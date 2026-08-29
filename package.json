@@ -11,7 +11,8 @@
   "files": [
     "dist",
     "bin",
-    "schemas"
+    "schemas",
+    "skills"
   ],
   "engines": {
     "node": ">=20.19.0"
@@ -20,6 +21,7 @@
     "build": "tsc",
     "test": "vitest run",
     "test:e2e": "vitest run tests/e2e",
+    "test:skills": "vitest run tests/skills",
     "test:all": "npm run build && vitest run"
   },
   "dependencies": {
