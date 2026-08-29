@@ -18,7 +18,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "vitest run tests/e2e",
+    "test:all": "npm run build && vitest run"
   },
   "dependencies": {
     "commander": "^14.0.2",

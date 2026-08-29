@@ -1,0 +1,124 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`контракт машинного вывода > instructions по одному артефакту > instructions: ключи artifact 1`] = `
+[
+  "description",
+  "id",
+  "status",
+]
+`;
+
+exports[`контракт машинного вывода > instructions по одному артефакту > instructions: ключи data 1`] = `
+[
+  "artifact",
+  "blockedBy",
+  "change",
+  "context",
+  "dependencies",
+  "instruction",
+  "language",
+  "languageExplicit",
+  "nextStep",
+  "outputKind",
+  "outputVersion",
+  "resolvedOutputPath",
+  "rules",
+  "schema",
+  "template",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода > instructions по одному артефакту > instructions: ключи dependencies 1`] = `
+[
+  "id",
+  "resolvedOutputPath",
+  "status",
+]
+`;
+
+exports[`контракт машинного вывода > status по всему рабочему пространству > status: ключи changes 1`] = `
+[
+  "artifactsDone",
+  "artifactsTotal",
+  "isPlanningComplete",
+  "name",
+  "schema",
+]
+`;
+
+exports[`контракт машинного вывода > status по всему рабочему пространству > status: ключи data 1`] = `
+[
+  "changes",
+  "nextStep",
+  "outputVersion",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода > status по одному change > status --change: ключи artifacts 1`] = `
+[
+  "blockedBy",
+  "description",
+  "id",
+  "outputKind",
+  "requires",
+  "resolvedOutputPath",
+  "status",
+]
+`;
+
+exports[`контракт машинного вывода > status по одному change > status --change: ключи data 1`] = `
+[
+  "artifacts",
+  "change",
+  "isPlanningComplete",
+  "nextStep",
+  "outputVersion",
+  "schema",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода > validate по одному change > validate: ключи data 1`] = `
+[
+  "findings",
+  "nextStep",
+  "outputVersion",
+  "strict",
+  "summary",
+  "target",
+]
+`;
+
+exports[`контракт машинного вывода > validate по одному change > validate: ключи findings 1`] = `
+[
+  "file",
+  "level",
+  "line",
+  "message",
+  "rule",
+]
+`;
+
+exports[`контракт машинного вывода > validate по одному change > validate: ключи summary 1`] = `
+[
+  "errors",
+  "warnings",
+]
+`;
+
+exports[`контракт машинного вывода > отказ при машинном выводе > отказ: ключи data 1`] = `
+[
+  "error",
+  "nextStep",
+  "outputVersion",
+]
+`;
+
+exports[`контракт машинного вывода > отказ при машинном выводе > отказ: ключи error 1`] = `
+[
+  "code",
+  "message",
+]
+`;
