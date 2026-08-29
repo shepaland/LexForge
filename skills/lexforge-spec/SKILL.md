@@ -47,7 +47,7 @@ Violating the letter of this rule is violating its spirit.
 
 A delta spec records behaviour a user of the product observes; a build step is not
 behaviour. `empty-delta` means either behaviour changed, or `skip_specs: true` is
-declared — only the user knows which. Ask him.
+declared — only the user knows which. Ask them.
 
 ## Rationalizations
 
@@ -56,7 +56,7 @@ declared — only the user knows which. Ask him.
 | "Nothing in it is invented", "Every sentence comes from `proposal.md`" | A source is not a confirmation. |
 | "This requirement exists to clear `empty-delta`" | You just named the purpose. |
 | "Deleted on Monday" | A planned cleanup is not a cleanup. |
-| "A decision he already delegated", "just in his head instead of in the repo" | He delegated work, not answers; `status` reads the repo. |
+| "A decision he already delegated", "just in his head instead of in the repo" | They delegated work, not answers; `status` reads the repo. |
 | "A workflow-ordering hint, not a reason to refuse work", "Don't run `lexforge status` on stage" | `blocked` is a gate; hiding it is worse. |
 
 ## Red flags - stop
