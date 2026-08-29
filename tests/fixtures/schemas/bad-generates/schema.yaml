@@ -1,0 +1,9 @@
+name: bad-generates
+description: An artifact whose output path matches neither accepted form
+artifacts:
+  - id: specs
+    description: Delta specs
+    template: templates/specs.md
+    generates: specs/*.md
+    instruction: |
+      Write the delta specs.

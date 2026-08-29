@@ -1,0 +1,9 @@
+name: missing-template
+description: An artifact pointing at a template that is not on disk
+artifacts:
+  - id: first
+    description: The first artifact
+    template: templates/nosuch.md
+    generates: first.md
+    instruction: |
+      Write the first artifact.

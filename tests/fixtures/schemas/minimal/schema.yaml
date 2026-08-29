@@ -1,0 +1,19 @@
+name: minimal
+description: Two artifacts and one edge between them
+artifacts:
+  - id: first
+    description: The first artifact
+    template: templates/first.md
+    generates: first.md
+    instruction: |
+      Write the first artifact.
+      Next step: lexforge instructions second --change <name>
+  - id: second
+    description: The second artifact
+    template: templates/second.md
+    generates: second.md
+    requires:
+      - first
+    instruction: |
+      Write the second artifact.
+      Next step: implement the change.

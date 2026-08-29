@@ -1,0 +1,19 @@
+name: cycle
+description: Two artifacts that require each other
+artifacts:
+  - id: a
+    description: Artifact a
+    template: templates/a.md
+    generates: a.md
+    requires:
+      - b
+    instruction: |
+      Write a.
+  - id: b
+    description: Artifact b
+    template: templates/b.md
+    generates: b.md
+    requires:
+      - a
+    instruction: |
+      Write b.

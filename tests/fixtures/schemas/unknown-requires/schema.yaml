@@ -1,0 +1,11 @@
+name: unknown-requires
+description: An artifact requiring an artifact that does not exist
+artifacts:
+  - id: first
+    description: The first artifact
+    template: templates/first.md
+    generates: first.md
+    requires:
+      - nosuch
+    instruction: |
+      Write the first artifact.

@@ -1,0 +1,15 @@
+name: duplicate-id
+description: Two artifacts carrying the same identifier
+artifacts:
+  - id: proposal
+    description: The proposal
+    template: templates/proposal.md
+    generates: proposal.md
+    instruction: |
+      Write the proposal.
+  - id: proposal
+    description: The proposal again
+    template: templates/proposal.md
+    generates: proposal-2.md
+    instruction: |
+      Write the proposal again.
