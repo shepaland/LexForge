@@ -1,6 +1,6 @@
 ---
 name: lexforge-plan
-description: Use when the task list of a LexForge change is asked for or has to be fixed - the user wants `tasks.md`, an implementation plan or a breakdown of the work for a change, or `lexforge validate` reports a finding in the tasks artifact.
+description: Use when a plan, a task list or a breakdown of the work is asked for on a LexForge change that already exists - the user wants the plan for a change or its `tasks.md`, or `lexforge validate` reports a finding in the tasks artifact.
 ---
 
 <!-- queue-rule:start -->
