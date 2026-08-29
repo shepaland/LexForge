@@ -1,0 +1,25 @@
+# Артефакты процесса разработки — нужны в сессии, не пользователю продукта
+openspec/
+docs/superpowers/
+
+# Changes в работе — процесс. Спеки в specforge/specs/ коммитятся: они описывают
+# поведение выпущенного продукта.
+specforge/changes/
+
+# Секреты
+.env
+.env.*
+*.pem
+*.key
+.npmrc
+.claude/settings.local.json
+
+# Сборка и зависимости
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Локальное окружение
+.DS_Store
+.idea/
+.vscode/
