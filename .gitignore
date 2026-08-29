@@ -19,6 +19,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Изолированные рабочие деревья сессий
+.claude/worktrees/
+
 # Локальное окружение
 .DS_Store
 .idea/
