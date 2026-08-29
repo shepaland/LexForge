@@ -1,6 +1,7 @@
 import { Command, CommanderError } from "commander";
 
 import type { CommandResult, OutputStream } from "../core/types.js";
+import { registerInit } from "./commands/init.js";
 import { UsageError } from "./errors.js";
 
 export interface RunOptions {
@@ -17,7 +18,7 @@ export interface CliContext {
   cwd: string;
   stdout: OutputStream;
   stderr: OutputStream;
-  finish(result: CommandResult): void;
+  finish(result: CommandResult<unknown>): void;
   readonly exitCode: number;
 }
 
@@ -28,7 +29,7 @@ export function createCliContext(options: RunOptions): CliContext {
     cwd: options.cwd,
     stdout: options.stdout ?? process.stdout,
     stderr: options.stderr ?? process.stderr,
-    finish(result: CommandResult) {
+    finish(result: CommandResult<unknown>) {
       exitCode = result.exitCode;
     },
     get exitCode() {
@@ -37,11 +38,8 @@ export function createCliContext(options: RunOptions): CliContext {
   };
 }
 
+/** Commands still waiting for their section of the plan. */
 const COMMANDS: Array<{ name: string; description: string }> = [
-  {
-    name: "init",
-    description: "Create the lexforge/ workspace and install skills for the listed tools",
-  },
   {
     name: "new",
     description: "Start a new change from a schema",
@@ -75,6 +73,8 @@ export function createProgram(context: CliContext): Command {
         context.stderr.write(text);
       },
     });
+
+  registerInit(program, context);
 
   for (const command of COMMANDS) {
     program.command(command.name).description(command.description);
