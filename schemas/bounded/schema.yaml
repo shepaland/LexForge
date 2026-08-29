@@ -1,0 +1,68 @@
+name: bounded
+description: Short pipeline for a change that needs no design document
+artifacts:
+  - id: proposal
+    description: Why the change is needed and what it changes
+    template: templates/proposal.md
+    generates: proposal.md
+    instruction: |
+      Write the proposal for this change.
+
+      Start with the classification. Say out loud whether this is a spike, a bounded
+      change, or an architectural change. Then ask the user your questions, one at
+      a time. Wait for each answer before you ask the next one.
+
+      When the goal is clear, offer two or three approaches. Name the trade-off of
+      each one. Give your recommendation and say why. Let the user pick.
+
+      Only then write the file. "Why" holds the reason for the change. "What Changes"
+      lists what a user of the product will see. "Capabilities" names the new and the
+      modified capabilities. "Impact" names the code and the systems this touches.
+
+      Do not write any product code in this step.
+
+      Next step: lexforge instructions specs --change <name>
+  - id: specs
+    description: Delta specs - requirements with scenarios
+    template: templates/spec.md
+    generates: specs/**/*.md
+    requires:
+      - proposal
+    instruction: |
+      Write one delta spec per capability.
+
+      Each file goes to specs/<capability-path>/spec.md inside the change. The path
+      may be nested, like identity/user-auth.
+
+      Group the requirements under one of four headings: "## ADDED Requirements",
+      "## MODIFIED Requirements", "## REMOVED Requirements", "## RENAMED Requirements".
+
+      Write a requirement as "### Requirement: <name>". Use the word SHALL in its
+      text. Give every requirement at least one "#### Scenario: <name>". Every
+      scenario needs a line with WHEN and a line with THEN.
+
+      Do not invent a requirement to make the check pass. A change that does not
+      alter behaviour declares skip_specs: true in .lexforge.yaml instead.
+
+      Next step: lexforge instructions tasks --change <name>
+  - id: tasks
+    description: Implementation plan, task by task
+    template: templates/tasks.md
+    generates: tasks.md
+    requires:
+      - specs
+    instruction: |
+      Write the plan.
+
+      Number the sections. Number every task inside a section, like 1.1 and 1.2.
+      Order the sections by dependency. A task never needs the result of a later one.
+
+      Each task names the file it touches. Each task names the check that proves it
+      works. Keep the test and the code apart: first the failing test, then the run
+      that shows it failing, then the implementation.
+
+      Leave no placeholder behind. Do not write TBD, TODO, or "same as task 3".
+
+      Every requirement from the delta specs needs at least one task that covers it.
+
+      Next step: implement the change task by task, ticking each checkbox in tasks.md.
