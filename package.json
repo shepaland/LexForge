@@ -1,0 +1,33 @@
+{
+  "name": "lexforge",
+  "version": "0.1.0",
+  "description": "Spec-driven pipeline with gates that agents cannot skip",
+  "license": "MIT",
+  "author": "shepaland",
+  "type": "module",
+  "bin": {
+    "lexforge": "bin/lexforge.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "schemas"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "yaml": "^2.8.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
