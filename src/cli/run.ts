@@ -2,8 +2,10 @@ import { Command, CommanderError } from "commander";
 
 import type { CommandResult, OutputStream } from "../core/types.js";
 import { registerInit } from "./commands/init.js";
+import { registerInstructions } from "./commands/instructions.js";
 import { registerNew } from "./commands/new-change.js";
 import { registerStatus } from "./commands/status.js";
+import { registerValidate } from "./commands/validate.js";
 import { UsageError } from "./errors.js";
 import { renderUsageError } from "./render.js";
 
@@ -41,18 +43,6 @@ export function createCliContext(options: RunOptions): CliContext {
   };
 }
 
-/** Commands still waiting for their section of the plan. */
-const COMMANDS: Array<{ name: string; description: string }> = [
-  {
-    name: "instructions",
-    description: "Show template, context, rules and instruction for one artifact",
-  },
-  {
-    name: "validate",
-    description: "Check the artifacts and the requirements of a change",
-  },
-];
-
 export function createProgram(context: CliContext): Command {
   const program = new Command();
 
@@ -72,10 +62,8 @@ export function createProgram(context: CliContext): Command {
   registerInit(program, context);
   registerNew(program, context);
   registerStatus(program, context);
-
-  for (const command of COMMANDS) {
-    program.command(command.name).description(command.description);
-  }
+  registerInstructions(program, context);
+  registerValidate(program, context);
 
   return program;
 }
