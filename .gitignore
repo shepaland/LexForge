@@ -2,9 +2,9 @@
 openspec/
 docs/superpowers/
 
-# Changes в работе — процесс. Спеки в specforge/specs/ коммитятся: они описывают
+# Changes в работе — процесс. Спеки в lexforge/specs/ коммитятся: они описывают
 # поведение выпущенного продукта.
-specforge/changes/
+lexforge/changes/
 
 # Секреты
 .env
@@ -23,3 +23,6 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# Заметка для старта сессии — процесс, не продукт
+NEXT-SESSION.md

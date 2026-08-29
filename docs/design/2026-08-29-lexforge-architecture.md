@@ -1,10 +1,10 @@
-# Архитектура SpecForge
+# Архитектура LexForge
 
 Дата: 2026-08-29. Статус: согласовано, основа для changes.
 
 ## Задача
 
-SpecForge соединяет две системы, каждая из которых решает половину проблемы.
+LexForge соединяет две системы, каждая из которых решает половину проблемы.
 
 OpenSpec ведёт изменение через артефакты `proposal → specs → design → tasks`, хранит спеки
 в репозитории и вливает дельту при архивации. Требования записаны так, что их проверяет
@@ -18,7 +18,7 @@ Iron Law у TDD и у проверки перед завершением, таб
 Слабое место — ничего не остаётся после мержа. Дизайн лежит в `docs/superpowers/specs/`
 и больше никем не читается, долговременных спеков нет.
 
-SpecForge берёт артефакты и проверяемую структуру требований у первой системы, ворота
+LexForge берёт артефакты и проверяемую структуру требований у первой системы, ворота
 и поведенческие правила у второй, а дисциплину переносит из текста в код собственного CLI.
 
 ## Что берётся у каждого донора
@@ -35,7 +35,7 @@ SpecForge берёт артефакты и проверяемую структу
 | 8. Проверка | оба | три измерения, ноль CRITICAL, свежий вывод команды под каждым заявлением |
 | 9. Слияние дельты, архивация, интеграция ветки | оба | сравнение дельты с основной спекой после слияния |
 
-Два дублирования срезаны. Дизайн живёт только в `specforge/changes/<name>/`, каталог
+Два дублирования срезаны. Дизайн живёт только в `lexforge/changes/<name>/`, каталог
 `docs/superpowers/specs/` не заводится. План не становится отдельным файлом: `tasks.md`
 пишется по требованиям writing-plans и служит планом.
 
@@ -44,12 +44,12 @@ SpecForge берёт артефакты и проверяемую структу
 В целевом проекте:
 
 ```
-specforge/
+lexforge/
   config.yaml                        # schema, context, rules, operations, verification
   specs/<capability-path>/spec.md    # долговременные спеки
   changes/
     <change-name>/
-      .specforge.yaml                # schema, skip_specs
+      .lexforge.yaml                # schema, skip_specs
       proposal.md
       specs/<capability-path>/spec.md
       design.md
@@ -62,11 +62,11 @@ specforge/
 `<capability-path>` — вложенный путь относительно `specs/`, как у OpenSpec: `user-auth`
 или `identity/user-auth`.
 
-В репозитории SpecForge:
+В репозитории LexForge:
 
 ```
-package.json                # bin.specforge; files: dist, bin, schemas, skills, templates
-bin/specforge.js
+package.json                # bin.lexforge; files: dist, bin, schemas, skills, templates
+bin/lexforge.js
 src/
   cli/                      # команды на commander
   core/
@@ -82,7 +82,7 @@ tests/scenarios/            # сценарии давления для суба�
 
 Схема описывается данными: последовательность артефактов, рёбра `requires`, шаблоны и пути
 на выходе (включая глобы для дельта-спек) читаются из описания схемы, а не зашиты в код.
-Отсюда `--schema`, команда `specforge schemas`, статус `skipped` для `skip_specs` и обход
+Отсюда `--schema`, команда `lexforge schemas`, статус `skipped` для `skip_specs` и обход
 `requires` транзитивно.
 
 Классификация из superpowers выбирает схему и нового кода не требует:
@@ -99,32 +99,32 @@ tests/scenarios/            # сценарии давления для суба�
 
 | Команда | Что делает |
 |---|---|
-| `specforge init [--tools <list>]` | ставит скиллы в каталоги агентов, создаёт `specforge/` |
-| `specforge new change <name> [--schema]` | каркас change и `.specforge.yaml` |
-| `specforge status [--change <name>] [--json]` | статусы `done`, `skipped`, `ready`, `blocked`, рёбра `requires`, `applyRequires`, пути |
-| `specforge instructions <artifact\|apply\|archive> --change <name> [--json]` | `template`, `context`, `rules`, `instruction`, `dependencies`, `resolvedOutputPath` |
-| `specforge validate <item> [--strict]` | структура артефактов и требований |
-| `specforge list [--specs]`, `show <item>`, `view` | обзор changes и спеков |
-| `specforge schemas`, `templates` | описания схем и пути к шаблонам |
-| `specforge archive <change>` | слить дельту в `specforge/specs/`, перенести change в `archive/` |
-| `specforge context`, `doctor` | резолв корня, здоровье связей |
+| `lexforge init [--tools <list>]` | ставит скиллы в каталоги агентов, создаёт `lexforge/` |
+| `lexforge new change <name> [--schema]` | каркас change и `.lexforge.yaml` |
+| `lexforge status [--change <name>] [--json]` | статусы `done`, `skipped`, `ready`, `blocked`, рёбра `requires`, `applyRequires`, пути |
+| `lexforge instructions <artifact\|apply\|archive> --change <name> [--json]` | `template`, `context`, `rules`, `instruction`, `dependencies`, `resolvedOutputPath` |
+| `lexforge validate <item> [--strict]` | структура артефактов и требований |
+| `lexforge list [--specs]`, `show <item>`, `view` | обзор changes и спеков |
+| `lexforge schemas`, `templates` | описания схем и пути к шаблонам |
+| `lexforge archive <change>` | слить дельту в `lexforge/specs/`, перенести change в `archive/` |
+| `lexforge context`, `doctor` | резолв корня, здоровье связей |
 
 Команды, которых нет ни у одного донора. Они превращают ворота superpowers из текста
 в проверку с кодом возврата:
 
-**`specforge check plan --change <name>`** — самопроверка из writing-plans. Ищет плейсхолдеры
+**`lexforge check plan --change <name>`** — самопроверка из writing-plans. Ищет плейсхолдеры
 (`TBD`, `TODO`, «add error handling», «similar to Task N»), требования дельта-спеки, на которые
 не ссылается ни одна задача, и идентификаторы, названные в задаче 7 иначе, чем в задаче 3.
 
-**`specforge evidence record --change <name> --label tests`** — выполняет команду, записанную
+**`lexforge evidence record --change <name> --label tests`** — выполняет команду, записанную
 в `config.yaml` под этой меткой, и пишет в `evidence.json` код возврата, хвост вывода, время
 и текущий `HEAD`. Произвольная команда аргументом не принимается: иначе агент скормит `true`
 и получит штамп.
 
-**`specforge check evidence --change <name> --require tests,lint`** — есть ли штамп, снятый
+**`lexforge check evidence --change <name> --require tests,lint`** — есть ли штамп, снятый
 на текущем `HEAD`. Штамп с прошлого коммита свежим не считается.
 
-**`specforge verify --change <name> [--json]`** — машинная часть трёх измерений: незакрытые
+**`lexforge verify --change <name> [--json]`** — машинная часть трёх измерений: незакрытые
 чекбоксы в `tasks.md`, требования дельты без следа в коде, состояние штампов. Coherence
 (следует ли реализация решениям из `design.md`) остаётся за скиллом.
 
@@ -134,7 +134,7 @@ tests/scenarios/            # сценарии давления для суба�
 Имена `verify`, `archive` и `apply` носят и команда CLI, и скилл конвейера. Команда выполняет
 машинную часть работы, скилл — ту, что требует чтения смысла, и вызывает команду внутри себя.
 
-Метки проверок задаются в `specforge/config.yaml`:
+Метки проверок задаются в `lexforge/config.yaml`:
 
 ```yaml
 verification:
@@ -146,20 +146,20 @@ verification:
 
 | Скилл | Срабатывает | Ворота на входе | Заканчивается |
 |---|---|---|---|
-| `specforge` | запрос на постройку, правку, фичу, багфикс | — | классификация объявлена, change заведён нужной схемой, назван следующий шаг |
-| `specforge:propose` | change заведён, `proposal` в статусе `ready` | `status` подтверждает `ready` | `proposal.md`, `validate` прошёл |
-| `specforge:spec` | `proposal` готов | то же | дельта-спека, `validate --strict` прошёл |
-| `specforge:design` | схема `spec-driven`, `spec` готов | то же | `design.md`, каждая секция согласована отдельно |
-| `specforge:plan` | `design` готов или схема `bounded` | то же | `tasks.md`, `check plan` вернул 0 |
-| `specforge:apply` | все артефакты `done` или `skipped` | `status` даёт `isPlanningComplete` | задачи закрыты, штампы сняты |
-| `specforge:verify` | реализация завершена | `check evidence` находит свежий штамп | отчёт по трём измерениям, ноль CRITICAL |
-| `specforge:archive` | verify чист | `verify --json` вернул 0 | дельта влита, change в архиве, ветка интегрирована |
-| `specforge:debug` | баг, падающий тест, неожиданное поведение | — | причина найдена до предложения фикса |
+| `lexforge` | запрос на постройку, правку, фичу, багфикс | — | классификация объявлена, change заведён нужной схемой, назван следующий шаг |
+| `lexforge:propose` | change заведён, `proposal` в статусе `ready` | `status` подтверждает `ready` | `proposal.md`, `validate` прошёл |
+| `lexforge:spec` | `proposal` готов | то же | дельта-спека, `validate --strict` прошёл |
+| `lexforge:design` | схема `spec-driven`, `spec` готов | то же | `design.md`, каждая секция согласована отдельно |
+| `lexforge:plan` | `design` готов или схема `bounded` | то же | `tasks.md`, `check plan` вернул 0 |
+| `lexforge:apply` | все артефакты `done` или `skipped` | `status` даёт `isPlanningComplete` | задачи закрыты, штампы сняты |
+| `lexforge:verify` | реализация завершена | `check evidence` находит свежий штамп | отчёт по трём измерениям, ноль CRITICAL |
+| `lexforge:archive` | verify чист | `verify --json` вернул 0 | дельта влита, change в архиве, ветка интегрирована |
+| `lexforge:debug` | баг, падающий тест, неожиданное поведение | — | причина найдена до предложения фикса |
 
 Тело `SKILL.md` пишется по-английски: по `description` агент решает, вызывать скилл или нет,
 и английский триггер срабатывает надёжнее на запросах любого языка.
 
-**Правило очереди.** Каждый скилл первым делом выполняет `specforge status --change <name> --json`
+**Правило очереди.** Каждый скилл первым делом выполняет `lexforge status --change <name> --json`
 и, если его артефакт не в статусе `ready`, останавливается и называет нужный шаг. Скилл `apply`,
 вызванный до написания `tasks.md`, увидит `blocked` и откажется.
 
@@ -167,10 +167,10 @@ verification:
 «сделай фичу X» разрешает только планирование, даже когда в нём написано «сделай». Реализация
 начинается новым запросом пользователя после того, как артефакты показаны.
 
-`specforge:propose` делает то, чего у OpenSpec нет: классифицирует запрос, задаёт вопросы
+`lexforge:propose` делает то, чего у OpenSpec нет: классифицирует запрос, задаёт вопросы
 по одному, предлагает подходы с рекомендацией и только потом пишет `Why`.
 
-`specforge:apply` внутри задачи ведёт цикл TDD с обязательным наблюдением падения; после задачи
+`lexforge:apply` внутри задачи ведёт цикл TDD с обязательным наблюдением падения; после задачи
 направляет ревьюера-субагента с узким контекстом (диапазон SHA и текст задачи, не история сессии);
 закрывает чекбокс сразу; при выходе задачи за спеку останавливается и спрашивает.
 
@@ -202,7 +202,7 @@ Iron Law одной строкой, таблица «отговорка → ре
 что нарушение буквы правила есть нарушение его духа. Отговорки в таблицу не выдумываются: туда
 попадают формулировки, которыми субагент оправдывался в RED-фазе.
 
-## Как проверяется сам SpecForge
+## Как проверяется сам LexForge
 
 CLI — обычный TDD на vitest: граф артефактов, резолвер путей, `validate --strict` на кривых
 спеках, коды возврата.
@@ -222,7 +222,7 @@ CLI — обычный TDD на vitest: граф артефактов, резо�
 | Этап | Что делается | Готовность |
 |---|---|---|
 | 1 | ядро CLI: `init`, `new change`, `status`, `instructions`, `validate`, граф артефактов, схемы `spec-driven` и `bounded` | vitest зелёный |
-| 2 | скиллы планирования: `specforge`, `propose`, `spec`, `design`, `plan` | сценарии давления пройдены |
+| 2 | скиллы планирования: `lexforge`, `propose`, `spec`, `design`, `plan` | сценарии давления пройдены |
 | 3 | команды-ворота: `check plan`, `evidence record`, `check evidence`, `verify` | vitest зелёный |
 | 4 | скиллы реализации: `apply`, `verify`, `archive`, `debug`, слияние дельты в CLI | сценарии пройдены |
 | 5 | упаковка: `files`, `bin`, `init` под claude, codex, cursor | установка в чистый репозиторий проходит |
@@ -233,7 +233,7 @@ CLI — обычный TDD на vitest: граф артефактов, резо�
 пишутся под конкретный этап.
 
 Этапы 1–3 ведутся через установленный `openspec` 1.9.0 в каталоге `openspec/`. Когда своё ядро
-заработает, репозиторий переходит на `specforge init` и каталог `specforge/`, а оставшиеся этапы
+заработает, репозиторий переходит на `lexforge init` и каталог `lexforge/`, а оставшиеся этапы
 идут через собственный конвейер. Переход проверяет продукт на реальном проекте.
 
 ## Решения и их цена
@@ -253,7 +253,7 @@ CLI — обычный TDD на vitest: граф артефактов, резо�
 Это делает проверку воспроизводимой и видимой в ревью, но добавляет файл, который меняется
 на каждом прогоне и создаёт конфликты слияния при параллельной работе над одним change.
 
-**Классификация выбирает схему.** Альтернатива — отдельный флаг `path` в `.specforge.yaml`
+**Классификация выбирает схему.** Альтернатива — отдельный флаг `path` в `.lexforge.yaml`
 и ветвление в каждом скилле. Через схемы ветвление уходит в граф артефактов, но требует держать
 две схемы синхронно при изменении шаблонов.
 
