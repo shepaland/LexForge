@@ -2,7 +2,10 @@ import { Command, CommanderError } from "commander";
 
 import type { CommandResult, OutputStream } from "../core/types.js";
 import { registerInit } from "./commands/init.js";
+import { registerNew } from "./commands/new-change.js";
+import { registerStatus } from "./commands/status.js";
 import { UsageError } from "./errors.js";
+import { renderUsageError } from "./render.js";
 
 export interface RunOptions {
   cwd: string;
@@ -41,14 +44,6 @@ export function createCliContext(options: RunOptions): CliContext {
 /** Commands still waiting for their section of the plan. */
 const COMMANDS: Array<{ name: string; description: string }> = [
   {
-    name: "new",
-    description: "Start a new change from a schema",
-  },
-  {
-    name: "status",
-    description: "Show artifact status for one change or for every active change",
-  },
-  {
     name: "instructions",
     description: "Show template, context, rules and instruction for one artifact",
   },
@@ -75,6 +70,8 @@ export function createProgram(context: CliContext): Command {
     });
 
   registerInit(program, context);
+  registerNew(program, context);
+  registerStatus(program, context);
 
   for (const command of COMMANDS) {
     program.command(command.name).description(command.description);
@@ -110,10 +107,11 @@ export async function runProgram(
     }
 
     if (error instanceof UsageError) {
-      context.stderr.write(`${error.message}\n`);
-      if (error.nextStep) {
-        context.stderr.write(`Next step: ${error.nextStep}\n`);
-      }
+      renderUsageError(error, {
+        json: wantsJson(argv),
+        stdout: context.stdout,
+        stderr: context.stderr,
+      });
       return 2;
     }
 
@@ -122,6 +120,15 @@ export async function runProgram(
     context.stderr.write(`internal error: ${name}: ${message}\n`);
     return 2;
   }
+}
+
+/**
+ * Where a refused call reports itself is decided by the machine-output flag,
+ * and the flag is read from the arguments: a command that throws never got as
+ * far as printing anything itself.
+ */
+function wantsJson(argv: string[]): boolean {
+  return argv.includes("--json");
 }
 
 export async function run(argv: string[], options: RunOptions): Promise<number> {
