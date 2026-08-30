@@ -12,12 +12,17 @@ import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
 /** The skills the published package carries, not a fixture copy of them. */
 const SKILLS_DIR = fileURLToPath(new URL("../../../skills", import.meta.url));
 
+/** Five planning skills and four implementation skills, in directory order. */
 const SKILL_NAMES = [
   "lexforge",
+  "lexforge-apply",
+  "lexforge-archive",
+  "lexforge-debug",
   "lexforge-design",
   "lexforge-plan",
   "lexforge-propose",
   "lexforge-spec",
+  "lexforge-verify",
 ];
 
 const created: string[] = [];
@@ -35,7 +40,7 @@ afterEach(() => {
 });
 
 describe("установка встроенных скиллов", () => {
-  it("кладёт пять каталогов в .claude/skills/ и не трогает текст скиллов", () => {
+  it("кладёт девять каталогов в .claude/skills/ и не трогает текст скиллов", () => {
     const root = project();
 
     const result = initWorkspace({ cwd: root, tools: ["claude"] });

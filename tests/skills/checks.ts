@@ -135,7 +135,7 @@ function bodyWithoutQueueRule(body: string): string {
   return body.slice(0, start) + body.slice(end + QUEUE_RULE_END.length);
 }
 
-/** The five planning skills of this stage; the directory carries these and nothing else. */
+/** The five planning skills: one artifact each, and a queue rule that reads that status. */
 export const PLANNING_SKILLS = [
   "lexforge",
   "lexforge-propose",
@@ -143,6 +143,32 @@ export const PLANNING_SKILLS = [
   "lexforge-design",
   "lexforge-plan",
 ];
+
+/** The four implementation skills, in the order they run. */
+export const IMPLEMENTATION_SKILLS = [
+  "lexforge-apply",
+  "lexforge-verify",
+  "lexforge-archive",
+  "lexforge-debug",
+];
+
+/**
+ * The implementation skills that work on a change. They own no artifact, so their queue
+ * rule asks a different question - is planning finished at all - and carries its own
+ * shared block.
+ */
+export const QUEUE_RULE_IMPLEMENTATION_SKILLS = [
+  "lexforge-apply",
+  "lexforge-verify",
+  "lexforge-archive",
+];
+
+/**
+ * Skills that carry no queue rule. `lexforge-debug` fires on any bug, including one in a
+ * project that has no LexForge workspace at all, and a block that stops on
+ * `workspace-not-found` would forbid exactly that work.
+ */
+export const SKILLS_WITHOUT_QUEUE_RULE = ["lexforge-debug"];
 
 export const QUEUE_RULE_START = "<!-- queue-rule:start -->";
 export const QUEUE_RULE_END = "<!-- queue-rule:end -->";

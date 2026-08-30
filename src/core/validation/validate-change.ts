@@ -14,6 +14,7 @@ import { scanSpec } from "./scan-spec.js";
 import {
   checkArtifactsDone,
   checkPurpose,
+  checkRenamedPairs,
   checkTemplatePlaceholders,
 } from "./strict-rules.js";
 
@@ -77,6 +78,7 @@ export function validateChange(
 
         if (strict) {
           findings.push(...checkPurpose(shown, content));
+          findings.push(...checkRenamedPairs(shown, content));
         }
       }
 

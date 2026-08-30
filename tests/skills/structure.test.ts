@@ -4,9 +4,12 @@ import { describe, expect, it } from "vitest";
 
 import { readSkills, type SkillFile } from "../helpers/read-skills.js";
 import {
+  IMPLEMENTATION_SKILLS,
   MAX_BODY_WORDS,
   MAX_DESCRIPTION_CHARS,
   PLANNING_SKILLS,
+  QUEUE_RULE_IMPLEMENTATION_SKILLS,
+  SKILLS_WITHOUT_QUEUE_RULE,
   checkSkillStructure,
   readQueueRule,
   type SkillFinding,
@@ -89,20 +92,61 @@ describe("проверки структуры на каталоге skills", () 
     expect(findings.map((finding) => finding.message)).toEqual([]);
   });
 
-  it("в каталоге лежат ровно пять скиллов планирования", () => {
+  it("в каталоге лежат девять скиллов: пять планирующих и четыре реализующих", () => {
     const dirs = readSkills(SKILLS).map((skill) => skill.dir);
 
-    expect(dirs.slice().sort()).toEqual(PLANNING_SKILLS.slice().sort());
+    expect(dirs.slice().sort()).toEqual(
+      [...PLANNING_SKILLS, ...IMPLEMENTATION_SKILLS].slice().sort(),
+    );
   });
 });
 
 describe("общий блок правила очереди", () => {
-  it("есть у каждого из пяти скиллов и совпадает посимвольно", () => {
-    const skills = readSkills(SKILLS);
-    const blocks = skills.map((skill) => ({ dir: skill.dir, text: readQueueRule(skill) }));
+  function blocksOf(group: string[], dir = SKILLS): { dir: string; text: string | null }[] {
+    const skills = readSkills(dir).filter((skill) => group.includes(skill.dir));
+    const missing = group.filter((name) => !skills.some((skill) => skill.dir === name));
+
+    expect(missing).toEqual([]);
+
+    return skills.map((skill) => ({ dir: skill.dir, text: readQueueRule(skill) }));
+  }
+
+  function sharedText(group: string[], dir = SKILLS): string {
+    const blocks = blocksOf(group, dir);
 
     expect(blocks.filter((block) => block.text === null).map((block) => block.dir)).toEqual([]);
-    expect(blocks).toHaveLength(PLANNING_SKILLS.length);
-    expect(new Set(blocks.map((block) => block.text)).size).toBe(1);
+    expect(blocks).toHaveLength(group.length);
+
+    const first = blocks[0]!;
+    // The list names the file: a skill left with the old text shows up by its directory.
+    expect(blocks.filter((block) => block.text !== first.text).map((block) => block.dir)).toEqual(
+      [],
+    );
+
+    return first.text!;
+  }
+
+  it("совпадает посимвольно у пяти скиллов планирования", () => {
+    expect(sharedText(PLANNING_SKILLS)).toContain("Queue rule");
+  });
+
+  it("совпадает посимвольно у трёх скиллов реализации, работающих на change", () => {
+    expect(sharedText(QUEUE_RULE_IMPLEMENTATION_SKILLS)).toContain("Queue rule");
+  });
+
+  it("у двух групп разный: планирование читает артефакт, реализация — весь план", () => {
+    expect(sharedText(QUEUE_RULE_IMPLEMENTATION_SKILLS)).not.toBe(sharedText(PLANNING_SKILLS));
+  });
+
+  it("скилл отладки блока не несёт: он срабатывает и там, где рабочего пространства нет", () => {
+    expect(blocksOf(SKILLS_WITHOUT_QUEUE_RULE)).toEqual(
+      SKILLS_WITHOUT_QUEUE_RULE.map((dir) => ({ dir, text: null })),
+    );
+  });
+
+  it("группы блока и каталог скиллов сходятся", () => {
+    expect([...QUEUE_RULE_IMPLEMENTATION_SKILLS, ...SKILLS_WITHOUT_QUEUE_RULE].sort()).toEqual(
+      IMPLEMENTATION_SKILLS.slice().sort(),
+    );
   });
 });

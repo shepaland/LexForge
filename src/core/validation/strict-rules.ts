@@ -1,3 +1,4 @@
+import { parseDeltaPlan } from "../archive/delta-plan.js";
 import type { ArtifactStatus } from "../artifact-graph/graph.js";
 import { CHANGE_CONFIG_FILE } from "../workspace/paths.js";
 import { makeFinding, type Finding } from "./finding.js";
@@ -113,6 +114,15 @@ export function checkTemplatePlaceholders(file: string, content: string): Findin
   }
 
   return findings;
+}
+
+/**
+ * The rename section carries pairs of `FROM` and `TO` lines and nothing else.
+ * A defect of form is caught here, on `lexforge validate <change> --strict`,
+ * and not at the archiving, where a broken pair would stop the whole merge.
+ */
+export function checkRenamedPairs(file: string, content: string): Finding[] {
+  return parseDeltaPlan(file, content).findings;
 }
 
 export interface ArtifactCheck {

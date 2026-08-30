@@ -31,6 +31,12 @@ Keeps a requirement that nobody wrote a scenario for.
 ### Requirement: Empty requirement
 `;
 
+const RENAME_WITHOUT_PAIR = `${VALID_SPEC}
+## RENAMED Requirements
+
+- FROM: \`### Requirement: Change carries a delta spec\`
+`;
+
 function workspace(files: Record<string, string> = {}): string {
   const root = makeWorkspace({
     "lexforge/config.yaml": "schema: spec-driven\n",
@@ -90,6 +96,18 @@ describe("lexforge validate", () => {
     expect(capture.err).toContain("lexforge/changes/add-auth/specs/auth/spec.md");
     expect(capture.err).toContain("requirement-without-scenario");
     expect(capture.out).toBe("");
+  });
+
+  it("строгий режим сообщает о секции переименования без пары и даёт код 1", async () => {
+    const root = workspace({
+      "lexforge/changes/add-auth/specs/auth/spec.md": RENAME_WITHOUT_PAIR,
+    });
+
+    const { exitCode, capture } = await call(["validate", "add-auth", "--strict"], root);
+
+    expect(exitCode).toBe(1);
+    expect(capture.err).toContain("renamed-pair-broken");
+    expect(capture.err).toContain("lexforge/changes/add-auth/specs/auth/spec.md");
   });
 
   it("без флага строгого режима strict ложно", async () => {

@@ -24,14 +24,21 @@ const SHIPPED = [
   "schemas/bounded/templates/tasks.md",
 ];
 
-/** The skills the package installs into a project. */
+/** The skills the package installs into a project: five planning, four implementation. */
 const SKILL_NAMES = [
   "lexforge",
+  "lexforge-apply",
+  "lexforge-archive",
+  "lexforge-debug",
   "lexforge-design",
   "lexforge-plan",
   "lexforge-propose",
   "lexforge-spec",
+  "lexforge-verify",
 ];
+
+/** Material a skill body links to instead of carrying it: it ships with the skill. */
+const SKILL_FILES = ["lexforge-apply/reviewer-prompt.md"];
 
 const created: string[] = [];
 let tarball = "";
@@ -84,11 +91,15 @@ describe("состав пакета", () => {
     expect(templates).toHaveLength(7);
   });
 
-  it("несёт пять файлов скиллов", () => {
+  it("несёт девять файлов скиллов и шаблон задания ревьюеру", () => {
     const root = path.join(unpacked, "package");
 
     for (const name of SKILL_NAMES) {
       expect(existsSync(path.join(root, "skills", name, "SKILL.md")), name).toBe(true);
+    }
+
+    for (const file of SKILL_FILES) {
+      expect(existsSync(path.join(root, "skills", file)), file).toBe(true);
     }
 
     expect(readdirSync(path.join(root, "skills")).sort()).toEqual(SKILL_NAMES);
@@ -135,7 +146,7 @@ describe("установка в чужой проект", () => {
   );
 
   it(
-    "init со списком инструментов раскладывает пять скиллов по каталогу агента",
+    "init со списком инструментов раскладывает девять скиллов по каталогу агента",
     () => {
       const project = tempDir();
 

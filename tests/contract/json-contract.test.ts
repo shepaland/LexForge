@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
-import { createGitWorkspace, type GitWorkspace } from "../helpers/git-workspace.js";
+import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 const created: string[] = [];
@@ -237,5 +237,58 @@ describe("контракт машинного вывода ворот", () => {
     expect(keys(answer)).toMatchSnapshot("verify: ключи data");
     expect(keys(answer.summary)).toMatchSnapshot("verify: ключи summary");
     expect(firstKeys(answer.findings)).toMatchSnapshot("verify: ключи findings");
+  });
+});
+
+/** A plan without an open task: what archiving needs before it merges anything. */
+const CLEAN_PLAN = [
+  "## 1. Вход",
+  "",
+  "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
+  "      -> auth#Change carries a delta spec",
+  "",
+].join("\n");
+
+/** One check, and it passes: a change can reach a fresh stamp on every label. */
+const ARCHIVE_CONFIG = `schema: spec-driven
+verification:
+  tests: node -e "process.exit(0)"
+`;
+
+/** A change that passes every measure: closed plan, edited file, fresh stamp. */
+async function archivableProject(): Promise<string> {
+  const made = createGitWorkspace({
+    "lexforge/config.yaml": ARCHIVE_CONFIG,
+    "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
+    "lexforge/changes/add-auth/specs/auth/spec.md": VALID_SPEC,
+    "lexforge/changes/add-auth/design.md": "## Context\n\nOne service, one database.\n",
+    "lexforge/changes/add-auth/tasks.md": CLEAN_PLAN,
+  });
+  repositories.push(made);
+
+  writeAt(made.root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
+  await call(["evidence", "record", "--change", "add-auth", "--label", "tests"], made.root);
+
+  return made.root;
+}
+
+describe("коды возврата команды архивации", () => {
+  it("удачная архивация даёт 0", async () => {
+    const { exitCode, capture } = await call(["archive", "add-auth"], await archivableProject());
+
+    expect(exitCode, capture.err).toBe(0);
+  });
+
+  it("находка проверки даёт 1", async () => {
+    const { exitCode } = await call(["archive", "add-auth"], gateProject());
+
+    expect(exitCode).toBe(1);
+  });
+
+  it("ненайденный change даёт 2", async () => {
+    const { exitCode } = await call(["archive", "nosuch"], gateProject());
+
+    expect(exitCode).toBe(2);
   });
 });

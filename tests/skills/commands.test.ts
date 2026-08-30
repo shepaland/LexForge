@@ -19,6 +19,7 @@ function fixture(dir: string): SkillFile {
 describe("список команд читается из программы CLI", () => {
   it("несёт команды и подкоманды, зарегистрированные в run.ts", () => {
     expect(knownCommandNames().slice().sort()).toEqual([
+      "archive",
       "change",
       "check",
       "evidence",
@@ -41,7 +42,7 @@ describe("проверка команд на фикстурах", () => {
 
     expect(findings).toHaveLength(1);
     expect(findings[0]!.rule).toBe("unknown-command");
-    expect(findings[0]!.message).toContain("archive");
+    expect(findings[0]!.message).toContain("publish");
     expect(findings[0]!.message).toContain("future-command/SKILL.md");
   });
 
@@ -54,7 +55,7 @@ describe("проверка команд на фикстурах", () => {
       dir: "fenced",
       file: "/tmp/fenced/SKILL.md",
       frontmatter: {},
-      body: ["Text before.", "", "```", "lexforge archive add-auth", "```", "", "Text after."].join(
+      body: ["Text before.", "", "```", "lexforge publish add-auth", "```", "", "Text after."].join(
         "\n",
       ),
     };
@@ -67,7 +68,7 @@ describe("проверка команд на фикстурах", () => {
       dir: "twice",
       file: "/tmp/twice/SKILL.md",
       frontmatter: {},
-      body: "Run `lexforge archive add-auth` and then `lexforge archive add-billing` again.",
+      body: "Run `lexforge publish add-auth` and then `lexforge publish add-billing` again.",
     };
 
     expect(checkNamedCommands(skill).map((entry) => entry.message)).toHaveLength(1);

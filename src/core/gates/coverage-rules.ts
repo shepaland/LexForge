@@ -154,7 +154,7 @@ function readRequirements(changeDir: string, target: OutputTarget): DeltaRequire
   const specsDir = path.join(path.resolve(changeDir), target.dir);
   const requirements: DeltaRequirement[] = [];
 
-  for (const file of listFiles(specsDir, `.${target.extension}`)) {
+  for (const file of listSpecFiles(specsDir, `.${target.extension}`)) {
     const relative = path.relative(specsDir, file).split(path.sep).join("/");
     const capability = capabilityOf(relative);
     const scan = scanSpec(relative, readFileSync(file, "utf8"));
@@ -171,7 +171,7 @@ function readRequirements(changeDir: string, target: OutputTarget): DeltaRequire
  * The capability a spec file belongs to: its path under `specs/` without the
  * extension, with a trailing `spec` dropped, so `auth/spec.md` is `auth`.
  */
-function capabilityOf(relative: string): string {
+export function capabilityOf(relative: string): string {
   const parts = relative.split("/");
   const last = parts.pop()!.replace(/\.[^.]+$/, "");
 
@@ -183,7 +183,7 @@ function capabilityOf(relative: string): string {
 }
 
 /** Every file with the given extension under the directory, in name order. */
-function listFiles(dir: string, extension: string): string[] {
+export function listSpecFiles(dir: string, extension: string): string[] {
   let entries;
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -196,7 +196,7 @@ function listFiles(dir: string, extension: string): string[] {
     const full = path.join(dir, entry.name);
 
     if (entry.isDirectory()) {
-      files.push(...listFiles(full, extension));
+      files.push(...listSpecFiles(full, extension));
       continue;
     }
 
