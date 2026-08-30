@@ -355,7 +355,12 @@ describe("checkRepository", () => {
   });
 });
 
-describe("resolveOnPath", () => {
+/** Право на запуск задают только Linux и macOS: на Windows его нет вовсе. */
+const POSIX = { platform: "linux" } as const;
+/** Прогон на Windows не отличает файл с битом запуска от файла без него. */
+const onPosix = it.skipIf(process.platform === "win32");
+
+describe("resolveOnPath на Linux и macOS", () => {
   it("находит файл в первом каталоге списка", () => {
     const first = project();
     const second = project();
@@ -363,27 +368,27 @@ describe("resolveOnPath", () => {
     writeExecutable(path.join(second, "lexforge"));
     const pathValue = [first, second].join(path.delimiter);
 
-    expect(resolveOnPath("lexforge", pathValue)).toBe(path.join(first, "lexforge"));
+    expect(resolveOnPath("lexforge", pathValue, POSIX)).toBe(path.join(first, "lexforge"));
   });
 
   it("отдаёт пустой результат, когда имени нет ни в одном каталоге", () => {
     const only = project();
     const pathValue = [only].join(path.delimiter);
 
-    expect(resolveOnPath("lexforge", pathValue)).toBeUndefined();
+    expect(resolveOnPath("lexforge", pathValue, POSIX)).toBeUndefined();
   });
 
-  it("файл без бита запуска именем команды не считается", () => {
+  onPosix("файл без бита запуска именем команды не считается", () => {
     const only = project();
     writeFileSync(path.join(only, "lexforge"), "#!/usr/bin/env node\n", {
       encoding: "utf8",
       mode: 0o644,
     });
 
-    expect(resolveOnPath("lexforge", only)).toBeUndefined();
+    expect(resolveOnPath("lexforge", only, POSIX)).toBeUndefined();
   });
 
-  it("пропускает неисполняемый файл и находит исполняемый в следующем каталоге", () => {
+  onPosix("пропускает неисполняемый файл и находит исполняемый в следующем каталоге", () => {
     const first = project();
     const second = project();
     writeFileSync(path.join(first, "lexforge"), "#!/usr/bin/env node\n", {
@@ -392,14 +397,61 @@ describe("resolveOnPath", () => {
     });
     const executable = writeExecutable(path.join(second, "lexforge"));
 
-    expect(resolveOnPath("lexforge", [first, second].join(path.delimiter))).toBe(executable);
+    expect(resolveOnPath("lexforge", [first, second].join(path.delimiter), POSIX)).toBe(executable);
   });
 
   it("каталог с именем команды именем команды не считается", () => {
     const only = project();
     mkdirSync(path.join(only, "lexforge"));
 
-    expect(resolveOnPath("lexforge", only)).toBeUndefined();
+    expect(resolveOnPath("lexforge", only, POSIX)).toBeUndefined();
+  });
+});
+
+describe("resolveOnPath на Windows", () => {
+  const WINDOWS = { platform: "win32", pathExt: ".COM;.EXE;.BAT;.CMD" } as const;
+
+  /** Что оставляет на PATH установка пакета: файл с расширением из PATHEXT. */
+  function writeCommand(directory: string, file: string): string {
+    const target = path.join(directory, file);
+    writeFileSync(target, "@echo off\n", { encoding: "utf8", mode: 0o644 });
+    return target;
+  }
+
+  it("находит команду по расширению из PATHEXT и не требует бита запуска", () => {
+    const only = project();
+    const command = writeCommand(only, "lexforge.cmd");
+
+    expect(resolveOnPath("lexforge", only, WINDOWS)).toBe(command);
+  });
+
+  it("при пустом PATHEXT берёт список по умолчанию", () => {
+    const only = project();
+    const command = writeCommand(only, "lexforge.cmd");
+
+    expect(resolveOnPath("lexforge", only, { platform: "win32", pathExt: "" })).toBe(command);
+  });
+
+  it("идёт по расширениям в порядке PATHEXT", () => {
+    const only = project();
+    const exe = writeCommand(only, "lexforge.exe");
+    writeCommand(only, "lexforge.cmd");
+
+    expect(resolveOnPath("lexforge", only, WINDOWS)).toBe(exe);
+  });
+
+  it("отдаёт пустой результат, когда ни одно расширение не совпало", () => {
+    const only = project();
+    writeCommand(only, "lexforge.ps1");
+
+    expect(resolveOnPath("lexforge", only, WINDOWS)).toBeUndefined();
+  });
+
+  it("каталог с именем команды и расширением командой не считается", () => {
+    const only = project();
+    mkdirSync(path.join(only, "lexforge.cmd"));
+
+    expect(resolveOnPath("lexforge", only, WINDOWS)).toBeUndefined();
   });
 });
 
@@ -424,7 +476,7 @@ describe("checkPath", () => {
     const only = project();
     const running = path.join(only, "node_modules", ".bin", "lexforge");
 
-    const result = checkPath({ pathValue: only, runningFile: running });
+    const result = checkPath({ pathValue: only, runningFile: running, ...POSIX });
 
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.message).toContain("npm install -g");
@@ -437,7 +489,7 @@ describe("checkPath", () => {
     writeExecutable(resolved);
     const running = path.join(project(), "node_modules", ".bin", "lexforge");
 
-    const result = checkPath({ pathValue: binDir, runningFile: running });
+    const result = checkPath({ pathValue: binDir, runningFile: running, ...POSIX });
 
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.message).toContain(resolved);
@@ -449,7 +501,7 @@ describe("checkPath", () => {
     const resolved = path.join(binDir, "lexforge");
     writeExecutable(resolved);
 
-    const result = checkPath({ pathValue: binDir, runningFile: resolved });
+    const result = checkPath({ pathValue: binDir, runningFile: resolved, ...POSIX });
 
     expect(result.findings).toEqual([]);
   });
