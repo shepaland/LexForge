@@ -76,7 +76,7 @@ export async function recordEvidence(
   // A run that never started is not a red run: there is nothing to record, and
   // a stamp saying "exit code 127" would read as a check that failed. The shell
   // reports both cases by number, and there is no other signal to read.
-  if (commandNeverStarted(run.exitCode)) {
+  if (commandNeverStarted({ exitCode: run.exitCode, command })) {
     throw new UsageError(
       "evidence-command-failed",
       `check "${options.label}" runs "${command}", and the shell could not run it ` +

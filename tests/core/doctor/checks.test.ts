@@ -8,6 +8,7 @@ import { answerPath } from "../../../src/core/answer-path.js";
 import { manifestPath, renderManifest } from "../../../src/core/init/install-manifest.js";
 import type { InstallScope } from "../../../src/core/init/tool-registry.js";
 import { toolDirectory } from "../../../src/core/init/tool-registry.js";
+import { resolveOnPath } from "../../../src/core/command-on-path.js";
 import {
   checkPath,
   checkRepository,
@@ -15,7 +16,6 @@ import {
   checkSkills,
   checkVerification,
   checkWorkspace,
-  resolveOnPath,
 } from "../../../src/core/doctor/checks.js";
 import { createGitWorkspace, createPlainWorkspace, git } from "../../helpers/git-workspace.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";

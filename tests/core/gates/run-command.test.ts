@@ -1,4 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+import { afterAll, describe, expect, it } from "vitest";
 
 import { commandNeverStarted, runLabelCommand } from "../../../src/core/gates/run-command.js";
 import { createCapture } from "../../helpers/capture.js";
@@ -134,21 +138,80 @@ describe("runLabelCommand: печать вывода", () => {
 });
 
 describe("commandNeverStarted", () => {
-  it("код 127 и код 126 говорят, что команда не запустилась", () => {
-    expect(commandNeverStarted(127, "linux")).toBe(true);
-    expect(commandNeverStarted(126, "linux")).toBe(true);
+  /** Каталог с командой под именем, которое считает исполняемым эта система. */
+  function pathWith(name: string): string {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "lexforge-path-"));
+    dirs.push(dir);
+    writeFileSync(path.join(dir, name), "#!/usr/bin/env node\n", { encoding: "utf8", mode: 0o755 });
+    return dir;
+  }
+
+  const dirs: string[] = [];
+  const EMPTY = mkdtempSync(path.join(os.tmpdir(), "lexforge-path-"));
+  dirs.push(EMPTY);
+
+  afterAll(() => {
+    while (dirs.length > 0) {
+      rmSync(dirs.pop()!, { recursive: true, force: true });
+    }
   });
 
-  it("на Windows о том же говорит код 9009 cmd.exe", () => {
-    expect(commandNeverStarted(9009, "win32")).toBe(true);
-  });
-
-  it("на Linux код 9009 значением команды не считается", () => {
-    expect(commandNeverStarted(9009, "linux")).toBe(false);
+  it("коды 127 и 126 говорят, что команда не запустилась", () => {
+    expect(commandNeverStarted({ exitCode: 127, command: "npm test", platform: "linux" })).toBe(
+      true,
+    );
+    expect(commandNeverStarted({ exitCode: 126, command: "npm test", platform: "linux" })).toBe(
+      true,
+    );
   });
 
   it("красный прогон проверки за незапустившуюся команду не принимается", () => {
-    expect(commandNeverStarted(1, "win32")).toBe(false);
-    expect(commandNeverStarted(1, "linux")).toBe(false);
+    expect(commandNeverStarted({ exitCode: 1, command: "npm test", platform: "linux" })).toBe(
+      false,
+    );
+  });
+
+  it("на Windows отвечает по PATH: голого имени там нет, значит команда не запускалась", () => {
+    expect(
+      commandNeverStarted({
+        exitCode: 1,
+        command: "lexforge-no-such-binary-here --run",
+        platform: "win32",
+        pathValue: EMPTY,
+      }),
+    ).toBe(true);
+  });
+
+  it("на Windows команда, лежащая на PATH, упавшей проверкой и остаётся", () => {
+    expect(
+      commandNeverStarted({
+        exitCode: 1,
+        command: "checker --strict",
+        platform: "win32",
+        pathValue: pathWith("checker.cmd"),
+      }),
+    ).toBe(false);
+  });
+
+  it("имя, которое cmd.exe выполняет сам, на PATH не ищется", () => {
+    expect(
+      commandNeverStarted({
+        exitCode: 1,
+        command: "echo hello",
+        platform: "win32",
+        pathValue: EMPTY,
+      }),
+    ).toBe(false);
+  });
+
+  it("нулевой код возврата ни при какой системе не значит, что команда не пошла", () => {
+    expect(
+      commandNeverStarted({
+        exitCode: 0,
+        command: "lexforge-no-such-binary-here",
+        platform: "win32",
+        pathValue: EMPTY,
+      }),
+    ).toBe(false);
   });
 });

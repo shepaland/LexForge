@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
 import { constants } from "node:os";
 
+import { resolveOnPath } from "../command-on-path.js";
+
 import type { OutputStream } from "../types.js";
 
 /**
@@ -12,26 +14,62 @@ export const COMMAND_NOT_FOUND = 127;
 export const NOT_EXECUTABLE = 126;
 
 /**
- * What `cmd.exe` answers for a name it does not recognise. Windows has neither
- * of the two numbers above: the shell there speaks its own, and a check whose
- * command is misspelled would otherwise be recorded as a check that failed.
+ * Names `cmd.exe` carries out itself. No file of that name lies on `PATH`, and
+ * a lookup for one would call a working command missing.
  */
-export const WINDOWS_COMMAND_NOT_FOUND = 9009;
+const WINDOWS_BUILTINS = new Set([
+  "assoc", "break", "call", "cd", "chdir", "cls", "color", "copy", "date", "del",
+  "dir", "echo", "endlocal", "erase", "exit", "for", "ftype", "goto", "if", "md",
+  "mkdir", "mklink", "move", "path", "pause", "popd", "prompt", "pushd", "rd",
+  "rem", "ren", "rename", "rmdir", "set", "setlocal", "shift", "start", "time",
+  "title", "type", "ver", "verify", "vol",
+]);
+
+export interface NeverStartedOptions {
+  exitCode: number;
+  /** The command line as the shell was given it. */
+  command: string;
+  /** The system the run happened on. Defaults to the one this process runs on. */
+  platform?: string;
+  /** The `PATH` the first word is looked up in. Read on Windows only. */
+  pathValue?: string;
+}
 
 /**
- * Whether the exit code says the command never started, as opposed to ran and
- * failed. The difference decides whether a stamp is written at all: a stamp
- * saying "exit code 9009" reads as a check that ran and went red.
+ * Whether the shell could not start the command at all, as opposed to running
+ * it and getting a failure back. The difference decides whether a stamp is
+ * written: a stamp for a run that never happened reads as a check that failed.
+ *
+ * Linux and macOS answer by number — `127` for a name the shell cannot find,
+ * `126` for a file it may not run. Windows has neither: `cmd.exe` answers `1`,
+ * the same number a failing check answers, so the number there says nothing.
+ * What is asked instead is whether the first word of the command is on `PATH`.
+ * A word carrying a separator is a path of its own and is left alone, and a
+ * name `cmd.exe` carries out itself is not looked for on disk.
  */
-export function commandNeverStarted(
-  exitCode: number,
-  platform: string = process.platform,
-): boolean {
-  if (platform === "win32" && exitCode === WINDOWS_COMMAND_NOT_FOUND) {
+export function commandNeverStarted(options: NeverStartedOptions): boolean {
+  if (options.exitCode === COMMAND_NOT_FOUND || options.exitCode === NOT_EXECUTABLE) {
     return true;
   }
 
-  return exitCode === COMMAND_NOT_FOUND || exitCode === NOT_EXECUTABLE;
+  const platform = options.platform ?? process.platform;
+  if (platform !== "win32" || options.exitCode === 0) {
+    return false;
+  }
+
+  const word = firstWord(options.command);
+  if (word === "" || WINDOWS_BUILTINS.has(word.toLowerCase()) || /[\\/:]/.test(word)) {
+    return false;
+  }
+
+  return resolveOnPath(word, options.pathValue ?? process.env.PATH ?? "", { platform }) === undefined;
+}
+
+/** The name the shell reads first: a quoted path counts as one word. */
+function firstWord(command: string): string {
+  const match = /^\s*"([^"]+)"|^\s*(\S+)/.exec(command);
+
+  return match ? (match[1] ?? match[2] ?? "") : "";
 }
 
 /** A run killed by a signal is reported the way a shell reports it. */
