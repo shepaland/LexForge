@@ -41,7 +41,7 @@ export interface InitData {
   nextStep: string;
 }
 
-const NEXT_STEP = "lexforge new change <name>";
+const NEXT_STEP = "lexforge doctor";
 
 /**
  * The gates that read the repository: an evidence record is tied to a commit

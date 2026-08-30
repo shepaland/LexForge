@@ -67,7 +67,7 @@ describe("lexforge init", () => {
     const lines = capture.out.trimEnd().split("\n");
 
     expect(exitCode, capture.err).toBe(0);
-    expect(lines.at(-1)).toBe("Next step: lexforge new change <name>");
+    expect(lines.at(-1)).toBe("Next step: lexforge doctor");
     expect(existsSync(path.join(root, "lexforge/config.yaml"))).toBe(true);
   });
 
@@ -82,7 +82,7 @@ describe("lexforge init", () => {
     expect(data.workspaceRoot).toBe(root);
     expect(data.created).toEqual(expect.arrayContaining([path.join(root, "lexforge/config.yaml")]));
     expect(data.unchanged).toEqual([]);
-    expect(data.nextStep).toBe("lexforge new change <name>");
+    expect(data.nextStep).toBe("lexforge doctor");
   });
 
   it("флаг языка пишется в config.yaml", async () => {
