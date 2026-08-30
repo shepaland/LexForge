@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
-
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
 import { UsageError } from "../../cli/errors.js";
+import { readTextFile } from "../read-text.js";
 import { workspacePaths } from "./paths.js";
 
 export const DEFAULT_SCHEMA = "spec-driven";
@@ -64,7 +63,7 @@ export interface ProjectConfig {
 
 export function readProjectConfig(root: string): ProjectConfig {
   const file = workspacePaths(root).config;
-  const raw = (parseYaml(readFileSync(file, "utf8")) ?? {}) as unknown;
+  const raw = (parseYaml(readTextFile(file)) ?? {}) as unknown;
 
   const result = ProjectConfigSchema.safeParse(raw);
   if (!result.success) {

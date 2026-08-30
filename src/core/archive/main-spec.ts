@@ -1,3 +1,5 @@
+import { splitTextLines } from "../read-text.js";
+
 /**
  * The long-lived spec of one capability: `lexforge/specs/<capability>/spec.md`.
  * It keeps a title, a Purpose section and a Requirements section holding blocks
@@ -167,7 +169,7 @@ export function renderMainSpec(spec: MainSpec): string {
  * so a block never carries a line the file does not hold.
  */
 export function splitLines(content: string): string[] {
-  const lines = content.split("\n");
+  const lines = splitTextLines(content);
   if (lines.length > 0 && lines[lines.length - 1] === "") {
     lines.pop();
   }

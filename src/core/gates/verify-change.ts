@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
 import { changeBase, changedFiles } from "../git/change-base.js";
 import { assertRepository, readHead } from "../git/repository.js";
 import { worktreeDigest } from "../git/worktree-digest.js";
+import { readTextFile } from "../read-text.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
 import { makeFinding, type Finding } from "../validation/finding.js";
@@ -131,7 +131,7 @@ function readPlan(root: string, change: string): PlanTasks {
 
   return {
     file: workspacePath(root, artifact.resolvedOutputPath),
-    tasks: parseTaskList(readFileSync(artifact.resolvedOutputPath, "utf8")),
+    tasks: parseTaskList(readTextFile(artifact.resolvedOutputPath)),
   };
 }
 

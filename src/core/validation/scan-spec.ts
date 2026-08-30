@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-
+import { readTextFile, splitTextLines } from "../read-text.js";
 import { makeFinding, type Finding } from "./finding.js";
 
 /** Delta operation a requirement is grouped under. */
@@ -131,7 +130,7 @@ export function scanSpec(file: string, content: string): SpecScanResult {
     hasMigration = false;
   };
 
-  const lines = content.split("\n");
+  const lines = splitTextLines(content);
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index]!;
@@ -246,5 +245,5 @@ export function scanSpec(file: string, content: string): SpecScanResult {
 
 /** Reads the file and scans it. Findings carry the path they were given. */
 export function scanSpecFile(filePath: string): SpecScanResult {
-  return scanSpec(filePath, readFileSync(filePath, "utf8"));
+  return scanSpec(filePath, readTextFile(filePath));
 }

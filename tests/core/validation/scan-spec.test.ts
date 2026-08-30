@@ -1,10 +1,16 @@
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import type { Finding } from "../../../src/core/validation/finding.js";
-import { scanSpecFile, type SpecScanResult } from "../../../src/core/validation/scan-spec.js";
+import {
+  scanSpec,
+  scanSpecFile,
+  type SpecScanResult,
+} from "../../../src/core/validation/scan-spec.js";
+import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
 
 const FIXTURES = fileURLToPath(new URL("../../fixtures/specs", import.meta.url));
 
@@ -170,5 +176,57 @@ describe("scanSpecFile на примере внутри тройных кавы�
 
     expect(result.requirements).toEqual([]);
     expect(result.findings).toEqual([]);
+  });
+});
+
+describe("scanSpec на тексте с переводами строк Windows", () => {
+  const LF = "## ADDED Requirements\n\n### Requirement: R\n\n#### Scenario: S\n\n- **WHEN** a\n";
+  const CRLF = LF.replace(/\n/g, "\r\n");
+
+  it("читает то же требование с тем же сценарием, что и текст с переводами Unix", () => {
+    const result = scanSpec("x.md", CRLF);
+
+    expect(result.requirements).toHaveLength(1);
+    expect(result.requirements[0]!.name).toBe("R");
+    expect(result.requirements[0]!.scenarios).toHaveLength(1);
+  });
+
+  it("даёт те же находки на тех же строках, что и текст с переводами Unix", () => {
+    expect(scanSpec("x.md", CRLF).findings).toEqual(scanSpec("x.md", LF).findings);
+  });
+});
+
+describe("scanSpecFile на файле с переводами строк Windows", () => {
+  let root = "";
+
+  afterEach(() => {
+    if (root !== "") {
+      removeWorkspace(root);
+      root = "";
+    }
+  });
+
+  /** The same fixture, written the way an editor on Windows writes it. */
+  function windowsCopy(name: string): SpecScanResult {
+    const text = readFileSync(path.join(FIXTURES, name), "utf8");
+    root = makeWorkspace({ [name]: text.replace(/\r?\n/g, "\r\n") });
+    return scanSpecFile(path.join(root, name));
+  }
+
+  it("называет те же находки на тех же строках, что и файл с переводами Unix", () => {
+    const windows = windowsCopy("no-then.md");
+    const unix = scan("no-then.md");
+
+    expect(rules(windows.findings)).toEqual(rules(unix.findings));
+    expect(windows.findings.map((finding) => finding.line)).toEqual(
+      unix.findings.map((finding) => finding.line),
+    );
+  });
+
+  it("считает строки требований и сценариев по файлу", () => {
+    const windows = windowsCopy("valid.md");
+    const unix = scan("valid.md");
+
+    expect(windows.requirements).toEqual(unix.requirements);
   });
 });

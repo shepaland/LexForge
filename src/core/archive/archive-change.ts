@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
@@ -6,6 +6,7 @@ import { capabilityOf, listSpecFiles } from "../gates/coverage-rules.js";
 import { verifyChange } from "../gates/verify-change.js";
 import { describedLabels, verificationEmpty } from "../gates/verification-labels.js";
 import { assertRepository } from "../git/repository.js";
+import { readTextFile } from "../read-text.js";
 import { loadSchema } from "../schemas/load-schema.js";
 import { parseOutputTarget } from "../schemas/output-target.js";
 import { readChangeState } from "../status/change-status.js";
@@ -190,9 +191,9 @@ function readMerges(root: string, change: string, state: ChangeState): Capabilit
       return {
         capability,
         deltaFile: workspacePath(root, file),
-        delta: readFileSync(file, "utf8"),
+        delta: readTextFile(file),
         specFile: workspacePath(root, specFile),
-        spec: existsSync(specFile) ? readFileSync(specFile, "utf8") : null,
+        spec: existsSync(specFile) ? readTextFile(specFile) : null,
       };
     });
   }

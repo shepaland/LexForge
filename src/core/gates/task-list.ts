@@ -1,3 +1,5 @@
+import { splitTextLines } from "../read-text.js";
+
 /** A checkbox line of `tasks.md`: the mark, an optional number, the rest of the line. */
 const TASK_LINE = /^\s*-\s*\[( |x|X)\]\s*([\d.]+)?\s*(.*)$/;
 
@@ -69,7 +71,7 @@ export interface PlanTasks {
  */
 export function parseTaskList(content: string): PlanTask[] {
   const tasks: PlanTask[] = [];
-  const lines = content.split("\n");
+  const lines = splitTextLines(content);
 
   for (let index = 0; index < lines.length; index += 1) {
     const match = TASK_LINE.exec(lines[index]!);

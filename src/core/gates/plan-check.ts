@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
+import { readTextFile } from "../read-text.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
 import type { Finding } from "../validation/finding.js";
@@ -78,7 +78,7 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
   const file = workspacePath(root, artifact.resolvedOutputPath);
   const plan: PlanTasks = {
     file,
-    tasks: parseTaskList(readFileSync(artifact.resolvedOutputPath, "utf8")),
+    tasks: parseTaskList(readTextFile(artifact.resolvedOutputPath)),
   };
 
   const findings = [

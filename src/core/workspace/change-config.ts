@@ -1,9 +1,10 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
 import { UsageError } from "../../cli/errors.js";
+import { readTextFile } from "../read-text.js";
 import { loadSchema } from "../schemas/load-schema.js";
 import { CHANGE_CONFIG_FILE, workspacePaths } from "./paths.js";
 
@@ -56,7 +57,7 @@ export function readChangeConfig(root: string, name: string): ChangeConfig {
     );
   }
 
-  const raw = (parseYaml(readFileSync(file, "utf8")) ?? {}) as Record<string, unknown>;
+  const raw = (parseYaml(readTextFile(file)) ?? {}) as Record<string, unknown>;
   const parsed = ChangeConfigSchema.safeParse(raw);
   if (!parsed.success) {
     throw new UsageError(

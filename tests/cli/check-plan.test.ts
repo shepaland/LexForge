@@ -200,3 +200,41 @@ describe("lexforge check plan: репозиторий не нужен", () => {
     expect((JSON.parse(capture.out) as { findings: unknown[] }).findings).toEqual([]);
   });
 });
+
+describe("lexforge check plan на файлах с переводами строк Windows", () => {
+  /** The same text, written the way an editor on Windows writes it. */
+  function crlf(text: string): string {
+    return text.replace(/\r?\n/g, "\r\n");
+  }
+
+  it("находит тот же плейсхолдер на той же строке, что и на файлах с переводами Unix", async () => {
+    const windows = workspace(crlf(WITH_FINDING), {
+      "lexforge/changes/add-auth/specs/auth/spec.md": crlf(SPEC),
+    });
+
+    const { exitCode, capture } = await call(
+      ["check", "plan", "--change", "add-auth", "--json"],
+      windows,
+    );
+    const data = JSON.parse(capture.out) as {
+      findings: { rule: string; line: number }[];
+      summary: { placeholders: number };
+    };
+
+    expect(exitCode).toBe(1);
+    expect(data.findings).toHaveLength(1);
+    expect(data.findings[0]!.rule).toBe("task-placeholder");
+    expect(data.findings[0]!.line).toBe(3);
+    expect(data.summary.placeholders).toBe(1);
+  });
+
+  it("на чистом плане с переводами Windows отвечает кодом 0", async () => {
+    const windows = workspace(crlf(CLEAN), {
+      "lexforge/changes/add-auth/specs/auth/spec.md": crlf(SPEC),
+    });
+
+    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], windows);
+
+    expect(exitCode).toBe(0);
+  });
+});

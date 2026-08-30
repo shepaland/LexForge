@@ -1,7 +1,8 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { nextStepForChange } from "../next-step.js";
+import { readTextFile } from "../read-text.js";
 import { loadSchema } from "../schemas/load-schema.js";
 import { parseOutputTarget, type OutputTarget } from "../schemas/output-target.js";
 import { readChangeState } from "../status/change-status.js";
@@ -69,7 +70,7 @@ export function validateChange(
     let requirements = 0;
     for (const file of collectFiles(changeDir, target)) {
       const shown = workspacePath(root, file);
-      const content = readFileSync(file, "utf8");
+      const content = readTextFile(file);
 
       if (isDelta) {
         const scan = scanSpec(shown, content);

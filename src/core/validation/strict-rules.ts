@@ -1,5 +1,6 @@
 import { parseDeltaPlan } from "../archive/delta-plan.js";
 import type { ArtifactStatus } from "../artifact-graph/graph.js";
+import { splitTextLines } from "../read-text.js";
 import { CHANGE_CONFIG_FILE } from "../workspace/paths.js";
 import { makeFinding, type Finding } from "./finding.js";
 
@@ -23,7 +24,7 @@ const LONE_PLACEHOLDER = /^<[^<>\n]+>$/;
  * everything between the heading and the next top-level heading.
  */
 export function checkPurpose(file: string, content: string): Finding[] {
-  const lines = content.split("\n");
+  const lines = splitTextLines(content);
   const heading = lines.findIndex((line) => PURPOSE_HEADING.test(line));
 
   if (heading === -1) {
@@ -69,7 +70,7 @@ export function checkPurpose(file: string, content: string): Finding[] {
  */
 export function checkTemplatePlaceholders(file: string, content: string): Finding[] {
   const findings: Finding[] = [];
-  const lines = content.split("\n");
+  const lines = splitTextLines(content);
   let inFence = false;
 
   for (let index = 0; index < lines.length; index += 1) {
