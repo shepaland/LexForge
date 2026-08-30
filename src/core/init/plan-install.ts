@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { UsageError } from "../../cli/errors.js";
-import { knownTools, TOOL_DIRECTORIES } from "./tool-registry.js";
+import { knownTools, toolDirectory } from "./tool-registry.js";
 
 /** `skills/` sits next to `src/` and `dist/`, three levels above this module. */
 export function builtinSkillsDir(): string {
@@ -32,7 +32,7 @@ export interface PlanInstallOptions {
  */
 export function planSkillInstall(options: PlanInstallOptions): InstallEntry[] {
   const directories = options.tools.map((tool) => {
-    const directory = TOOL_DIRECTORIES[tool];
+    const directory = toolDirectory(tool, "project");
     if (!directory) {
       throw new UsageError(
         "tool-unknown",
