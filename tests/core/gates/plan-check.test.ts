@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { UsageError } from "../../../src/cli/errors.js";
+import { answerPath } from "../../../src/core/answer-path.js";
 import { checkPlan } from "../../../src/core/gates/plan-check.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
 
@@ -122,7 +123,7 @@ describe("checkPlan: находки трёх наборов правил", () =>
     expect(result.data.findings).toEqual([]);
     expect(result.exitCode).toBe(0);
     expect(result.data.change).toBe("add-auth");
-    expect(result.data.workspaceRoot).toBe(root);
+    expect(result.data.workspaceRoot).toBe(answerPath(root));
     expect(result.data.outputVersion).toBe(1);
   });
 });

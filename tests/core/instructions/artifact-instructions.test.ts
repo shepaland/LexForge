@@ -3,6 +3,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { UsageError } from "../../../src/cli/errors.js";
+import { answerPath } from "../../../src/core/answer-path.js";
 import { artifactInstructions } from "../../../src/core/instructions/artifact-instructions.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
 
@@ -49,7 +50,7 @@ describe("состав ответа artifactInstructions", () => {
       "nextStep",
     ]);
     expect(result.data.outputVersion).toBe(1);
-    expect(result.data.workspaceRoot).toBe(root);
+    expect(result.data.workspaceRoot).toBe(answerPath(root));
     expect(result.data.change).toBe("add-auth");
     expect(result.data.schema).toBe("spec-driven");
     expect(result.exitCode).toBe(0);
@@ -71,7 +72,7 @@ describe("состав ответа artifactInstructions", () => {
     expect(data.instruction).toContain("Write the proposal for this change.");
     expect(data.template).toContain("## Why");
     expect(data.resolvedOutputPath).toBe(
-      path.join(root, "lexforge/changes/add-auth/proposal.md"),
+      answerPath(path.join(root, "lexforge/changes/add-auth/proposal.md")),
     );
     expect(data.outputKind).toBe("file");
   });
@@ -90,11 +91,11 @@ describe("зависимости артефакта", () => {
     expect(Object.keys(data.dependencies[0]!)).toEqual(["id", "status", "resolvedOutputPath"]);
     expect(data.dependencies[0]!.status).toBe("ready");
     expect(data.dependencies[0]!.resolvedOutputPath).toBe(
-      path.join(root, "lexforge/changes/add-auth/specs/**/*.md"),
+      answerPath(path.join(root, "lexforge/changes/add-auth/specs/**/*.md")),
     );
     expect(data.dependencies[1]!.status).toBe("done");
     expect(data.dependencies[1]!.resolvedOutputPath).toBe(
-      path.join(root, "lexforge/changes/add-auth/design.md"),
+      answerPath(path.join(root, "lexforge/changes/add-auth/design.md")),
     );
   });
 

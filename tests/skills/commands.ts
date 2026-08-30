@@ -1,8 +1,9 @@
 import type { Command } from "commander";
 
+import { createCliContext, createProgram } from "../../src/cli/run.js";
+import { answerPath } from "../../src/core/answer-path.js";
 import { createCapture } from "../helpers/capture.js";
 import type { SkillFile } from "../helpers/read-skills.js";
-import { createCliContext, createProgram } from "../../src/cli/run.js";
 import type { SkillFinding } from "./checks.js";
 
 /** `lexforge` followed by a word: the shape a command takes in the body of a skill. */
@@ -47,7 +48,7 @@ export function checkNamedCommands(
     .filter((name) => !known.includes(name))
     .map((name) => ({
       rule: "unknown-command",
-      file: skill.file,
-      message: `${skill.file}: names "lexforge ${name}", and the CLI has no such command; it knows ${known.join(", ")}`,
+      file: answerPath(skill.file),
+      message: `${answerPath(skill.file)}: names "lexforge ${name}", and the CLI has no such command; it knows ${known.join(", ")}`,
     }));
 }

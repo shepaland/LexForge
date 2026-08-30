@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../../src/cli/run.js";
+import { answerPath } from "../../../src/core/answer-path.js";
 import { initWorkspace } from "../../../src/core/init/init-workspace.js";
 import { createCapture } from "../../helpers/capture.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
@@ -54,7 +55,7 @@ describe("установка встроенных скиллов", () => {
       expect(readFileSync(target, "utf8"), name).toBe(
         readFileSync(path.join(SKILLS_DIR, name, "SKILL.md"), "utf8"),
       );
-      expect(result.data.created, name).toEqual(expect.arrayContaining([target]));
+      expect(result.data.created, name).toEqual(expect.arrayContaining([answerPath(target)]));
     }
   });
 });

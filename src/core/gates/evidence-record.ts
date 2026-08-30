@@ -11,7 +11,7 @@ import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { CONFIG_FILE, WORKSPACE_DIR } from "../workspace/paths.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { evidenceFile, putRecord, readLedger, type EvidenceRecord } from "./evidence-store.js";
-import { COMMAND_NOT_FOUND, NOT_EXECUTABLE, runLabelCommand } from "./run-command.js";
+import { commandNeverStarted, runLabelCommand } from "./run-command.js";
 import { labelCommand } from "./verification-labels.js";
 
 export interface RecordEvidenceOptions {
@@ -76,7 +76,7 @@ export async function recordEvidence(
   // A run that never started is not a red run: there is nothing to record, and
   // a stamp saying "exit code 127" would read as a check that failed. The shell
   // reports both cases by number, and there is no other signal to read.
-  if (run.exitCode === COMMAND_NOT_FOUND || run.exitCode === NOT_EXECUTABLE) {
+  if (commandNeverStarted(run.exitCode)) {
     throw new UsageError(
       "evidence-command-failed",
       `check "${options.label}" runs "${command}", and the shell could not run it ` +

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { runLabelCommand } from "../../../src/core/gates/run-command.js";
+import { commandNeverStarted, runLabelCommand } from "../../../src/core/gates/run-command.js";
 import { createCapture } from "../../helpers/capture.js";
 
 /** UTC, ISO 8601, to the millisecond: the form `Date.prototype.toISOString` gives. */
@@ -130,5 +130,25 @@ describe("runLabelCommand: печать вывода", () => {
 
     expect(capture.err).toContain("second");
     expect(capture.out).toContain("third");
+  });
+});
+
+describe("commandNeverStarted", () => {
+  it("код 127 и код 126 говорят, что команда не запустилась", () => {
+    expect(commandNeverStarted(127, "linux")).toBe(true);
+    expect(commandNeverStarted(126, "linux")).toBe(true);
+  });
+
+  it("на Windows о том же говорит код 9009 cmd.exe", () => {
+    expect(commandNeverStarted(9009, "win32")).toBe(true);
+  });
+
+  it("на Linux код 9009 значением команды не считается", () => {
+    expect(commandNeverStarted(9009, "linux")).toBe(false);
+  });
+
+  it("красный прогон проверки за незапустившуюся команду не принимается", () => {
+    expect(commandNeverStarted(1, "win32")).toBe(false);
+    expect(commandNeverStarted(1, "linux")).toBe(false);
   });
 });

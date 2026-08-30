@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { UsageError } from "../../../src/cli/errors.js";
+import { answerPath } from "../../../src/core/answer-path.js";
 import { initWorkspace } from "../../../src/core/init/init-workspace.js";
 import { readProjectConfig } from "../../../src/core/workspace/project-config.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
@@ -42,10 +43,10 @@ describe("initWorkspace, первый запуск", () => {
     const text = result.lines.join("\n");
 
     for (const relative of ["lexforge/config.yaml", "lexforge/specs", "lexforge/changes/archive"]) {
-      expect(text).toContain(path.join(root, relative));
+      expect(text).toContain(answerPath(path.join(root, relative)));
     }
     expect(result.data.created).toEqual(
-      expect.arrayContaining([path.join(root, "lexforge/config.yaml")]),
+      expect.arrayContaining([answerPath(path.join(root, "lexforge/config.yaml"))]),
     );
   });
 
@@ -74,10 +75,10 @@ describe("initWorkspace, повторный запуск", () => {
     expect(result.exitCode).toBe(0);
     expect(readFileSync(path.join(root, "lexforge/config.yaml"), "utf8")).toBe(HAND_WRITTEN_CONFIG);
     expect(statSync(path.join(root, "lexforge/specs")).isDirectory()).toBe(true);
-    expect(result.data.created).toEqual([path.join(root, "lexforge/specs")]);
+    expect(result.data.created).toEqual([answerPath(path.join(root, "lexforge/specs"))]);
     expect(result.data.unchanged).toEqual(
       expect.arrayContaining([
-        path.join(root, "lexforge/config.yaml"),
+        answerPath(path.join(root, "lexforge/config.yaml")),
         path.join(root, "lexforge/changes/archive"),
       ]),
     );
@@ -93,8 +94,8 @@ describe("initWorkspace, повторный запуск", () => {
 
     expect(text).toContain("Created:");
     expect(text).toContain("Left as is:");
-    expect(text).toContain(path.join(root, "lexforge/specs"));
-    expect(text).toContain(path.join(root, "lexforge/config.yaml"));
+    expect(text).toContain(answerPath(path.join(root, "lexforge/specs")));
+    expect(text).toContain(answerPath(path.join(root, "lexforge/config.yaml")));
   });
 });
 
@@ -133,8 +134,8 @@ describe("initWorkspace, установка скиллов", () => {
 
     expect(result.exitCode).toBe(0);
     expect(readFileSync(skill, "utf8")).toContain("sample-plan");
-    expect(result.data.created).toEqual(expect.arrayContaining([skill]));
-    expect(result.lines.join("\n")).toContain(skill);
+    expect(result.data.created).toEqual(expect.arrayContaining([answerPath(skill)]));
+    expect(result.lines.join("\n")).toContain(answerPath(skill));
   });
 
   it("неизвестный инструмент не даёт записать ни одного файла", () => {

@@ -21,10 +21,13 @@ export interface DoctorEnv {
 /**
  * A `lexforge` stub in its own directory, so `checkPath` resolves the bare
  * name to itself. The file is never run; it carries the execute bit because
- * that is what `checkPath` looks for — a shell runs nothing else.
+ * that is what `checkPath` looks for on Linux and macOS — a shell runs nothing
+ * else. On Windows the bit does not exist and the extension decides, so the
+ * stub is written under the name an installation leaves there.
  */
 export function stubOnPath(root: string): { pathValue: string; runningFile: string } {
-  const runningFile = path.join(root, "bin", "lexforge");
+  const name = process.platform === "win32" ? "lexforge.cmd" : "lexforge";
+  const runningFile = path.join(root, "bin", name);
   mkdirSync(path.dirname(runningFile), { recursive: true });
   writeFileSync(runningFile, "#!/usr/bin/env node\n", { encoding: "utf8", mode: 0o755 });
   return { pathValue: path.dirname(runningFile), runningFile };

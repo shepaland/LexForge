@@ -11,6 +11,29 @@ import type { OutputStream } from "../types.js";
 export const COMMAND_NOT_FOUND = 127;
 export const NOT_EXECUTABLE = 126;
 
+/**
+ * What `cmd.exe` answers for a name it does not recognise. Windows has neither
+ * of the two numbers above: the shell there speaks its own, and a check whose
+ * command is misspelled would otherwise be recorded as a check that failed.
+ */
+export const WINDOWS_COMMAND_NOT_FOUND = 9009;
+
+/**
+ * Whether the exit code says the command never started, as opposed to ran and
+ * failed. The difference decides whether a stamp is written at all: a stamp
+ * saying "exit code 9009" reads as a check that ran and went red.
+ */
+export function commandNeverStarted(
+  exitCode: number,
+  platform: string = process.platform,
+): boolean {
+  if (platform === "win32" && exitCode === WINDOWS_COMMAND_NOT_FOUND) {
+    return true;
+  }
+
+  return exitCode === COMMAND_NOT_FOUND || exitCode === NOT_EXECUTABLE;
+}
+
 /** A run killed by a signal is reported the way a shell reports it. */
 const SIGNAL_BASE = 128;
 

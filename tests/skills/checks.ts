@@ -1,3 +1,4 @@
+import { answerPath } from "../../src/core/answer-path.js";
 import type { SkillFile } from "../helpers/read-skills.js";
 
 /** The frontmatter carries these two fields and nothing else. */
@@ -24,7 +25,9 @@ export interface SkillFinding {
 }
 
 function finding(rule: string, skill: SkillFile, detail: string): SkillFinding {
-  return { rule, file: skill.file, message: `${skill.file}: ${detail}` };
+  const file = answerPath(skill.file);
+
+  return { rule, file, message: `${file}: ${detail}` };
 }
 
 export function countWords(text: string): number {

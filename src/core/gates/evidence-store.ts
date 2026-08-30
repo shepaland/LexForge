@@ -4,6 +4,7 @@ import path from "node:path";
 import { z } from "zod";
 
 import { UsageError } from "../../cli/errors.js";
+import { answerPath } from "../answer-path.js";
 import { workspacePaths } from "../workspace/paths.js";
 
 /** Name of the ledger inside the change directory. */
@@ -96,11 +97,13 @@ export function readLedger(root: string, change: string): EvidenceLedger {
  * breaks on a merge conflict, and only a person can tell which run counts.
  */
 function broken(file: string, detail: string): UsageError {
+  const shown = answerPath(file);
+
   return new UsageError(
     "evidence-broken",
-    `${file} is not a readable evidence ledger: ${detail}. ` +
+    `${shown} is not a readable evidence ledger: ${detail}. ` +
       "No stamp is read or written until the file is sound again.",
-    `open ${file}, resolve the conflict by hand, then run this command again`,
+    `open ${shown}, resolve the conflict by hand, then run this command again`,
   );
 }
 

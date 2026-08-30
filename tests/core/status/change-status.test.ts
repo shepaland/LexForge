@@ -2,6 +2,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { answerPath } from "../../../src/core/answer-path.js";
 import { changeStatus } from "../../../src/core/status/change-status.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
 
@@ -39,7 +40,7 @@ describe("состав ответа changeStatus", () => {
       "nextStep",
     ]);
     expect(result.data.outputVersion).toBe(1);
-    expect(result.data.workspaceRoot).toBe(root);
+    expect(result.data.workspaceRoot).toBe(answerPath(root));
     expect(result.data.change).toBe("add-auth");
     expect(result.data.schema).toBe("spec-driven");
     expect(result.data.isPlanningComplete).toBe(false);
@@ -71,7 +72,7 @@ describe("состав ответа changeStatus", () => {
     expect(proposal.requires).toEqual([]);
     expect(proposal.blockedBy).toEqual([]);
     expect(proposal.resolvedOutputPath).toBe(
-      path.join(root, "lexforge/changes/add-auth/proposal.md"),
+      answerPath(path.join(root, "lexforge/changes/add-auth/proposal.md")),
     );
     expect(proposal.outputKind).toBe("file");
   });

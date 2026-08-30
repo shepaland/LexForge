@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/run.js";
+import { answerPath } from "../../src/core/answer-path.js";
 import { createCapture } from "../helpers/capture.js";
 import { git } from "../helpers/git-workspace.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
@@ -79,8 +80,10 @@ describe("lexforge init", () => {
 
     expect(exitCode).toBe(0);
     expect(data.outputVersion).toBe(1);
-    expect(data.workspaceRoot).toBe(root);
-    expect(data.created).toEqual(expect.arrayContaining([path.join(root, "lexforge/config.yaml")]));
+    expect(data.workspaceRoot).toBe(answerPath(root));
+    expect(data.created).toEqual(
+      expect.arrayContaining([answerPath(path.join(root, "lexforge/config.yaml"))]),
+    );
     expect(data.unchanged).toEqual([]);
     expect(data.nextStep).toBe("lexforge doctor");
   });
@@ -241,7 +244,9 @@ describe("lexforge init, уборка прошлой версии", () => {
     expect(exitCode, capture.err).toBe(0);
     expect(existsSync(path.join(root, ".claude/skills/lexforge-retired"))).toBe(false);
     expect(capture.out).toContain("Removed:");
-    expect(capture.out).toContain(path.join(root, ".claude/skills/lexforge-retired/SKILL.md"));
+    expect(capture.out).toContain(
+      answerPath(path.join(root, ".claude/skills/lexforge-retired/SKILL.md")),
+    );
     expect(readdirSync(path.join(root, ".claude/skills")).sort()).toHaveLength(9);
   });
 
@@ -257,8 +262,8 @@ describe("lexforge init, уборка прошлой версии", () => {
     expect(existsSync(path.join(root, ".claude/skills/lexforge-retired/SKILL.md"))).toBe(true);
     expect(existsSync(path.join(root, ".claude/skills/my-own-skill/SKILL.md"))).toBe(true);
     expect(capture.out).toContain("Left for you to sort out:");
-    expect(capture.out).toContain(path.join(root, ".claude/skills/lexforge-retired"));
-    expect(capture.out).not.toContain(path.join(root, ".claude/skills/my-own-skill"));
+    expect(capture.out).toContain(answerPath(path.join(root, ".claude/skills/lexforge-retired")));
+    expect(capture.out).not.toContain(answerPath(path.join(root, ".claude/skills/my-own-skill")));
   });
 });
 

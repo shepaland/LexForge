@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { applyChange } from "../../src/core/archive/apply-plan.js";
 import { run } from "../../src/cli/run.js";
+import { answerPath } from "../../src/core/answer-path.js";
 import { createCapture } from "../helpers/capture.js";
 import {
   createGitWorkspace,
@@ -377,7 +378,7 @@ describe("lexforge archive: запись спек и перенос катало
       "workspaceRoot",
     ]);
     expect(answer.outputVersion).toBe(1);
-    expect(answer.workspaceRoot).toBe(root);
+    expect(answer.workspaceRoot).toBe(answerPath(root));
     expect(answer.change).toBe(CHANGE);
     expect(answer.findings).toEqual([]);
     expect(answer.archivePath).toBe(`lexforge/changes/archive/${today()}-${CHANGE}`);

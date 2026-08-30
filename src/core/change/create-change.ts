@@ -86,7 +86,7 @@ function checkFree(changeDir: string, archiveDir: string, name: string): void {
   if (existsSync(changeDir)) {
     throw new UsageError(
       "change-name-taken",
-      `change "${name}" already exists: ${changeDir}. Pick another name.`,
+      `change "${name}" already exists: ${answerPath(changeDir)}. Pick another name.`,
     );
   }
 

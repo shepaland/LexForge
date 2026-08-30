@@ -395,6 +395,43 @@ function findByExtension(
   return undefined;
 }
 
+/**
+ * Whether the command found on `PATH` and the file this run started from belong
+ * to one installation. On Linux and macOS they are the same file: the name on
+ * `PATH` is the script itself, or a link the shell hands over as it was written.
+ *
+ * On Windows they never are. The name resolves to a wrapper — `lexforge.cmd` —
+ * and the wrapper starts node on the JavaScript beside it, so comparing the two
+ * paths would report every healthy installation as two. What is compared there
+ * is the tree they live in: npm writes the wrapper either next to the
+ * `node_modules` holding the package, or into the `node_modules/.bin` beside it.
+ * Two installations lie in two different trees, and that is still told apart.
+ */
+function sameInstallation(resolved: string, runningFile: string, windows: boolean): boolean {
+  if (path.resolve(resolved) === path.resolve(runningFile)) {
+    return true;
+  }
+
+  if (!windows) {
+    return false;
+  }
+
+  const wrapperDir = path.dirname(path.resolve(resolved));
+  const roots = [wrapperDir];
+  if (path.basename(wrapperDir) === ".bin") {
+    roots.push(path.dirname(wrapperDir));
+  }
+
+  return roots.some((root) => inside(root, path.resolve(runningFile)));
+}
+
+/** Whether the file lies under the directory, the directory itself aside. */
+function inside(directory: string, file: string): boolean {
+  const relative = path.relative(directory, file);
+
+  return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+
 export interface CheckPathOptions extends ResolveOnPathOptions {
   /** The bare name skills call the command by. Defaults to `lexforge`. */
   name?: string;
@@ -430,7 +467,9 @@ export function checkPath(options: CheckPathOptions): HealthCheck {
     return { id: "path", title: "Command name on PATH", findings };
   }
 
-  if (path.resolve(resolved) !== path.resolve(options.runningFile)) {
+  const windows = (options.platform ?? process.platform) === "win32";
+
+  if (!sameInstallation(resolved, options.runningFile, windows)) {
     findings.push({
       rule: "path-multiple-installs",
       level: "error",

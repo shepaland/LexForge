@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { HEALTHY_NEXT_STEP } from "../../src/core/doctor/run-doctor.js";
 import { run } from "../../src/cli/run.js";
+import { answerPath } from "../../src/core/answer-path.js";
 import { createCapture } from "../helpers/capture.js";
 import { createPlainWorkspace, type GitWorkspace } from "../helpers/git-workspace.js";
 import { healthyDoctorEnv, stubOnPath, type DoctorEnv } from "../helpers/doctor-env.js";
@@ -200,7 +201,7 @@ describe("lexforge doctor", () => {
 
     expect(data.outputVersion).toBe(1);
     expect(typeof data.version).toBe("string");
-    expect(data.workspaceRoot).toBe(workspace.root);
+    expect(data.workspaceRoot).toBe(answerPath(workspace.root));
     expect(data.checks.length).toBe(6);
     expect(data.summary).toBeTruthy();
     expect(typeof data.nextStep).toBe("string");
@@ -251,7 +252,7 @@ describe("lexforge doctor", () => {
     });
     const data = JSON.parse(capture.out) as DoctorDocument;
 
-    expect(data.workspaceRoot).toBe(root);
+    expect(data.workspaceRoot).toBe(answerPath(root));
   });
 });
 

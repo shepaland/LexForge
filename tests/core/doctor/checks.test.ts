@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { answerPath } from "../../../src/core/answer-path.js";
 import { manifestPath, renderManifest } from "../../../src/core/init/install-manifest.js";
 import type { InstallScope } from "../../../src/core/init/tool-registry.js";
 import { toolDirectory } from "../../../src/core/init/tool-registry.js";
@@ -123,7 +124,7 @@ describe("checkWorkspace", () => {
 
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.rule).toBeTruthy();
-    expect(result.findings[0]!.path).toBe(path.join(root, "lexforge/config.yaml"));
+    expect(result.findings[0]!.path).toBe(answerPath(path.join(root, "lexforge/config.yaml")));
   });
 
   it("на каталоге lexforge/ без config.yaml находка называет путь известного файла", () => {
@@ -133,7 +134,7 @@ describe("checkWorkspace", () => {
 
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.rule).toBe("workspace-incomplete");
-    expect(result.findings[0]!.path).toBe(path.join(root, "lexforge/config.yaml"));
+    expect(result.findings[0]!.path).toBe(answerPath(path.join(root, "lexforge/config.yaml")));
   });
 });
 
@@ -166,7 +167,7 @@ describe("checkSkills", () => {
 
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.rule).toBe("skills-modified");
-    expect(result.findings[0]!.path).toContain(path.join("sample-plan", "SKILL.md"));
+    expect(result.findings[0]!.path).toContain(answerPath(path.join("sample-plan", "SKILL.md")));
     expect(result.findings[0]!.message).toContain("lexforge init --tools claude");
   });
 
@@ -206,7 +207,7 @@ describe("checkSkills", () => {
 
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.rule).toBe("skills-file-missing");
-    expect(result.findings[0]!.path).toContain(path.join("sample-verify", "SKILL.md"));
+    expect(result.findings[0]!.path).toContain(answerPath(path.join("sample-verify", "SKILL.md")));
   });
 
   it("сверяет файлы побайтно: невалидный UTF-8, совпадающий после декодирования, всё равно даёт находку", () => {
@@ -359,6 +360,8 @@ describe("checkRepository", () => {
 const POSIX = { platform: "linux" } as const;
 /** Прогон на Windows не отличает файл с битом запуска от файла без него. */
 const onPosix = it.skipIf(process.platform === "win32");
+/** Система, где команду на PATH задаёт расширение, а не бит запуска. */
+const WINDOWS_ENV = { platform: "win32", pathExt: ".COM;.EXE;.BAT;.CMD" } as const;
 
 describe("resolveOnPath на Linux и macOS", () => {
   it("находит файл в первом каталоге списка", () => {
@@ -492,8 +495,43 @@ describe("checkPath", () => {
     const result = checkPath({ pathValue: binDir, runningFile: running, ...POSIX });
 
     expect(result.findings).toHaveLength(1);
-    expect(result.findings[0]!.message).toContain(resolved);
-    expect(result.findings[0]!.message).toContain(running);
+    expect(result.findings[0]!.message).toContain(answerPath(resolved));
+    expect(result.findings[0]!.message).toContain(answerPath(running));
+  });
+
+  it("на Windows обёртка рядом с установкой второй установкой не считается", () => {
+    const binDir = project();
+    writeFileSync(path.join(binDir, "lexforge.cmd"), "@echo off\n", "utf8");
+    const running = path.join(binDir, "node_modules", "lexforge", "bin", "lexforge.js");
+
+    const result = checkPath({ pathValue: binDir, runningFile: running, ...WINDOWS_ENV });
+
+    expect(result.findings).toEqual([]);
+  });
+
+  it("на Windows обёртка из node_modules/.bin второй установкой не считается", () => {
+    const root = project();
+    const binDir = path.join(root, "node_modules", ".bin");
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(path.join(binDir, "lexforge.cmd"), "@echo off\n", "utf8");
+    const running = path.join(root, "node_modules", "lexforge", "bin", "lexforge.js");
+
+    const result = checkPath({ pathValue: binDir, runningFile: running, ...WINDOWS_ENV });
+
+    expect(result.findings).toEqual([]);
+  });
+
+  it("на Windows обёртка из чужого дерева даёт path-multiple-installs", () => {
+    const binDir = project();
+    const wrapper = path.join(binDir, "lexforge.cmd");
+    writeFileSync(wrapper, "@echo off\n", "utf8");
+    const running = path.join(project(), "node_modules", "lexforge", "bin", "lexforge.js");
+
+    const result = checkPath({ pathValue: binDir, runningFile: running, ...WINDOWS_ENV });
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]!.rule).toBe("path-multiple-installs");
+    expect(result.findings[0]!.message).toContain(answerPath(wrapper));
   });
 
   it("когда разрешённый путь совпадает с запущенным файлом, ничего не даёт", () => {

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 
 import { UsageError } from "../../cli/errors.js";
+import { answerPath } from "../answer-path.js";
 import { SchemaDefinitionSchema, type SchemaDefinition } from "./definition.js";
 import { parseOutputTarget } from "./output-target.js";
 
@@ -99,7 +100,7 @@ function checkDefinition(name: string, definition: SchemaDefinition, schemaDir: 
       throw new UsageError(
         "schema-invalid",
         `schema "${name}": artifact "${artifact.id}" points at a template that is not on disk. ` +
-          `Expected file: ${template}`,
+          `Expected file: ${answerPath(template)}`,
       );
     }
   }
