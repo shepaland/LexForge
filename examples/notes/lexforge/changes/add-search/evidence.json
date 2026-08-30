@@ -1,0 +1,25 @@
+{
+  "outputVersion": 1,
+  "records": {
+    "lint": {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "startedAt": "2026-08-30T18:53:41.230Z",
+      "durationMs": 239,
+      "head": "53fa8c1f735609d56914bc27cad6ed1273d81af2",
+      "worktreeDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": "\n> notes@0.1.0 lint\n> node --check src/notes.js\n\n",
+      "outputTruncated": false
+    },
+    "tests": {
+      "command": "npm test",
+      "exitCode": 0,
+      "startedAt": "2026-08-30T18:53:34.620Z",
+      "durationMs": 451,
+      "head": "53fa8c1f735609d56914bc27cad6ed1273d81af2",
+      "worktreeDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": "\n> notes@0.1.0 test\n> node --test --test-reporter dot\n\n......\n",
+      "outputTruncated": false
+    }
+  }
+}
