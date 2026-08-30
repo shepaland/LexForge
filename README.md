@@ -1,5 +1,7 @@
 # LexForge
 
+[![lexforge on npm](https://img.shields.io/npm/v/lexforge.svg)](https://www.npmjs.com/package/lexforge)
+
 **English** · [Русский](README.ru.md)
 
 A spec-driven pipeline for coding agents. LexForge is built out of two systems: it takes the
@@ -158,11 +160,14 @@ and names the gates that will need one.
 
 ## Installation
 
-A global install puts the `lexforge` command on `PATH`, which is how the skills call it:
+The package is published on npm as [`lexforge`](https://www.npmjs.com/package/lexforge).
+A global install puts the command on `PATH`, which is how the skills call it:
 
 ```bash
 npm install -g lexforge
 ```
+
+`lexforge --version` prints the installed version and confirms the name resolved.
 
 Installing it as a project dependency pins the version to the project, and then the command is
 called through `npx`:

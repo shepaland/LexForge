@@ -1,5 +1,7 @@
 # LexForge
 
+[![lexforge on npm](https://img.shields.io/npm/v/lexforge.svg)](https://www.npmjs.com/package/lexforge)
+
 **Русский** · [English](README.md)
 
 Конвейер spec-driven разработки для кодовых агентов. LexForge собран из двух систем: артефакты
@@ -155,11 +157,14 @@ OpenSpec описывает шаги, но ничем не мешает их о�
 
 ## Установка
 
-Глобальная установка кладёт команду `lexforge` в `PATH`, и скиллы зовут её по имени:
+Пакет опубликован в npm под именем [`lexforge`](https://www.npmjs.com/package/lexforge).
+Глобальная установка кладёт команду в `PATH`, и скиллы зовут её по имени:
 
 ```bash
 npm install -g lexforge
 ```
+
+`lexforge --version` печатает установленную версию и подтверждает, что имя разрешилось.
 
 Установка в зависимости проекта закрепляет версию за проектом, и тогда команду зовут через `npx`:
 
