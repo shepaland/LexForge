@@ -10,6 +10,14 @@ change from the user's request to the archived spec, and `lexforge verify` answe
 code whether the work is done: a claim of completion that has no fresh command output behind it
 does not pass.
 
+![The agent says the change is done; `lexforge verify` answers exit 1 until the checks have actually been run](https://raw.githubusercontent.com/shepaland/LexForge/main/docs/media/verify.gif)
+
+The agent has written the code and ticked every box. `lexforge verify` answers `1`: the
+ledger holds no stamp for either check. `evidence record` runs the command itself and
+writes the stamp, and only then does `verify` answer `0` — while still naming what no
+command can check for you. The change on the recording is kept in
+[`examples/notes`](examples/notes): proposal, spec, design, plan, stamps and the code.
+
 ## Quick start
 
 ```bash
