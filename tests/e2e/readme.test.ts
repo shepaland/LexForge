@@ -12,29 +12,51 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 /**
  * Разделы, которых требование «README написан для того, кто ставит» ждёт
  * от README. Читатель ставит LexForge в свой проект, и каждый заголовок
- * отвечает на один его вопрос.
+ * отвечает на один его вопрос. README на двух языках, поэтому список
+ * заголовков свой у каждого файла, а порядок вопросов общий.
  */
-const REQUIRED_HEADINGS = [
-  "## Что делает LexForge",
-  "## Требования",
-  "## Установка",
-  "## Первый запуск",
-  "## Девять скиллов",
-  "## Команды и коды возврата",
-  "## Что коммитить",
-];
+const REQUIRED_HEADINGS: Record<string, readonly string[]> = {
+  "README.md": [
+    "## What the merge buys you",
+    "## Requirements",
+    "## Installation",
+    "## First run",
+    "## The nine skills",
+    "## Commands and exit codes",
+    "## What to commit",
+  ],
+  "README.ru.md": [
+    "## Что даёт объединение",
+    "## Требования",
+    "## Установка",
+    "## Первый запуск",
+    "## Девять скиллов",
+    "## Команды и коды возврата",
+    "## Что коммитить",
+  ],
+};
 
-const readme = readFileSync(path.join(REPO_ROOT, "README.md"), "utf8");
+const readme = Object.fromEntries(
+  Object.keys(REQUIRED_HEADINGS).map((file) => [
+    file,
+    readFileSync(path.join(REPO_ROOT, file), "utf8"),
+  ]),
+);
 
-describe("README для того, кто ставит", () => {
+const countHeadings = (text: string): number =>
+  text.split("\n").filter((line) => line.startsWith("## ")).length;
+
+describe.each(Object.keys(REQUIRED_HEADINGS))("README для того, кто ставит: %s", (file) => {
+  const text = readme[file];
+
   it("несёт семь обязательных заголовков разделов", () => {
-    for (const heading of REQUIRED_HEADINGS) {
-      expect(readme, `в README нет заголовка «${heading}»`).toContain(`\n${heading}\n`);
+    for (const heading of REQUIRED_HEADINGS[file]) {
+      expect(text, `в ${file} нет заголовка «${heading}»`).toContain(`\n${heading}\n`);
     }
   });
 
   it("цитирует следующий шаг здоровой проверки слово в слово", () => {
-    expect(readme, "в README нет строки следующего шага из doctor").toContain(
+    expect(text, `в ${file} нет строки следующего шага из doctor`).toContain(
       `Next step: ${HEALTHY_NEXT_STEP}`,
     );
   });
@@ -43,13 +65,22 @@ describe("README для того, кто ставит", () => {
     for (const tool of knownTools()) {
       const directories = TOOL_DIRECTORIES[tool];
 
-      expect(readme, `в README нет имени рантайма «${tool}»`).toContain(tool);
-      expect(readme, `в README нет каталога «${directories.project}» рантайма ${tool}`).toContain(
+      expect(text, `в ${file} нет имени рантайма «${tool}»`).toContain(tool);
+      expect(text, `в ${file} нет каталога «${directories.project}» рантайма ${tool}`).toContain(
         directories.project,
       );
-      expect(readme, `в README нет каталога «${directories.user}» рантайма ${tool}`).toContain(
+      expect(text, `в ${file} нет каталога «${directories.user}» рантайма ${tool}`).toContain(
         directories.user,
       );
     }
+  });
+});
+
+describe("README на двух языках", () => {
+  it("несёт одинаковое число разделов в обоих файлах", () => {
+    expect(
+      countHeadings(readme["README.ru.md"]),
+      "разделы README.md и README.ru.md разошлись, править их нужно зеркально",
+    ).toBe(countHeadings(readme["README.md"]));
   });
 });
