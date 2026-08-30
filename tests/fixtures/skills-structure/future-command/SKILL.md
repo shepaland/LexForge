@@ -5,6 +5,6 @@ description: Use when a command check needs a skill that names a command the CLI
 
 Read the state of the change first: `lexforge status --change <name> --json`.
 
-When the plan is written, run `lexforge check plan` and read the findings.
+When the change is finished, run `lexforge archive add-auth` and read the findings.
 
 Next step: `lexforge instructions specs --change <name>`.

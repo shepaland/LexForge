@@ -7,8 +7,12 @@ export const FRONTMATTER_FIELDS = ["name", "description"];
 export const MAX_DESCRIPTION_CHARS = 1024;
 
 /** The body is loaded whole, so it competes with the conversation for attention. */
-/** Words a skill may spend on its own material; the shared queue rule is not counted. */
-export const MAX_BODY_WORDS = 500;
+/**
+ * Words a skill may spend on its own material; the shared queue rule is not counted.
+ * 500 left no room for a rationalization the runs kept finding, and the only way to add
+ * a row was to cut a rule whose scenario then went unchecked. 650 buys that room.
+ */
+export const MAX_BODY_WORDS = 650;
 
 export const DESCRIPTION_OPENING = "Use when";
 

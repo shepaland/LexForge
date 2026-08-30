@@ -20,9 +20,11 @@ describe("список команд читается из программы CLI
   it("несёт команды и подкоманды, зарегистрированные в run.ts", () => {
     expect(knownCommandNames().slice().sort()).toEqual([
       "change",
+      "check",
       "init",
       "instructions",
       "new",
+      "plan",
       "status",
       "validate",
     ]);
@@ -35,7 +37,7 @@ describe("проверка команд на фикстурах", () => {
 
     expect(findings).toHaveLength(1);
     expect(findings[0]!.rule).toBe("unknown-command");
-    expect(findings[0]!.message).toContain("check");
+    expect(findings[0]!.message).toContain("archive");
     expect(findings[0]!.message).toContain("future-command/SKILL.md");
   });
 
@@ -48,7 +50,7 @@ describe("проверка команд на фикстурах", () => {
       dir: "fenced",
       file: "/tmp/fenced/SKILL.md",
       frontmatter: {},
-      body: ["Text before.", "", "```", "lexforge check plan", "```", "", "Text after."].join(
+      body: ["Text before.", "", "```", "lexforge archive add-auth", "```", "", "Text after."].join(
         "\n",
       ),
     };
@@ -61,7 +63,7 @@ describe("проверка команд на фикстурах", () => {
       dir: "twice",
       file: "/tmp/twice/SKILL.md",
       frontmatter: {},
-      body: "Run `lexforge check plan` and then `lexforge check tasks` again.",
+      body: "Run `lexforge archive add-auth` and then `lexforge archive add-billing` again.",
     };
 
     expect(checkNamedCommands(skill).map((entry) => entry.message)).toHaveLength(1);

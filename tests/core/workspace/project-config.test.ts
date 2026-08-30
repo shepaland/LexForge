@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
+import { UsageError } from "../../../src/cli/errors.js";
 import { readProjectConfig } from "../../../src/core/workspace/project-config.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
 
@@ -60,5 +61,58 @@ describe("readProjectConfig", () => {
     );
 
     expect(config.schema).toBe("bounded");
+  });
+});
+
+describe("readProjectConfig: раздел verification", () => {
+  it("метки проверок читаются парами", () => {
+    const config = readProjectConfig(
+      workspace("verification:\n  tests: npm test\n  lint: npm run lint\n"),
+    );
+
+    expect(config.verification).toEqual({ tests: "npm test", lint: "npm run lint" });
+  });
+
+  it("без раздела verification даёт пустой объект", () => {
+    const config = readProjectConfig(workspace("schema: bounded\n"));
+
+    expect(config.verification).toEqual({});
+  });
+
+  it("метка из строчных букв и дефисов принимается", () => {
+    const config = readProjectConfig(workspace("verification:\n  unit-tests: npm test\n"));
+
+    expect(config.verification).toEqual({ "unit-tests": "npm test" });
+  });
+
+  it("метка с пробелом и заглавными буквами останавливает чтение", () => {
+    let caught: unknown;
+    try {
+      readProjectConfig(workspace("verification:\n  Unit Tests: npm test\n"));
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(UsageError);
+    expect((caught as UsageError).code).toBe("project-config-invalid");
+    expect((caught as UsageError).message).toContain("Unit Tests");
+    expect((caught as UsageError).message).toContain("lowercase");
+    expect((caught as UsageError).message).toContain("unit-tests");
+  });
+});
+
+describe("readProjectConfig: свои маркеры плейсхолдеров", () => {
+  it("список plan_placeholders отдаётся строками", () => {
+    const config = readProjectConfig(
+      workspace("plan_placeholders:\n  - на усмотрение исполнителя\n  - потом решим\n"),
+    );
+
+    expect(config.planPlaceholders).toEqual(["на усмотрение исполнителя", "потом решим"]);
+  });
+
+  it("без списка отдаётся пустой массив", () => {
+    const config = readProjectConfig(workspace("schema: bounded\n"));
+
+    expect(config.planPlaceholders).toEqual([]);
   });
 });

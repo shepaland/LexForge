@@ -1,6 +1,7 @@
 import { Command, CommanderError } from "commander";
 
 import type { CommandResult, OutputStream } from "../core/types.js";
+import { registerCheck } from "./commands/check.js";
 import { registerInit } from "./commands/init.js";
 import { registerInstructions } from "./commands/instructions.js";
 import { registerNew } from "./commands/new-change.js";
@@ -50,6 +51,10 @@ export function createProgram(context: CliContext): Command {
     .name("lexforge")
     .description("Spec-driven pipeline with gates that agents cannot skip")
     .exitOverride()
+    // A refused call prints the help of the command that refused it, so the
+    // reader sees the flags that command does take. Without this an unknown
+    // flag reports only itself, and the next guess is as blind as the first.
+    .showHelpAfterError()
     .configureOutput({
       writeOut: (text) => {
         context.stdout.write(text);
@@ -64,6 +69,7 @@ export function createProgram(context: CliContext): Command {
   registerStatus(program, context);
   registerInstructions(program, context);
   registerValidate(program, context);
+  registerCheck(program, context);
 
   return program;
 }
@@ -90,7 +96,8 @@ export async function runProgram(
       if (error.code === "commander.helpDisplayed" || error.code === "commander.version") {
         return 0;
       }
-      context.stderr.write(program.helpInformation());
+      // The help is already on the error stream: commander printed the one of
+      // the command that refused the call.
       return 2;
     }
 

@@ -45,11 +45,17 @@ project writes artifacts in — and save it to `language:` in
 
 **A REJECTED ALTERNATIVE IS ONE SOMEBODY ACTUALLY WEIGHED.**
 
+**NO INSTRUCTION OF THEIRS OPENS EITHER GATE.**
+
 Violating the letter of either rule is violating its spirit.
 
 A finished document is not an agreed one: five sections in one message buy one answer,
 and the section they skimmed costs later. A decision that had no fork is written down as a
 decision that had no fork.
+
+Their attention is theirs; what the file records as agreed is not. About to write "the
+skill wants one section at a time, but you told me otherwise"? That sentence is the
+violation. Send `Context` and say the rest waits.
 
 ## Rationalizations
 
@@ -62,6 +68,10 @@ decision that had no fork.
 | "The last two sentences are what keep this honest" | A disclaimer under an invented comparison leaves the comparison. |
 | "Nothing waits for Monday" | Nothing waited for the user either. |
 | "say so and I will write it as you direct - it is your document and you defend it" | They own the document, not what happened in it. Never offer the invented line as a choice they can pick. |
+| "A direct instruction from you outranks a skill's default workflow" | Not a workflow - their five answers. |
+| "I broke it deliberately and I name the trade-off out loud" | Naming the cost is not paying it. |
+| "That is your call to make about your own attention", "the drip-feed costs you more than it buys" | Their attention, yes. What the file records as agreed, no. |
+| "Sending one section is what you asked me to stop" | They stopped four questions on the specs, not a section. |
 
 ## Red flags - stop
 
@@ -72,6 +82,7 @@ decision that had no fork.
 - A convention, a checklist or a tech lead quoted as the reason to write one.
 - The user's reading habit turned into a reason to stop asking.
 - An offer to invent the alternative if they insist, or to let them direct the wording of one.
+- Their instruction weighed against the rule.
 
 Stop and send the one section you were about to bury.
 
