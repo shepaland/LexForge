@@ -1,14 +1,30 @@
 # LexForge
 
 [![lexforge on npm](https://img.shields.io/npm/v/lexforge.svg)](https://www.npmjs.com/package/lexforge)
+[![license MIT](https://img.shields.io/npm/l/lexforge.svg)](LICENSE)
 
 **English** · [Русский](README.ru.md)
 
-A spec-driven pipeline for coding agents. LexForge is built out of two systems: it takes the
-artifacts and the machine-checkable shape of requirements from **OpenSpec**, and the process gates
-and behavioural rules for the agent from **superpowers**. Nine skills carry the agent from the
-user's request to the archived change, and the `lexforge` command answers with an exit code
-whether the work is done.
+A spec-driven pipeline for coding agents, with gates the agent cannot skip. Nine skills carry a
+change from the user's request to the archived spec, and `lexforge verify` answers with an exit
+code whether the work is done: a claim of completion that has no fresh command output behind it
+does not pass.
+
+## Quick start
+
+```bash
+npm install -g lexforge       # the skills call the command by this name on PATH
+lexforge init --tools claude  # agents · claude · codex · cursor · opencode
+lexforge doctor               # six conditions, each named with or without a finding
+```
+
+Then ask the agent for work in the usual words — "add X", "fix Y". The `lexforge` skill names the
+class of work and the pipeline starts from there; the four steps in full are in
+[First run](#first-run).
+
+LexForge is built out of two systems: it takes the artifacts and the machine-checkable shape of
+requirements from **OpenSpec**, and the process gates and behavioural rules for the agent from
+**superpowers**.
 
 ## What the merge buys you
 
