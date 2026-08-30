@@ -45,32 +45,32 @@ ANNOTATIONS = [
     {
         "at": (6.3, 10.4),
         "box": box(first_line=3, line_count=4, chars=145),
-        "en": "The agent said: done. But nobody ran the checks.",
-        "ru": "Агент сказал: готово. Но проверки никто не запускал.",
+        "en": "The agent reported the change as done, but it never ran a single check.",
+        "ru": "Агент отчитался, что всё готово, но ни одной проверки он не запускал.",
     },
     {
         "at": (10.9, 14.6),
         "box": box(first_line=13, line_count=2, chars=9),
-        "en": "The answer is 1. That means: not done. No way past.",
-        "ru": "Ответ — 1. Это значит «не готово». Дальше не пройти.",
+        "en": "A 1 means the work does not pass.",
+        "ru": "Единица в ответе значит, что работа не принята.",
     },
     {
         "at": (17.2, 21.1),
         "box": box(first_line=20, line_count=2, chars=49),
-        "en": "Now LexForge runs the tests itself and writes down what happened.",
-        "ru": "Теперь LexForge сам запускает тесты и записывает, что вышло.",
+        "en": "LexForge runs the tests itself and records how they ended.",
+        "ru": "LexForge сам запускает тесты и записывает, чем они кончились.",
     },
     {
         "at": (26.2, 30.3),
         "box": box(first_line=31, line_count=1, chars=61),
-        "en": "Tests passed. Now the answer is 0 — done for real.",
-        "ru": "Тесты прошли. Теперь ответ 0 — готово по-настоящему.",
+        "en": "The tests passed, and now LexForge accepts the change.",
+        "ru": "Тесты прошли, и теперь LexForge принимает изменение.",
     },
     {
         "at": (31.2, 35.3),
         "box": box(first_line=33, line_count=4, chars=76, scroll=2),
-        "en": "And it says straight out what it cannot check. That part is on you.",
-        "ru": "А что проверить не может — говорит прямо. Это остаётся человеку.",
+        "en": "What it cannot check, LexForge names outright: the design, the requirements, the quality of the code.",
+        "ru": "Что проверить нельзя, LexForge называет прямо: дизайн, требования, качество кода.",
     },
 ]
 
