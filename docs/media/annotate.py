@@ -45,32 +45,32 @@ ANNOTATIONS = [
     {
         "at": (6.3, 10.4),
         "box": box(first_line=3, line_count=4, chars=145),
-        "en": "The agent says the change is done. The gate answers: no stamp for either check.",
-        "ru": "Агент говорит, что изменение готово. Ворота отвечают: штампа нет ни по одной проверке.",
+        "en": "The agent said: done. But nobody ran the checks.",
+        "ru": "Агент сказал: готово. Но проверки никто не запускал.",
     },
     {
         "at": (10.9, 14.6),
         "box": box(first_line=13, line_count=2, chars=9),
-        "en": "Exit code 1. Nothing moves on until the checks have actually been run.",
-        "ru": "Код возврата 1. Дальше ничего не двинется, пока проверки не запущены на самом деле.",
+        "en": "The answer is 1. That means: not done. No way past.",
+        "ru": "Ответ — 1. Это значит «не готово». Дальше не пройти.",
     },
     {
         "at": (17.2, 21.1),
         "box": box(first_line=20, line_count=2, chars=49),
-        "en": "LexForge runs the command itself and stamps the exit code it saw — not the one it was told.",
-        "ru": "LexForge сам запускает команду и штампует тот код возврата, который увидел, а не заявленный.",
+        "en": "Now LexForge runs the tests itself and writes down what happened.",
+        "ru": "Теперь LexForge сам запускает тесты и записывает, что вышло.",
     },
     {
         "at": (26.2, 30.3),
         "box": box(first_line=31, line_count=1, chars=61),
-        "en": "Only now does verify answer 0: the evidence is fresh and matches this working tree.",
-        "ru": "Только теперь verify отвечает 0: доказательства свежие и совпадают с этим рабочим деревом.",
+        "en": "Tests passed. Now the answer is 0 — done for real.",
+        "ru": "Тесты прошли. Теперь ответ 0 — готово по-настоящему.",
     },
     {
         "at": (31.2, 35.3),
         "box": box(first_line=33, line_count=4, chars=76, scroll=2),
-        "en": "And it still names what no command can check for you.",
-        "ru": "И всё равно называет то, что за вас не проверит никакая команда.",
+        "en": "And it says straight out what it cannot check. That part is on you.",
+        "ru": "А чего проверить не может — говорит прямо. Это остаётся человеку.",
     },
 ]
 
