@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { HEALTHY_NEXT_STEP } from "../../src/core/doctor/run-doctor.js";
 import { TOOL_DIRECTORIES, knownTools } from "../../src/core/init/tool-registry.js";
+import { readTextFile } from "../../src/core/read-text.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -39,7 +39,7 @@ const REQUIRED_HEADINGS: Record<string, readonly string[]> = {
 const readme = Object.fromEntries(
   Object.keys(REQUIRED_HEADINGS).map((file) => [
     file,
-    readFileSync(path.join(REPO_ROOT, file), "utf8"),
+    readTextFile(path.join(REPO_ROOT, file)),
   ]),
 );
 

@@ -2,8 +2,9 @@ name: CI
 
 # The suite runs on the three operating systems a user is likely to install on,
 # and on the lowest Node the package declares plus the current LTS. Windows is
-# here for one reason above the rest: it checks out with CRLF line endings, and
-# the evidence digest hashes the bytes of the working tree.
+# here for one reason above the rest: it writes a path with another separator
+# and reads a file another editor wrote, and the answer of a command must not
+# depend on either.
 
 on:
   push:

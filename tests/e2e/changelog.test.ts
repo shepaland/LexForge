@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { readTextFile } from "../../src/core/read-text.js";
 import {
   changelogOrderViolation,
   changelogVersionMismatch,
@@ -16,7 +17,7 @@ const packageVersion = (
   JSON.parse(readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")) as { version: string }
 ).version;
 
-const entries = parseChangelogEntries(readFileSync(path.join(REPO_ROOT, "CHANGELOG.md"), "utf8"));
+const entries = parseChangelogEntries(readTextFile(path.join(REPO_ROOT, "CHANGELOG.md")));
 
 describe("журнал изменений", () => {
   it("верхняя запись несёт номер версии, равный полю version пакета", () => {
