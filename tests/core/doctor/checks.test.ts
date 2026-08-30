@@ -87,6 +87,15 @@ describe("checkWorkspace", () => {
 
     expect(result.findings).toEqual([]);
   });
+
+  it("на синтаксически битом config.yaml даёт находку вместо исключения", () => {
+    const root = project({ "lexforge/config.yaml": "schema: [unterminated\n" });
+
+    const result = checkWorkspace(root);
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]!.rule).toBeTruthy();
+  });
 });
 
 describe("checkVerification", () => {
@@ -117,6 +126,7 @@ describe("checkSkills", () => {
     const result = checkSkills({ root, home, skillsDir: SKILLS_DIR, version: VERSION });
 
     expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]!.rule).toBe("skills-modified");
     expect(result.findings[0]!.path).toContain(path.join("sample-plan", "SKILL.md"));
     expect(result.findings[0]!.message).toContain("lexforge init --tools claude");
   });
@@ -158,6 +168,42 @@ describe("checkSkills", () => {
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.rule).toBe("skills-file-missing");
     expect(result.findings[0]!.path).toContain(path.join("sample-verify", "SKILL.md"));
+  });
+
+  it("сверяет файлы побайтно: невалидный UTF-8, совпадающий после декодирования, всё равно даёт находку", () => {
+    const shippedSource = project();
+    const root = project();
+    const home = emptyHome();
+    const relFile = "sample-plan/SKILL.md";
+
+    // Два разных набора байт, которые Node декодирует в одну и ту же строку
+    // с символом замены: побайтная сверка обязана их различить, а сверка
+    // декодированных строк — нет.
+    const shippedFile = path.join(shippedSource, relFile);
+    mkdirSync(path.dirname(shippedFile), { recursive: true });
+    writeFileSync(shippedFile, Buffer.from([0x80]));
+
+    const skillsDir = path.resolve(root, toolDirectory("claude", "project"));
+    const installedFile = path.join(skillsDir, relFile);
+    mkdirSync(path.dirname(installedFile), { recursive: true });
+    writeFileSync(installedFile, Buffer.from([0x81]));
+
+    writeFileSync(
+      manifestPath(skillsDir),
+      renderManifest({
+        version: VERSION,
+        installedAt: "2026-08-29T10:00:00.000Z",
+        tool: "claude",
+        scope: "project",
+        files: [relFile],
+      }),
+      "utf8",
+    );
+
+    const result = checkSkills({ root, home, skillsDir: shippedSource, version: VERSION });
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]!.rule).toBe("skills-modified");
   });
 });
 

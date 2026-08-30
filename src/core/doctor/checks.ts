@@ -47,7 +47,10 @@ function workspaceFinding(error: UsageError): DoctorFinding {
  * Condition 1: the `lexforge/` workspace is set up and `config.yaml` reads
  * without error. `findWorkspaceRoot` and `readProjectConfig` both throw a
  * `UsageError` for every other command; here that state is a finding, not a
- * refusal to run.
+ * refusal to run. `readProjectConfig` also lets a `YAMLParseError` from the
+ * `yaml` package through unchanged on syntactically broken YAML — that is
+ * caught here too, not just `UsageError`, so a hand-edited `config.yaml` gives
+ * a finding rather than crashing this otherwise pure function.
  */
 export function checkWorkspace(cwd: string): HealthCheck {
   const findings: DoctorFinding[] = [];
@@ -56,10 +59,17 @@ export function checkWorkspace(cwd: string): HealthCheck {
     const root = findWorkspaceRoot(cwd);
     readProjectConfig(root);
   } catch (error) {
-    if (!(error instanceof UsageError)) {
+    if (error instanceof UsageError) {
+      findings.push(workspaceFinding(error));
+    } else if (error instanceof Error) {
+      findings.push({
+        rule: "config-unreadable",
+        level: "error",
+        message: `config.yaml could not be read: ${error.message}`,
+      });
+    } else {
       throw error;
     }
-    findings.push(workspaceFinding(error));
   }
 
   return { id: "workspace", title: "Workspace and configuration", findings };
@@ -174,7 +184,10 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
           continue;
         }
 
-        if (readFileSync(installed, "utf8") !== readFileSync(shipped, "utf8")) {
+        // Compared as raw bytes, not decoded text: the spec calls this a
+        // byte-for-byte comparison, and two different invalid byte sequences
+        // can decode to the same replacement character.
+        if (!readFileSync(installed).equals(readFileSync(shipped))) {
           findings.push({
             rule: "skills-modified",
             level: "error",
