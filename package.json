@@ -28,7 +28,8 @@
     "bin",
     "schemas",
     "skills",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "README.ru.md"
   ],
   "engines": {
     "node": ">=20.19.0"
