@@ -10,6 +10,7 @@ import { knownTools, toolDirectory } from "../init/tool-registry.js";
 import { packageVersion, requiredNodeVersion } from "../package-info.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
+import { workspacePaths } from "../workspace/paths.js";
 
 /**
  * Every finding of an installation check is fatal to the "is this install
@@ -37,10 +38,23 @@ export interface HealthCheck {
   findings: DoctorFinding[];
 }
 
-/** Turns the `UsageError` a workspace lookup throws into a finding. */
-function workspaceFinding(error: UsageError): DoctorFinding {
+/**
+ * Turns the `UsageError` a workspace lookup throws into a finding. `filePath`
+ * is set when the error is about one file that exists at a known location —
+ * `config.yaml` once its directory has been found — so the finding names the
+ * path the spec asks for.
+ */
+function workspaceFinding(error: UsageError, filePath?: string): DoctorFinding {
   const nextStep = error.nextStep ? ` Run: ${error.nextStep}` : "";
-  return { rule: error.code, level: "error", message: `${error.message}${nextStep}` };
+  const finding: DoctorFinding = {
+    rule: error.code,
+    level: "error",
+    message: `${error.message}${nextStep}`,
+  };
+  if (filePath) {
+    finding.path = filePath;
+  }
+  return finding;
 }
 
 /**
@@ -54,18 +68,31 @@ function workspaceFinding(error: UsageError): DoctorFinding {
  */
 export function checkWorkspace(cwd: string): HealthCheck {
   const findings: DoctorFinding[] = [];
+  let root: string;
 
   try {
-    const root = findWorkspaceRoot(cwd);
-    readProjectConfig(root);
+    root = findWorkspaceRoot(cwd);
   } catch (error) {
     if (error instanceof UsageError) {
       findings.push(workspaceFinding(error));
+      return { id: "workspace", title: "Workspace and configuration", findings };
+    }
+    throw error;
+  }
+
+  const configPath = workspacePaths(root).config;
+
+  try {
+    readProjectConfig(root);
+  } catch (error) {
+    if (error instanceof UsageError) {
+      findings.push(workspaceFinding(error, configPath));
     } else if (error instanceof Error) {
       findings.push({
         rule: "config-unreadable",
         level: "error",
         message: `config.yaml could not be read: ${error.message}`,
+        path: configPath,
       });
     } else {
       throw error;

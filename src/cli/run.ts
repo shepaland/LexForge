@@ -6,6 +6,7 @@ import { packageVersion } from "../core/package-info.js";
 import type { CommandResult, OutputStream } from "../core/types.js";
 import { registerArchive } from "./commands/archive.js";
 import { registerCheck } from "./commands/check.js";
+import { registerDoctor } from "./commands/doctor.js";
 import { registerEvidence } from "./commands/evidence.js";
 import { registerInit } from "./commands/init.js";
 import { registerInstructions } from "./commands/instructions.js";
@@ -20,6 +21,10 @@ export interface RunOptions {
   cwd: string;
   /** The home directory a user-scope installation writes under. */
   home?: string;
+  /** The `PATH` value `doctor` resolves the command name against. */
+  pathValue?: string;
+  /** The file this run was started from, for `doctor`'s `PATH` check. */
+  runningFile?: string;
   stdout?: OutputStream;
   stderr?: OutputStream;
 }
@@ -31,6 +36,8 @@ export interface RunOptions {
 export interface CliContext {
   cwd: string;
   home: string;
+  pathValue: string;
+  runningFile: string;
   stdout: OutputStream;
   stderr: OutputStream;
   finish(result: CommandResult<unknown>): void;
@@ -43,6 +50,8 @@ export function createCliContext(options: RunOptions): CliContext {
   return {
     cwd: options.cwd,
     home: options.home ?? os.homedir(),
+    pathValue: options.pathValue ?? process.env.PATH ?? "",
+    runningFile: options.runningFile ?? process.argv[1] ?? "",
     stdout: options.stdout ?? process.stdout,
     stderr: options.stderr ?? process.stderr,
     finish(result: CommandResult<unknown>) {
@@ -76,6 +85,7 @@ export function createProgram(context: CliContext): Command {
     });
 
   registerInit(program, context);
+  registerDoctor(program, context);
   registerNew(program, context);
   registerStatus(program, context);
   registerInstructions(program, context);

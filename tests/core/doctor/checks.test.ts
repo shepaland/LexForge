@@ -95,6 +95,7 @@ describe("checkWorkspace", () => {
 
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.rule).toBeTruthy();
+    expect(result.findings[0]!.path).toBe(path.join(root, "lexforge/config.yaml"));
   });
 });
 

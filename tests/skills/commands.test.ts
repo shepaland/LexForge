@@ -22,6 +22,7 @@ describe("список команд читается из программы CLI
       "archive",
       "change",
       "check",
+      "doctor",
       "evidence",
       "evidence",
       "init",

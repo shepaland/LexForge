@@ -7,6 +7,9 @@
  * файла в `lexforge-gate-commands` — для четырёх команд-ворот. Если снимок разошёлся
  * с решением, правится код, а не снимок.
  */
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
+
 import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/run.js";
@@ -288,6 +291,88 @@ describe("коды возврата команды архивации", () => {
 
   it("ненайденный change даёт 2", async () => {
     const { exitCode } = await call(["archive", "nosuch"], gateProject());
+
+    expect(exitCode).toBe(2);
+  });
+});
+
+/** A `lexforge` stub on its own directory, so `checkPath` resolves it to itself. */
+function stubOnPath(root: string): { pathValue: string; runningFile: string } {
+  const runningFile = path.join(root, "bin", "lexforge");
+  mkdirSync(path.dirname(runningFile), { recursive: true });
+  writeFileSync(runningFile, "#!/usr/bin/env node\n", "utf8");
+  return { pathValue: path.dirname(runningFile), runningFile };
+}
+
+/** A project doctor reads as healthy: workspace, skills, repository, PATH, runtime. */
+async function healthyInstall(): Promise<{ root: string; home: string; pathValue: string; runningFile: string }> {
+  const workspace = createGitWorkspace();
+  repositories.push(workspace);
+  const home = makeWorkspace();
+  created.push(home);
+  const stub = stubOnPath(workspace.root);
+
+  const initCapture = createCapture();
+  const initExit = await run(["init", "--tools", "claude"], {
+    cwd: workspace.root,
+    home,
+    stdout: initCapture.stdout,
+    stderr: initCapture.stderr,
+  });
+  expect(initExit, initCapture.err).toBe(0);
+
+  return { root: workspace.root, home, ...stub };
+}
+
+describe("коды возврата команды doctor", () => {
+  it("здоровая установка даёт 0", async () => {
+    const env = await healthyInstall();
+    const capture = createCapture();
+
+    const exitCode = await run(["doctor"], {
+      cwd: env.root,
+      home: env.home,
+      pathValue: env.pathValue,
+      runningFile: env.runningFile,
+      stdout: capture.stdout,
+      stderr: capture.stderr,
+    });
+
+    expect(exitCode, capture.err).toBe(0);
+  });
+
+  it("находка на пустом рабочем пространстве даёт 1", async () => {
+    const root = makeWorkspace();
+    created.push(root);
+    const home = makeWorkspace();
+    created.push(home);
+    const stub = stubOnPath(root);
+    const capture = createCapture();
+
+    const exitCode = await run(["doctor"], {
+      cwd: root,
+      home,
+      pathValue: stub.pathValue,
+      runningFile: stub.runningFile,
+      stdout: capture.stdout,
+      stderr: capture.stderr,
+    });
+
+    expect(exitCode).toBe(1);
+  });
+
+  it("неизвестный флаг даёт 2", async () => {
+    const env = await healthyInstall();
+    const capture = createCapture();
+
+    const exitCode = await run(["doctor", "--fix"], {
+      cwd: env.root,
+      home: env.home,
+      pathValue: env.pathValue,
+      runningFile: env.runningFile,
+      stdout: capture.stdout,
+      stderr: capture.stderr,
+    });
 
     expect(exitCode).toBe(2);
   });
