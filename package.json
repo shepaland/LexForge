@@ -4,21 +4,41 @@
   "description": "Spec-driven pipeline with gates that agents cannot skip",
   "license": "MIT",
   "author": "shepaland",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shepaland/LexForge.git"
+  },
+  "homepage": "https://github.com/shepaland/LexForge#readme",
+  "bugs": {
+    "url": "https://github.com/shepaland/LexForge/issues"
+  },
+  "keywords": [
+    "spec-driven",
+    "openspec",
+    "agent",
+    "cli",
+    "skills"
+  ],
   "type": "module",
   "bin": {
     "lexforge": "bin/lexforge.js"
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
     "bin",
     "schemas",
-    "skills"
+    "skills",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=20.19.0"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
+    "prepack": "npm run build",
     "test": "vitest run",
     "test:e2e": "vitest run tests/e2e",
     "test:skills": "vitest run tests/skills",

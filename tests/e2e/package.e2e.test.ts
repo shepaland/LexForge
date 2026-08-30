@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, readdirSync, symlinkSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -39,6 +39,9 @@ const SKILL_NAMES = [
 
 /** Material a skill body links to instead of carrying it: it ships with the skill. */
 const SKILL_FILES = ["lexforge-apply/reviewer-prompt.md"];
+
+/** Traces of development: the archive is read by a machine that never builds this package. */
+const FORBIDDEN = ["tests", "openspec", "docs", ".claude", "node_modules", "src"];
 
 const created: string[] = [];
 let tarball = "";
@@ -106,6 +109,67 @@ describe("состав пакета", () => {
   });
 });
 
+describe("состав пакета, журнал изменений", () => {
+  it("несёт CHANGELOG.md в корне архива", () => {
+    expect(existsSync(path.join(unpacked, "package", "CHANGELOG.md"))).toBe(true);
+  });
+});
+
+describe("состав пакета, следы разработки", () => {
+  it("не несёт каталогов разработки", () => {
+    const root = path.join(unpacked, "package");
+
+    for (const entry of FORBIDDEN) {
+      expect(existsSync(path.join(root, entry)), entry).toBe(false);
+    }
+  });
+
+  it("не несёт карт кода и файлов деклараций", () => {
+    const root = path.join(unpacked, "package");
+    const unwanted = walk(path.join(root, "dist")).filter(
+      (file) => file.endsWith(".js.map") || file.endsWith(".d.ts"),
+    );
+
+    expect(unwanted).toEqual([]);
+  });
+});
+
+describe("сборка перед упаковкой", () => {
+  it(
+    "упаковка без каталога dist даёт архив со сборкой",
+    () => {
+      const copy = tempDir();
+
+      // A copy of the sources without `dist/`: the packing has to build them
+      // itself. `node_modules` is linked, not copied — the build needs the
+      // compiler, and copying a tree of that size proves nothing.
+      for (const entry of ["src", "bin", "schemas", "skills"]) {
+        cpSync(path.join(REPO_ROOT, entry), path.join(copy, entry), { recursive: true });
+      }
+      for (const file of ["package.json", "tsconfig.json", "CHANGELOG.md", "README.md"]) {
+        copyFileSync(path.join(REPO_ROOT, file), path.join(copy, file));
+      }
+      symlinkSync(path.join(REPO_ROOT, "node_modules"), path.join(copy, "node_modules"));
+
+      expect(existsSync(path.join(copy, "dist"))).toBe(false);
+
+      const destination = tempDir();
+      const output = execFileSync(
+        "npm",
+        ["pack", "--pack-destination", destination, "--loglevel", "error"],
+        { cwd: copy, encoding: "utf8" },
+      );
+
+      const archive = path.join(destination, output.trim().split("\n").at(-1)!);
+      const opened = tempDir();
+      execFileSync("tar", ["-xf", archive, "-C", opened], { encoding: "utf8" });
+
+      expect(existsSync(path.join(opened, "package", "dist", "cli", "run.js"))).toBe(true);
+    },
+    300_000,
+  );
+});
+
 describe("установка в чужой проект", () => {
   it(
     "поставленный пакет проходит init, new change и status",
@@ -168,3 +232,22 @@ describe("установка в чужой проект", () => {
     300_000,
   );
 });
+
+/** Every file under a directory, as paths relative to it. */
+function walk(dir: string, prefix = ""): string[] {
+  if (!existsSync(dir)) {
+    return [];
+  }
+
+  const found: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const relative = path.join(prefix, entry.name);
+    if (entry.isDirectory()) {
+      found.push(...walk(path.join(dir, entry.name), relative));
+    } else {
+      found.push(relative);
+    }
+  }
+
+  return found;
+}
