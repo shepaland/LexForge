@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
+import { npmCall, npxCall } from "../helpers/npm.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -170,16 +171,19 @@ describe("сборка перед упаковкой", () => {
       for (const file of ["package.json", "tsconfig.json", "CHANGELOG.md", "README.md"]) {
         copyFileSync(path.join(REPO_ROOT, file), path.join(copy, file));
       }
-      symlinkSync(path.join(REPO_ROOT, "node_modules"), path.join(copy, "node_modules"));
+      // Junction, а не символическая ссылка: на Windows каталожный symlink
+      // требует прав, которых у обычного прогона нет.
+      symlinkSync(path.join(REPO_ROOT, "node_modules"), path.join(copy, "node_modules"), "junction");
 
       expect(existsSync(path.join(copy, "dist"))).toBe(false);
 
       const destination = tempDir();
-      const output = execFileSync(
-        "npm",
-        ["pack", "--pack-destination", destination, "--loglevel", "error"],
-        { cwd: copy, encoding: "utf8" },
-      );
+      const pack = npmCall(["pack", "--pack-destination", destination, "--loglevel", "error"]);
+      const output = execFileSync(pack.file, pack.args, {
+        cwd: copy,
+        encoding: "utf8",
+        shell: pack.shell,
+      });
 
       const archive = path.join(destination, output.trim().split("\n").at(-1)!);
       const opened = tempDir();
@@ -197,11 +201,12 @@ describe("установка в чужой проект", () => {
     () => {
       const project = tempDir();
 
-      const install = spawnSync(
-        "npm",
-        ["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"],
-        { cwd: project, encoding: "utf8" },
-      );
+      const call = npmCall(["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"]);
+      const install = spawnSync(call.file, call.args, {
+        cwd: project,
+        encoding: "utf8",
+        shell: call.shell,
+      });
       expect(install.stderr).toBe("");
       expect(install.status).toBe(0);
 
@@ -211,9 +216,14 @@ describe("установка в чужой проект", () => {
         ["lexforge", "status", "--change", "smoke", "--json"],
       ];
 
-      const results = calls.map((argv) =>
-        spawnSync("npx", argv, { cwd: project, encoding: "utf8" }),
-      );
+      const results = calls.map((argv) => {
+        const npx = npxCall(argv);
+        return spawnSync(npx.file, npx.args, {
+          cwd: project,
+          encoding: "utf8",
+          shell: npx.shell,
+        });
+      });
 
       for (const [index, result] of results.entries()) {
         expect(result.status, `${calls[index]!.join(" ")} → ${result.stderr}`).toBe(0);
@@ -235,16 +245,19 @@ describe("установка в чужой проект", () => {
     () => {
       const project = tempDir();
 
-      const install = spawnSync(
-        "npm",
-        ["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"],
-        { cwd: project, encoding: "utf8" },
-      );
-      expect(install.status).toBe(0);
-
-      const result = spawnSync("npx", ["lexforge", "init", "--tools", "claude"], {
+      const call = npmCall(["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"]);
+      const install = spawnSync(call.file, call.args, {
         cwd: project,
         encoding: "utf8",
+        shell: call.shell,
+      });
+      expect(install.status).toBe(0);
+
+      const npx = npxCall(["lexforge", "init", "--tools", "claude"]);
+      const result = spawnSync(npx.file, npx.args, {
+        cwd: project,
+        encoding: "utf8",
+        shell: npx.shell,
       });
 
       expect(result.status, result.stderr).toBe(0);

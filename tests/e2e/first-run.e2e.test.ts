@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterAll, describe, expect, inject, it } from "vitest";
 
 import { git } from "../helpers/git-workspace.js";
+import { npmCall, npxCall } from "../helpers/npm.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 /** The nine skills the package installs: five planning, four implementation. */
@@ -47,11 +48,12 @@ interface Project {
 }
 
 function installTarball(root: string): void {
-  const install = spawnSync(
-    "npm",
-    ["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"],
-    { cwd: root, encoding: "utf8" },
-  );
+  const call = npmCall(["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"]);
+  const install = spawnSync(call.file, call.args, {
+    cwd: root,
+    encoding: "utf8",
+    shell: call.shell,
+  });
   expect(install.status, install.stderr).toBe(0);
 }
 
@@ -64,9 +66,11 @@ function installProject(): Project {
 
 /** Runs the installed CLI the way a project would: through `npx`, by its bare name. */
 function lexforge(argv: string[], project: Project) {
-  return spawnSync("npx", ["lexforge", ...argv], {
+  const npx = npxCall(["lexforge", ...argv]);
+  return spawnSync(npx.file, npx.args, {
     cwd: project.root,
     encoding: "utf8",
+    shell: npx.shell,
     env: { ...process.env, HOME: project.home, USERPROFILE: project.home },
   });
 }

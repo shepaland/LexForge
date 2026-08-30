@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 
 import type { GlobalSetupContext } from "vitest/node";
 
+import { npmCall } from "../helpers/npm.js";
+
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 declare module "vitest" {
@@ -30,11 +32,12 @@ declare module "vitest" {
 export default function setup({ provide }: GlobalSetupContext): () => void {
   const destination = mkdtempSync(path.join(os.tmpdir(), "lexforge-pack-"));
 
-  const output = execFileSync(
-    "npm",
-    ["pack", "--pack-destination", destination, "--loglevel", "error"],
-    { cwd: REPO_ROOT, encoding: "utf8" },
-  );
+  const pack = npmCall(["pack", "--pack-destination", destination, "--loglevel", "error"]);
+  const output = execFileSync(pack.file, pack.args, {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    shell: pack.shell,
+  });
 
   provide("tarball", path.join(destination, output.trim().split("\n").at(-1)!));
 
