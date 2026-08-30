@@ -1,6 +1,6 @@
 {
   "name": "lexforge",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Spec-driven pipeline with gates that agents cannot skip",
   "license": "MIT",
   "author": "shepaland",
