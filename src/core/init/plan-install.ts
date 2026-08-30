@@ -45,12 +45,26 @@ export interface InstallPlan {
    * holds anything a person put there stays.
    */
   emptied: string[];
+  /** One manifest per tool: where it goes and what this installation writes. */
+  manifests: PlannedManifest[];
   /**
    * Skill directories of LexForge that no manifest accounts for: a version
    * that wrote no manifest left them, and a person decides their fate. The
    * installation names them and leaves them where they are.
    */
   unmanaged: string[];
+}
+
+/** The record one installation leaves next to a skills directory. */
+export interface PlannedManifest {
+  /** Absolute path of the manifest file itself. */
+  path: string;
+  tool: string;
+  scope: InstallScope;
+  /** Absolute path of the skills directory the manifest describes. */
+  skillsDir: string;
+  /** Files this installation writes, relative to the skills directory. */
+  files: string[];
 }
 
 /**
@@ -87,21 +101,30 @@ export function planSkillInstall(options: PlanInstallOptions): InstallPlan {
   const files: InstallEntry[] = [];
   const removed: string[] = [];
   const emptied: string[] = [];
+  const manifests: PlannedManifest[] = [];
   const unmanaged: string[] = [];
-  for (const directory of directories) {
+  for (const [index, directory] of directories.entries()) {
     const skillsDir = path.resolve(root, directory);
     for (const relative of shipped) {
       const target = path.join(skillsDir, relative);
       const content = readFileSync(path.join(source, relative), "utf8");
       files.push({ path: target, content, state: stateOf(target, content) });
     }
+    manifests.push({
+      path: manifestPath(skillsDir),
+      tool: options.tools[index]!,
+      scope,
+      skillsDir,
+      files: shipped.map((file) => file.split(path.sep).join("/")),
+    });
+
     const retiredFiles = retired(skillsDir, shipped);
     removed.push(...retiredFiles);
     emptied.push(...emptiedBy(retiredFiles, files));
     unmanaged.push(...leftBehind(skillsDir, shipped, retiredFiles));
   }
 
-  return { files, removed, emptied, unmanaged };
+  return { files, removed, emptied, manifests, unmanaged };
 }
 
 /**

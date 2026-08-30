@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import os from "node:os";
 
 import { Command, CommanderError } from "commander";
 
+import { packageVersion } from "../core/package-info.js";
 import type { CommandResult, OutputStream } from "../core/types.js";
 import { registerArchive } from "./commands/archive.js";
 import { registerCheck } from "./commands/check.js";
@@ -19,6 +18,8 @@ import { renderUsageError } from "./render.js";
 
 export interface RunOptions {
   cwd: string;
+  /** The home directory a user-scope installation writes under. */
+  home?: string;
   stdout?: OutputStream;
   stderr?: OutputStream;
 }
@@ -29,6 +30,7 @@ export interface RunOptions {
  */
 export interface CliContext {
   cwd: string;
+  home: string;
   stdout: OutputStream;
   stderr: OutputStream;
   finish(result: CommandResult<unknown>): void;
@@ -40,6 +42,7 @@ export function createCliContext(options: RunOptions): CliContext {
 
   return {
     cwd: options.cwd,
+    home: options.home ?? os.homedir(),
     stdout: options.stdout ?? process.stdout,
     stderr: options.stderr ?? process.stderr,
     finish(result: CommandResult<unknown>) {
@@ -49,20 +52,6 @@ export function createCliContext(options: RunOptions): CliContext {
       return exitCode;
     },
   };
-}
-
-/**
- * The version has one home: the `version` field of the package. Reading it
- * here keeps the printed number and the published one from drifting apart.
- * The manifest sits two levels above this module, both in `src/` and `dist/`.
- */
-function packageVersion(): string {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-  const manifest = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")) as {
-    version: string;
-  };
-
-  return manifest.version;
 }
 
 export function createProgram(context: CliContext): Command {

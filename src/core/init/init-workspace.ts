@@ -1,10 +1,16 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { tryGit } from "../git/repository.js";
+import { packageVersion } from "../package-info.js";
 import type { CommandResult } from "../types.js";
 import { workspacePaths } from "../workspace/paths.js";
 import { projectConfigText } from "./config-template.js";
+import { detectTools } from "./detect-tools.js";
+import { renderManifest } from "./install-manifest.js";
 import { planSkillInstall } from "./plan-install.js";
+import type { InstallScope } from "./tool-registry.js";
+import { knownTools } from "./tool-registry.js";
 
 export interface InitOptions {
   /** The project root the workspace is created in. */
@@ -13,6 +19,10 @@ export interface InitOptions {
   language?: string;
   /** Agents to install the skills for. An unknown name writes nothing at all. */
   tools?: string[];
+  /** Into the project by default; `user` writes under the home directory. */
+  scope?: InstallScope;
+  /** The home directory the user scope writes under. */
+  home?: string;
   skillsDir?: string;
 }
 
@@ -22,10 +32,40 @@ export interface InitData {
   created: string[];
   updated: string[];
   unchanged: string[];
+  /** Files of a previous version this run deleted, by its manifest and nothing else. */
+  removed: string[];
+  /** Skill directories nothing accounts for: they stay, and a person decides. */
+  unmanaged: string[];
+  /** What this project still lacks. Initialization reports it and fixes nothing. */
+  notes: string[];
   nextStep: string;
 }
 
 const NEXT_STEP = "lexforge new change <name>";
+
+/**
+ * The gates that read the repository: an evidence record is tied to a commit
+ * and to the state of the working tree, and a project without a repository has
+ * neither. Initialization says so and creates nothing: whether this directory
+ * becomes a repository is not its decision.
+ */
+const GIT_NOTE =
+  "This directory is not a git repository. " +
+  "The gates evidence record, check evidence, verify and archive need one.";
+
+/**
+ * A run that installed nothing has one thing left to do: install the skills.
+ * The names come from the directories already on this machine, and the choice
+ * stays with the person — a directory found is not a directory written to.
+ */
+function installStep(root: string, home: string): string {
+  const found = detectTools({ root, home });
+  if (found.length > 0) {
+    return `lexforge init --tools ${found.join(",")}`;
+  }
+
+  return `lexforge init --tools <one of: ${knownTools().join(", ")}>`;
+}
 
 export function initWorkspace(options: InitOptions): CommandResult<InitData> {
   const paths = workspacePaths(options.cwd);
@@ -38,6 +78,8 @@ export function initWorkspace(options: InitOptions): CommandResult<InitData> {
   const plan = planSkillInstall({
     root: paths.root,
     tools: options.tools ?? [],
+    scope: options.scope,
+    home: options.home,
     skillsDir: options.skillsDir,
   });
 
@@ -71,16 +113,55 @@ export function initWorkspace(options: InitOptions): CommandResult<InitData> {
     (skill.state === "updated" ? updated : created).push(skill.path);
   }
 
+  // Files the previous version left and this one does not carry. The list comes
+  // from its manifest: what no manifest names is never deleted.
+  for (const file of plan.removed) {
+    rmSync(file, { force: true });
+  }
+  for (const directory of plan.emptied) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+
+  // The record of what this installation wrote. The next one deletes by this
+  // list and by nothing else.
+  const installedAt = new Date().toISOString();
+  for (const manifest of plan.manifests) {
+    const state = existsSync(manifest.path) ? "updated" : "created";
+    mkdirSync(path.dirname(manifest.path), { recursive: true });
+    writeFileSync(
+      manifest.path,
+      renderManifest({
+        version: packageVersion(),
+        installedAt,
+        tool: manifest.tool,
+        scope: manifest.scope,
+        files: manifest.files,
+      }),
+      "utf8",
+    );
+    (state === "updated" ? updated : created).push(manifest.path);
+  }
+
+  const notes = tryGit(paths.root, ["rev-parse", "--show-toplevel"]).ok ? [] : [GIT_NOTE];
+
+  const nextStep =
+    plan.files.length > 0
+      ? NEXT_STEP
+      : installStep(paths.root, options.home ?? paths.root);
+
   const data: InitData = {
     outputVersion: 1,
     workspaceRoot: paths.root,
     created,
     updated,
     unchanged,
-    nextStep: NEXT_STEP,
+    removed: plan.removed,
+    unmanaged: plan.unmanaged,
+    notes,
+    nextStep,
   };
 
-  return { data, lines: renderGroups(data), nextStep: NEXT_STEP, exitCode: 0 };
+  return { data, lines: renderGroups(data), nextStep, exitCode: 0 };
 }
 
 function renderGroups(data: InitData): string[] {
@@ -88,6 +169,8 @@ function renderGroups(data: InitData): string[] {
     ["Created:", data.created],
     ["Updated:", data.updated],
     ["Left as is:", data.unchanged],
+    ["Removed:", data.removed],
+    ["Left for you to sort out:", data.unmanaged],
   ];
 
   const lines: string[] = [];
@@ -98,5 +181,5 @@ function renderGroups(data: InitData): string[] {
     lines.push(title, ...paths.map((entry) => `  ${entry}`));
   }
 
-  return lines;
+  return [...lines, ...data.notes];
 }

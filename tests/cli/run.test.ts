@@ -56,6 +56,6 @@ describe("run с флагом версии", () => {
     );
 
     expect(source).not.toMatch(/"\d+\.\d+\.\d+"/);
-    expect(source).toContain("package.json");
+    expect(source).toContain("packageVersion");
   });
 });
