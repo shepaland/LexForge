@@ -78,41 +78,34 @@ function findExecutable(directory: string, name: string): string | undefined {
 
 /**
  * The Windows search: the first extension of `PATHEXT` whose file lies in the
- * directory. Names are matched the way Windows matches them — without regard
- * to case — and the answer carries the name as it is written on disk, so the
- * path of the found command is the path that really exists.
+ * directory. Each name is asked for directly rather than by reading the whole
+ * directory — this runs over every entry of `PATH`, and some of them hold
+ * thousands of files. The directory is read once, on a hit, and only to learn
+ * the case the name is written in: Windows answers to any case, and the path
+ * in the answer has to be the path that really exists.
  */
 function findByExtension(
   directory: string,
   name: string,
   extensions: string[],
 ): string | undefined {
-  let entries: string[];
-  try {
-    entries = readdirSync(directory);
-  } catch {
-    return undefined;
-  }
-
-  const byLowerCase = new Map<string, string>();
-  for (const entry of entries) {
-    const key = entry.toLowerCase();
-    if (!byLowerCase.has(key)) {
-      byLowerCase.set(key, entry);
-    }
-  }
-
   for (const extension of extensions) {
-    const entry = byLowerCase.get((name + extension).toLowerCase());
-    if (entry === undefined) {
-      continue;
-    }
-
-    const candidate = path.join(directory, entry);
-    if (statSync(candidate, { throwIfNoEntry: false })?.isFile()) {
-      return candidate;
+    for (const written of [extension, extension.toLowerCase()]) {
+      const candidate = path.join(directory, name + written);
+      if (statSync(candidate, { throwIfNoEntry: false })?.isFile()) {
+        return path.join(directory, writtenName(directory, name + written));
+      }
     }
   }
 
   return undefined;
+}
+
+/** The entry of the directory that matches the name, in the case it is stored in. */
+function writtenName(directory: string, name: string): string {
+  try {
+    return readdirSync(directory).find((entry) => entry.toLowerCase() === name.toLowerCase()) ?? name;
+  } catch {
+    return name;
+  }
 }
