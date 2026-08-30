@@ -21,10 +21,13 @@ describe("список команд читается из программы CLI
     expect(knownCommandNames().slice().sort()).toEqual([
       "change",
       "check",
+      "evidence",
+      "evidence",
       "init",
       "instructions",
       "new",
       "plan",
+      "record",
       "status",
       "validate",
     ]);

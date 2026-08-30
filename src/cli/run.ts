@@ -2,6 +2,7 @@ import { Command, CommanderError } from "commander";
 
 import type { CommandResult, OutputStream } from "../core/types.js";
 import { registerCheck } from "./commands/check.js";
+import { registerEvidence } from "./commands/evidence.js";
 import { registerInit } from "./commands/init.js";
 import { registerInstructions } from "./commands/instructions.js";
 import { registerNew } from "./commands/new-change.js";
@@ -70,6 +71,7 @@ export function createProgram(context: CliContext): Command {
   registerInstructions(program, context);
   registerValidate(program, context);
   registerCheck(program, context);
+  registerEvidence(program, context);
 
   return program;
 }
