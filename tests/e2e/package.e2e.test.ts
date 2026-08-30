@@ -24,6 +24,15 @@ const SHIPPED = [
   "schemas/bounded/templates/tasks.md",
 ];
 
+/** The skills the package installs into a project. */
+const SKILL_NAMES = [
+  "lexforge",
+  "lexforge-design",
+  "lexforge-plan",
+  "lexforge-propose",
+  "lexforge-spec",
+];
+
 const created: string[] = [];
 let tarball = "";
 let unpacked = "";
@@ -74,6 +83,16 @@ describe("состав пакета", () => {
 
     expect(templates).toHaveLength(7);
   });
+
+  it("несёт пять файлов скиллов", () => {
+    const root = path.join(unpacked, "package");
+
+    for (const name of SKILL_NAMES) {
+      expect(existsSync(path.join(root, "skills", name, "SKILL.md")), name).toBe(true);
+    }
+
+    expect(readdirSync(path.join(root, "skills")).sort()).toEqual(SKILL_NAMES);
+  });
 });
 
 describe("установка в чужой проект", () => {
@@ -111,6 +130,29 @@ describe("установка в чужой проект", () => {
 
       expect(data.outputVersion).toBe(1);
       expect(data.change).toBe("smoke");
+    },
+    300_000,
+  );
+
+  it(
+    "init со списком инструментов раскладывает пять скиллов по каталогу агента",
+    () => {
+      const project = tempDir();
+
+      const install = spawnSync(
+        "npm",
+        ["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"],
+        { cwd: project, encoding: "utf8" },
+      );
+      expect(install.status).toBe(0);
+
+      const result = spawnSync("npx", ["lexforge", "init", "--tools", "claude"], {
+        cwd: project,
+        encoding: "utf8",
+      });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(readdirSync(path.join(project, ".claude", "skills")).sort()).toEqual(SKILL_NAMES);
     },
     300_000,
   );
