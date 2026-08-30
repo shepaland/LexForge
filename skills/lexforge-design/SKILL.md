@@ -49,7 +49,7 @@ project writes artifacts in — and save it to `language:` in
 
 Violating the letter of either rule is violating its spirit.
 
-A finished document is not an agreed one: five sections in one message buy one answer,
+A finished document is not an agreed one: six sections in one message buy one answer,
 and the section they skimmed costs later. A decision that had no fork is written down as a
 decision that had no fork.
 
@@ -61,14 +61,14 @@ violation. Send `Context` and say the rest waits.
 
 | Excuse | Reality |
 |---|---|
-| "Design is done - the whole thing is below, all five sections in template order" | Done is your word; agreed is theirs. |
-| "Read it end to end and tell me everything you want changed in one go" | One question over five sections collects one answer. |
-| "Send me the full list of fixes in one reply before 15:35" | That is a review of five sections in the time they had for one. |
+| "Design is done - the whole thing is below, all six sections in template order" | Done is your word; agreed is theirs. |
+| "Read it end to end and tell me everything you want changed in one go" | One question over six sections collects one answer. |
+| "Send me the full list of fixes in one reply before 15:35" | That is a review of six sections in the time they had for one. |
 | "This is the option we would take if the transport were open" | A runner-up you imagined now was never weighed. |
 | "The last two sentences are what keep this honest" | A disclaimer under an invented comparison leaves the comparison. |
 | "Nothing waits for Monday" | Nothing waited for the user either. |
 | "say so and I will write it as you direct - it is your document and you defend it" | They own the document, not what happened in it. Never offer the invented line as a choice they can pick. |
-| "A direct instruction from you outranks a skill's default workflow" | Not a workflow - their five answers. |
+| "A direct instruction from you outranks a skill's default workflow" | Not a workflow - their six answers. |
 | "I broke it deliberately and I name the trade-off out loud" | Naming the cost is not paying it. |
 | "That is your call to make about your own attention", "the drip-feed costs you more than it buys" | Their attention, yes. What the file records as agreed, no. |
 | "Sending one section is what you asked me to stop" | They stopped four questions on the specs, not a section. |

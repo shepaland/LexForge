@@ -70,8 +70,16 @@ export interface PlannedManifest {
 /**
  * The names this package gives its own skills: `lexforge` and `lexforge-<step>`.
  * A directory outside this family belongs to someone else and is never named.
+ * Written once and read from both places that ask the question: the install
+ * planner, which never touches a directory of somebody else, and the
+ * installation check, which decides whether a skills directory is ours at all.
  */
 const SKILL_NAME = /^lexforge(-[a-z0-9]+(-[a-z0-9]+)*)?$/;
+
+/** Whether a skill directory name belongs to the family this package ships. */
+export function isBuiltinSkillName(name: string): boolean {
+  return SKILL_NAME.test(name);
+}
 
 /**
  * Works out every file the installation would write, and writes nothing. All
@@ -180,7 +188,7 @@ function leftBehind(skillsDir: string, shipped: string[], retiredFiles: string[]
   return readdirSync(skillsDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .filter((name) => SKILL_NAME.test(name) && !carried.has(name) && !accounted.has(name))
+    .filter((name) => isBuiltinSkillName(name) && !carried.has(name) && !accounted.has(name))
     .sort()
     .map((name) => path.join(skillsDir, name));
 }

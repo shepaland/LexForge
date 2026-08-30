@@ -20,12 +20,13 @@ export interface DoctorEnv {
 
 /**
  * A `lexforge` stub in its own directory, so `checkPath` resolves the bare
- * name to itself: the file is never run, `checkPath` only checks it exists.
+ * name to itself. The file is never run; it carries the execute bit because
+ * that is what `checkPath` looks for — a shell runs nothing else.
  */
 export function stubOnPath(root: string): { pathValue: string; runningFile: string } {
   const runningFile = path.join(root, "bin", "lexforge");
   mkdirSync(path.dirname(runningFile), { recursive: true });
-  writeFileSync(runningFile, "#!/usr/bin/env node\n", "utf8");
+  writeFileSync(runningFile, "#!/usr/bin/env node\n", { encoding: "utf8", mode: 0o755 });
   return { pathValue: path.dirname(runningFile), runningFile };
 }
 

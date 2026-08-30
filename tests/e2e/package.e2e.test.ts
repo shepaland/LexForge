@@ -1,9 +1,9 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { copyFileSync, cpSync, existsSync, readdirSync, symlinkSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
@@ -44,7 +44,8 @@ const SKILL_FILES = ["lexforge-apply/reviewer-prompt.md"];
 const FORBIDDEN = ["tests", "openspec", "docs", ".claude", "node_modules", "src"];
 
 const created: string[] = [];
-let tarball = "";
+/** Собран один раз на весь прогон: см. `tests/e2e/pack-tarball.ts`. */
+const tarball = inject("tarball");
 let unpacked = "";
 
 function tempDir(): string {
@@ -54,16 +55,6 @@ function tempDir(): string {
 }
 
 beforeAll(() => {
-  const destination = tempDir();
-
-  const output = execFileSync(
-    "npm",
-    ["pack", "--pack-destination", destination, "--loglevel", "error"],
-    { cwd: REPO_ROOT, encoding: "utf8" },
-  );
-
-  tarball = path.join(destination, output.trim().split("\n").at(-1)!);
-
   unpacked = tempDir();
   execFileSync("tar", ["-xf", tarball, "-C", unpacked], { encoding: "utf8" });
 }, 180_000);
@@ -106,6 +97,36 @@ describe("состав пакета", () => {
     }
 
     expect(readdirSync(path.join(root, "skills")).sort()).toEqual(SKILL_NAMES);
+  });
+});
+
+describe("состав пакета, побайтная сверка с репозиторием", () => {
+  /** Каталоги, которые упаковка копирует как есть: собранного кода среди них нет. */
+  const COPIED = ["bin", "schemas", "skills"];
+
+  it("каждый поставленный файл совпадает с файлом репозитория побайтно", () => {
+    const root = path.join(unpacked, "package");
+    const differing: string[] = [];
+    let compared = 0;
+
+    for (const directory of COPIED) {
+      for (const relative of walk(path.join(root, directory))) {
+        const entry = path.join(directory, relative);
+        const shipped = readFileSync(path.join(root, entry));
+        const repository = path.join(REPO_ROOT, entry);
+        compared += 1;
+
+        if (!existsSync(repository) || !shipped.equals(readFileSync(repository))) {
+          differing.push(entry);
+        }
+      }
+    }
+
+    expect(readFileSync(path.join(root, "CHANGELOG.md")), "CHANGELOG.md").toEqual(
+      readFileSync(path.join(REPO_ROOT, "CHANGELOG.md")),
+    );
+    expect(differing).toEqual([]);
+    expect(compared).toBeGreaterThan(SKILL_NAMES.length);
   });
 });
 

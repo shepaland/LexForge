@@ -1,14 +1,11 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, inject, it } from "vitest";
 
 import { git } from "../helpers/git-workspace.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
-
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** The nine skills the package installs: five planning, four implementation. */
 const SKILL_NAMES = [
@@ -24,25 +21,14 @@ const SKILL_NAMES = [
 ];
 
 const created: string[] = [];
-let tarball = "";
+/** Собран один раз на весь прогон: см. `tests/e2e/pack-tarball.ts`. */
+const tarball = inject("tarball");
 
 function tempDir(): string {
   const dir = makeWorkspace();
   created.push(dir);
   return dir;
 }
-
-beforeAll(() => {
-  const destination = tempDir();
-
-  const output = execFileSync(
-    "npm",
-    ["pack", "--pack-destination", destination, "--loglevel", "error"],
-    { cwd: REPO_ROOT, encoding: "utf8" },
-  );
-
-  tarball = path.join(destination, output.trim().split("\n").at(-1)!);
-}, 180_000);
 
 afterAll(() => {
   while (created.length > 0) {

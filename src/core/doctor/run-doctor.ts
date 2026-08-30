@@ -48,7 +48,12 @@ export interface DoctorData {
   nextStep: string;
 }
 
-const HEALTHY_NEXT_STEP =
+/**
+ * What a run without findings names as the next step: the pipeline is entered
+ * by asking an agent, not by another command of this program. README quotes
+ * this line word for word, and a test holds the two together.
+ */
+export const HEALTHY_NEXT_STEP =
   "installation is healthy. Ask your agent to start work, for example: lexforge new change <name>";
 const FINDINGS_NEXT_STEP = "fix the findings above, then run: lexforge doctor";
 

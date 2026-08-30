@@ -7,6 +7,9 @@
  * файла в `lexforge-gate-commands` — для четырёх команд-ворот. Если снимок разошёлся
  * с решением, правится код, а не снимок.
  */
+import { readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+
 import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/run.js";
@@ -308,6 +311,69 @@ async function healthyInstall(): Promise<DoctorEnv> {
   doctorEnvs.push(env);
   return env;
 }
+
+/** One `doctor --json` run against a prepared installation. */
+async function doctorData(env: DoctorEnv): Promise<Record<string, unknown>> {
+  const capture = createCapture();
+  const exitCode = await run(["doctor", "--json"], {
+    cwd: env.cwd,
+    home: env.home,
+    pathValue: env.pathValue,
+    runningFile: env.runningFile,
+    stdout: capture.stdout,
+    stderr: capture.stderr,
+  });
+  expect(exitCode, capture.err).not.toBe(2);
+  return JSON.parse(capture.out) as Record<string, unknown>;
+}
+
+describe("контракт машинного вывода проверки установки", () => {
+  it("doctor на здоровой установке", async () => {
+    const answer = await doctorData(await healthyInstall());
+
+    expect(keys(answer)).toMatchSnapshot("doctor: ключи data");
+    expect(keys(answer.summary)).toMatchSnapshot("doctor: ключи summary");
+    expect(firstKeys(answer.checks)).toMatchSnapshot("doctor: ключи checks");
+    // Имена условий — публичный контракт наравне с именами полей: по ним
+    // скилл находит нужное условие в ответе.
+    expect(
+      (answer.checks as Array<{ id: string; title: string }>).map(
+        (check) => `${check.id}: ${check.title}`,
+      ),
+    ).toMatchSnapshot("doctor: имена и заголовки условий");
+  });
+
+  it("doctor с находкой о файле", async () => {
+    const env = await healthyInstall();
+    const installed = path.join(env.cwd, ".claude/skills/lexforge/SKILL.md");
+    writeFileSync(installed, `${readFileSync(installed, "utf8")}\nhand-edited\n`, "utf8");
+
+    const answer = await doctorData(env);
+
+    expect(firstKeys(answer.findings)).toMatchSnapshot("doctor: ключи findings");
+  });
+});
+
+describe("контракт машинного вывода инициализации", () => {
+  it("init со списком инструментов", async () => {
+    const root = makeWorkspace();
+    created.push(root);
+    const home = makeWorkspace();
+    created.push(home);
+    const capture = createCapture();
+
+    const exitCode = await run(["init", "--tools", "claude", "--json"], {
+      cwd: root,
+      home,
+      stdout: capture.stdout,
+      stderr: capture.stderr,
+    });
+    const answer = JSON.parse(capture.out) as Record<string, unknown>;
+
+    expect(exitCode, capture.err).toBe(0);
+    expect(keys(answer)).toMatchSnapshot("init: ключи data");
+  });
+});
 
 describe("коды возврата команды doctor", () => {
   it("здоровая установка даёт 0", async () => {

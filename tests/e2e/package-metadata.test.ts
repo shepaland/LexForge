@@ -36,6 +36,10 @@ describe("метаданные пакета", () => {
     }
   });
 
+  it("поле author несёт имя и почту", () => {
+    expect(manifest.author).toMatch(/^\S.* <[^\s<>@]+@[^\s<>@]+>$/);
+  });
+
   it("поле bin называет ровно одну команду lexforge", () => {
     expect(Object.keys(manifest.bin as Record<string, string>)).toEqual(["lexforge"]);
   });

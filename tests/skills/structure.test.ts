@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -98,6 +99,43 @@ describe("проверки структуры на каталоге skills", () 
     expect(dirs.slice().sort()).toEqual(
       [...PLANNING_SKILLS, ...IMPLEMENTATION_SKILLS].slice().sort(),
     );
+  });
+});
+
+describe("скилл проектирования и шаблон design", () => {
+  const NUMBER_WORDS = [
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+  ];
+
+  it("называет столько разделов, сколько заголовков несёт шаблон", () => {
+    const template = readFileSync(
+      fileURLToPath(new URL("../../schemas/spec-driven/templates/design.md", import.meta.url)),
+      "utf8",
+    );
+    const headings = template.match(/^## .+$/gm) ?? [];
+    const skill = readSkills(SKILLS).find((entry) => entry.dir === "lexforge-design");
+
+    expect(skill, "скилла lexforge-design нет в каталоге").toBeTruthy();
+    expect(headings.length).toBeGreaterThan(0);
+
+    // Разделы и ответы считаются вместе: ответ даётся на раздел, и число
+    // у них одно. «one answer» — про один ответ, а не про их число, и в счёт
+    // не идёт.
+    const named = [...skill!.body.matchAll(/\b([a-z]+) (?:sections|answers)\b/g)]
+      .map((match) => match[1]!)
+      .filter((word) => word !== "one");
+
+    expect(named.length).toBeGreaterThan(0);
+    expect([...new Set(named)]).toEqual([NUMBER_WORDS[headings.length]]);
   });
 });
 

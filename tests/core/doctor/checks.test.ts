@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { manifestPath, renderManifest } from "../../../src/core/init/install-manifest.js";
+import type { InstallScope } from "../../../src/core/init/tool-registry.js";
 import { toolDirectory } from "../../../src/core/init/tool-registry.js";
 import {
   checkPath,
@@ -34,13 +35,40 @@ function emptyHome(): string {
   return project();
 }
 
-/** Lays out a project-scope skill install for `tool`, as `planSkillInstall` would leave it. */
+/** A `lexforge` stub with the execute bit set: what a real installation leaves on `PATH`. */
+function writeExecutable(file: string): string {
+  writeFileSync(file, "#!/usr/bin/env node\n", { encoding: "utf8", mode: 0o755 });
+  return file;
+}
+
+/** A skill directory of somebody else: the name is outside the `lexforge` family. */
+function writeForeignSkill(skillsDir: string): string {
+  const file = path.join(skillsDir, "someone-elses-skill", "SKILL.md");
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, "---\nname: someone-elses-skill\n---\n\nNot ours.\n", "utf8");
+  return file;
+}
+
+/**
+ * Lays out a skill install for `tool`, as `planSkillInstall` would leave it.
+ * `target` is the project root for the project scope and the home directory
+ * for the user scope.
+ */
 function installSkills(
-  root: string,
+  target: string,
   tool: string,
-  options: { overrides?: Record<string, string>; version?: string; files?: string[] } = {},
+  options: {
+    overrides?: Record<string, string>;
+    version?: string;
+    files?: string[];
+    scope?: InstallScope;
+  } = {},
 ): string {
-  const skillsDir = path.resolve(root, toolDirectory(tool, "project"));
+  const scope = options.scope ?? "project";
+  const skillsDir =
+    scope === "project"
+      ? path.resolve(target, toolDirectory(tool, "project"))
+      : toolDirectory(tool, "user", target);
 
   for (const name of SHIPPED_FILES) {
     const content = readFileSync(path.join(SKILLS_DIR, name), "utf8");
@@ -55,7 +83,7 @@ function installSkills(
       version: options.version ?? VERSION,
       installedAt: "2026-08-29T10:00:00.000Z",
       tool,
-      scope: "project",
+      scope,
       files: options.files ?? SHIPPED_FILES,
     }),
     "utf8",
@@ -216,6 +244,84 @@ describe("checkSkills", () => {
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.rule).toBe("skills-modified");
   });
+
+  it("чужой каталог скиллов в домашнем каталоге находки не даёт при целой проектной установке", () => {
+    const root = project();
+    const home = emptyHome();
+    installSkills(root, "claude");
+    writeForeignSkill(path.join(home, ".claude", "skills"));
+
+    const result = checkSkills({ root, home, skillsDir: SKILLS_DIR, version: VERSION });
+
+    expect(result.findings).toEqual([]);
+  });
+
+  it("каталог с одними чужими скиллами установкой не считается: находка называет, что скиллы не ставились", () => {
+    const root = project();
+    const home = emptyHome();
+    writeForeignSkill(path.join(home, ".claude", "skills"));
+
+    const result = checkSkills({ root, home, skillsDir: SKILLS_DIR, version: VERSION });
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]!.rule).toBe("skills-not-installed");
+  });
+
+  it("на целой установке в пользовательской области ничего не даёт", () => {
+    const root = project();
+    const home = emptyHome();
+    installSkills(home, "claude", { scope: "user" });
+
+    const result = checkSkills({ root, home, skillsDir: SKILLS_DIR, version: VERSION });
+
+    expect(result.findings).toEqual([]);
+  });
+
+  it("на расхождении в пользовательской области находка зовёт команду с флагом области", () => {
+    const root = project();
+    const home = emptyHome();
+    const shipped = readFileSync(path.join(SKILLS_DIR, "sample-plan/SKILL.md"), "utf8");
+    installSkills(home, "claude", {
+      scope: "user",
+      overrides: {
+        "sample-plan/SKILL.md": shipped.replace("A sample skill.", "A hand-edited skill."),
+      },
+    });
+
+    const result = checkSkills({ root, home, skillsDir: SKILLS_DIR, version: VERSION });
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]!.rule).toBe("skills-modified");
+    expect(result.findings[0]!.message).toContain("lexforge init --tools claude --scope user");
+  });
+
+  it("на манифесте прошлой версии в пользовательской области находка зовёт команду с флагом области", () => {
+    const root = project();
+    const home = emptyHome();
+    installSkills(home, "claude", { scope: "user", version: "0.9.0" });
+
+    const result = checkSkills({ root, home, skillsDir: SKILLS_DIR, version: VERSION });
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]!.rule).toBe("skills-version-mismatch");
+    expect(result.findings[0]!.message).toContain("lexforge init --tools claude --scope user");
+  });
+
+  it("каталог со скиллом семейства lexforge без манифеста даёт находку с командой той же области", () => {
+    const root = project();
+    const home = emptyHome();
+    // Так выглядит установка версии, которая манифеста не писала: каталог
+    // скилла имени семейства есть, а файла, называющего его содержимое, нет.
+    const left = path.join(toolDirectory("claude", "user", home), "lexforge-plan", "SKILL.md");
+    mkdirSync(path.dirname(left), { recursive: true });
+    writeFileSync(left, "---\nname: lexforge-plan\n---\n\nLeft behind.\n", "utf8");
+
+    const result = checkSkills({ root, home, skillsDir: SKILLS_DIR, version: VERSION });
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]!.rule).toBe("skills-unmanaged");
+    expect(result.findings[0]!.message).toContain("lexforge init --tools claude --scope user");
+  });
 });
 
 describe("checkRepository", () => {
@@ -253,8 +359,8 @@ describe("resolveOnPath", () => {
   it("находит файл в первом каталоге списка", () => {
     const first = project();
     const second = project();
-    writeFileSync(path.join(first, "lexforge"), "#!/usr/bin/env node\n", "utf8");
-    writeFileSync(path.join(second, "lexforge"), "#!/usr/bin/env node\n", "utf8");
+    writeExecutable(path.join(first, "lexforge"));
+    writeExecutable(path.join(second, "lexforge"));
     const pathValue = [first, second].join(path.delimiter);
 
     expect(resolveOnPath("lexforge", pathValue)).toBe(path.join(first, "lexforge"));
@@ -265,6 +371,35 @@ describe("resolveOnPath", () => {
     const pathValue = [only].join(path.delimiter);
 
     expect(resolveOnPath("lexforge", pathValue)).toBeUndefined();
+  });
+
+  it("файл без бита запуска именем команды не считается", () => {
+    const only = project();
+    writeFileSync(path.join(only, "lexforge"), "#!/usr/bin/env node\n", {
+      encoding: "utf8",
+      mode: 0o644,
+    });
+
+    expect(resolveOnPath("lexforge", only)).toBeUndefined();
+  });
+
+  it("пропускает неисполняемый файл и находит исполняемый в следующем каталоге", () => {
+    const first = project();
+    const second = project();
+    writeFileSync(path.join(first, "lexforge"), "#!/usr/bin/env node\n", {
+      encoding: "utf8",
+      mode: 0o644,
+    });
+    const executable = writeExecutable(path.join(second, "lexforge"));
+
+    expect(resolveOnPath("lexforge", [first, second].join(path.delimiter))).toBe(executable);
+  });
+
+  it("каталог с именем команды именем команды не считается", () => {
+    const only = project();
+    mkdirSync(path.join(only, "lexforge"));
+
+    expect(resolveOnPath("lexforge", only)).toBeUndefined();
   });
 });
 
@@ -299,7 +434,7 @@ describe("checkPath", () => {
   it("когда разрешённый путь отличается от запущенного файла, находка называет оба пути", () => {
     const binDir = project();
     const resolved = path.join(binDir, "lexforge");
-    writeFileSync(resolved, "#!/usr/bin/env node\n", "utf8");
+    writeExecutable(resolved);
     const running = path.join(project(), "node_modules", ".bin", "lexforge");
 
     const result = checkPath({ pathValue: binDir, runningFile: running });
@@ -312,7 +447,7 @@ describe("checkPath", () => {
   it("когда разрешённый путь совпадает с запущенным файлом, ничего не даёт", () => {
     const binDir = project();
     const resolved = path.join(binDir, "lexforge");
-    writeFileSync(resolved, "#!/usr/bin/env node\n", "utf8");
+    writeExecutable(resolved);
 
     const result = checkPath({ pathValue: binDir, runningFile: resolved });
 

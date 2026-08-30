@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Spec-driven pipeline with gates that agents cannot skip",
   "license": "MIT",
-  "author": "shepaland",
+  "author": "shepaland <a.shepelkin@mail.ru>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/shepaland/LexForge.git"

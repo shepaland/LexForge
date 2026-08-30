@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { HEALTHY_NEXT_STEP } from "../../src/core/doctor/run-doctor.js";
 import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
 import { createPlainWorkspace, type GitWorkspace } from "../helpers/git-workspace.js";
@@ -100,6 +101,33 @@ describe("lexforge doctor", () => {
     );
     const passed = data.checks.filter((check) => check.findings.length === 0);
     expect(passed).toHaveLength(4);
+  });
+
+  it("чужие скиллы в домашнем каталоге агента не мешают: находок нет и код 0", async () => {
+    const env = await healthyEnv();
+    // Каталог `~/.claude/skills` есть у всякого, кто пользуется агентом.
+    // Здесь в нём лежит скилл, который LexForge не ставил.
+    const foreign = path.join(env.home, ".claude", "skills", "someone-elses-skill", "SKILL.md");
+    mkdirSync(path.dirname(foreign), { recursive: true });
+    writeFileSync(foreign, "---\nname: someone-elses-skill\n---\n\nNot ours.\n", "utf8");
+
+    const { exitCode, capture } = await call(["doctor", "--json"], env);
+    const data = JSON.parse(capture.out) as DoctorDocument;
+
+    expect(exitCode, capture.err).toBe(0);
+    expect(data.findings).toEqual([]);
+  });
+
+  it("без находок называет следующим шагом обращение к агенту", async () => {
+    const env = await healthyEnv();
+
+    const { exitCode, capture } = await call(["doctor"], env);
+    const machine = await call(["doctor", "--json"], env);
+    const data = JSON.parse(machine.capture.out) as DoctorDocument;
+
+    expect(exitCode, capture.err).toBe(0);
+    expect(data.nextStep).toBe(HEALTHY_NEXT_STEP);
+    expect(capture.out.trimEnd().split("\n").at(-1)).toBe(`Next step: ${HEALTHY_NEXT_STEP}`);
   });
 
   it("в каталоге без lexforge/ даёт код 1 и находку с командой инициализации", async () => {

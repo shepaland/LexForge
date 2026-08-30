@@ -263,3 +263,65 @@ exports[`контракт машинного вывода ворот > verify > 
   "staleLabels",
 ]
 `;
+
+exports[`контракт машинного вывода инициализации > init со списком инструментов > init: ключи data 1`] = `
+[
+  "created",
+  "nextStep",
+  "notes",
+  "outputVersion",
+  "removed",
+  "unchanged",
+  "unmanaged",
+  "updated",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода проверки установки > doctor на здоровой установке > doctor: имена и заголовки условий 1`] = `
+[
+  "workspace: Workspace and configuration",
+  "verification: Verification labels",
+  "skills: Installed skills",
+  "path: Command name on PATH",
+  "repository: Git repository",
+  "runtime: Node version",
+]
+`;
+
+exports[`контракт машинного вывода проверки установки > doctor на здоровой установке > doctor: ключи checks 1`] = `
+[
+  "findings",
+  "id",
+  "title",
+]
+`;
+
+exports[`контракт машинного вывода проверки установки > doctor на здоровой установке > doctor: ключи data 1`] = `
+[
+  "checks",
+  "findings",
+  "nextStep",
+  "outputVersion",
+  "summary",
+  "version",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода проверки установки > doctor на здоровой установке > doctor: ключи summary 1`] = `
+[
+  "checksPassed",
+  "checksTotal",
+  "findingsTotal",
+]
+`;
+
+exports[`контракт машинного вывода проверки установки > doctor с находкой о файле > doctor: ключи findings 1`] = `
+[
+  "level",
+  "message",
+  "path",
+  "rule",
+]
+`;

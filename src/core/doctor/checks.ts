@@ -1,11 +1,12 @@
-import { existsSync, readFileSync } from "node:fs";
+import { accessSync, constants, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
 import { tryGit } from "../git/repository.js";
 import { manifestPath, readManifest } from "../init/install-manifest.js";
-import { builtinSkillsDir } from "../init/plan-install.js";
+import { builtinSkillsDir, isBuiltinSkillName } from "../init/plan-install.js";
+import type { InstallScope } from "../init/tool-registry.js";
 import { knownTools, toolDirectory } from "../init/tool-registry.js";
 import { packageVersion, requiredNodeVersion } from "../package-info.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
@@ -139,8 +140,30 @@ export interface CheckSkillsOptions {
   version?: string;
 }
 
-function reinstallStep(tool: string): string {
-  return `lexforge init --tools ${tool}`;
+/**
+ * The command that repairs a finding. It names the scope the directory sits in:
+ * a finding about the user scope answered by an installation into the project
+ * writes new files somewhere else and leaves the finding standing.
+ */
+function reinstallStep(tool: string, scope: InstallScope): string {
+  return `lexforge init --tools ${tool}${scope === "user" ? " --scope user" : ""}`;
+}
+
+/**
+ * Whether this skills directory belongs to a LexForge installation: the install
+ * manifest lies next to it, or it holds a skill directory of the `lexforge`
+ * name family. A directory that holds only somebody else's skills is none of
+ * this check's business — `~/.claude/skills` is there on every machine that
+ * runs an agent, and its presence says nothing about LexForge.
+ */
+function isInstallDirectory(skillsDir: string, manifestFile: string): boolean {
+  if (existsSync(manifestFile)) {
+    return true;
+  }
+
+  return readdirSync(skillsDir, { withFileTypes: true }).some(
+    (entry) => entry.isDirectory() && isBuiltinSkillName(entry.name),
+  );
 }
 
 /**
@@ -148,6 +171,11 @@ function reinstallStep(tool: string): string {
  * written — for every known tool, in the project and in the home directory —
  * matches the shipped skill byte for byte, and its manifest names the current
  * package version.
+ *
+ * The question here is not which runtimes this machine has: that one is asked
+ * by `detectTools`, and it is answered by the directory of the agent itself.
+ * This check looks for installations of LexForge, and a skills directory
+ * without one is passed over.
  */
 export function checkSkills(options: CheckSkillsOptions): HealthCheck {
   const home = options.home ?? os.homedir();
@@ -161,12 +189,16 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
       const directory = toolDirectory(tool, scope, home);
       const skillsDir = scope === "project" ? path.resolve(options.root, directory) : directory;
 
-      if (!existsSync(skillsDir)) {
+      if (!statSync(skillsDir, { throwIfNoEntry: false })?.isDirectory()) {
+        continue;
+      }
+
+      const manifestFile = manifestPath(skillsDir);
+      if (!isInstallDirectory(skillsDir, manifestFile)) {
         continue;
       }
       foundAny = true;
 
-      const manifestFile = manifestPath(skillsDir);
       const manifest = existsSync(manifestFile)
         ? readManifest(readFileSync(manifestFile, "utf8"))
         : undefined;
@@ -177,7 +209,7 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
           level: "error",
           message:
             `${skillsDir} holds skills for ${tool} (${scope}) with no lexforge install ` +
-            `manifest, so its contents are unknown. Run "${reinstallStep(tool)}" to record it.`,
+            `manifest, so its contents are unknown. Run "${reinstallStep(tool, scope)}" to record it.`,
           path: skillsDir,
         });
         continue;
@@ -189,7 +221,7 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
           level: "error",
           message:
             `${skillsDir} was installed by lexforge ${manifest.version}, this is ${version}. ` +
-            `Run "${reinstallStep(tool)}" to update it.`,
+            `Run "${reinstallStep(tool, scope)}" to update it.`,
           path: skillsDir,
         });
       }
@@ -204,7 +236,7 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
             level: "error",
             message:
               `${installed} is listed in the install manifest but missing on disk. ` +
-              `Run "${reinstallStep(tool)}" to reinstall it.`,
+              `Run "${reinstallStep(tool, scope)}" to reinstall it.`,
             path: installed,
           });
           continue;
@@ -223,7 +255,7 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
             level: "error",
             message:
               `${installed} differs from the shipped skill. ` +
-              `Run "${reinstallStep(tool)}" to reinstall it.`,
+              `Run "${reinstallStep(tool, scope)}" to reinstall it.`,
             path: installed,
           });
         }
@@ -245,20 +277,31 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
 }
 
 /**
- * Looks for a file named `name` in the directories of `pathValue`, a
- * `PATH`-shaped, `path.delimiter`-separated list, in order, and returns the
+ * Looks for an executable file named `name` in the directories of `pathValue`,
+ * a `PATH`-shaped, `path.delimiter`-separated list, in order, and returns the
  * first one found. No process is started: the search reads the directories
- * directly, the same thing a shell does before it runs anything.
+ * directly, the same thing a shell does before it runs anything — and, like a
+ * shell, it passes over what it may not execute. A file without the execute
+ * bit and a directory of that name both leave the command name unresolved.
  */
 export function resolveOnPath(name: string, pathValue: string): string | undefined {
   for (const directory of pathValue.split(path.delimiter)) {
     if (!directory) {
       continue;
     }
+
     const candidate = path.join(directory, name);
-    if (existsSync(candidate)) {
-      return candidate;
+    if (!statSync(candidate, { throwIfNoEntry: false })?.isFile()) {
+      continue;
     }
+
+    try {
+      accessSync(candidate, constants.X_OK);
+    } catch {
+      continue;
+    }
+
+    return candidate;
   }
 
   return undefined;

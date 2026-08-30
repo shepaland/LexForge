@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { HEALTHY_NEXT_STEP } from "../../src/core/doctor/run-doctor.js";
 import { TOOL_DIRECTORIES, knownTools } from "../../src/core/init/tool-registry.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -30,6 +31,12 @@ describe("README для того, кто ставит", () => {
     for (const heading of REQUIRED_HEADINGS) {
       expect(readme, `в README нет заголовка «${heading}»`).toContain(`\n${heading}\n`);
     }
+  });
+
+  it("цитирует следующий шаг здоровой проверки слово в слово", () => {
+    expect(readme, "в README нет строки следующего шага из doctor").toContain(
+      `Next step: ${HEALTHY_NEXT_STEP}`,
+    );
   });
 
   it("называет каждый рантайм реестра и оба его каталога", () => {
