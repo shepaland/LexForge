@@ -158,6 +158,29 @@ describe("круг из четырёх вызовов", () => {
   );
 });
 
+describe("проверка сразу после установки", () => {
+  it(
+    "doctor даёт код 1 и называет отсутствие репозитория и пустой verification",
+    () => {
+      const project = installProject();
+
+      const init = lexforge(["init", "--tools", "claude"], project);
+      expect(init.status, init.stderr).toBe(0);
+
+      const doctor = lexforge(["doctor", "--json"], project);
+      const data = JSON.parse(doctor.stdout) as {
+        findings: Array<{ rule: string }>;
+      };
+      const rules = data.findings.map((finding) => finding.rule);
+
+      expect(doctor.status).toBe(1);
+      expect(rules).toContain("repository-missing");
+      expect(rules).toContain("verification-empty");
+    },
+    300_000,
+  );
+});
+
 describe("пакет потерял шаблон", () => {
   it(
     "new change падает на вызове, которому нужен пропавший шаблон",
