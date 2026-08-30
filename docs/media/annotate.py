@@ -70,7 +70,7 @@ ANNOTATIONS = [
         "at": (31.2, 35.3),
         "box": box(first_line=33, line_count=4, chars=76, scroll=2),
         "en": "And it says straight out what it cannot check. That part is on you.",
-        "ru": "А чего проверить не может — говорит прямо. Это остаётся человеку.",
+        "ru": "А что проверить не может — говорит прямо. Это остаётся человеку.",
     },
 ]
 
