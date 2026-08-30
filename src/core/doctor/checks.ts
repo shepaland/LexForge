@@ -39,10 +39,12 @@ export interface HealthCheck {
 }
 
 /**
- * Turns the `UsageError` a workspace lookup throws into a finding. `filePath`
- * is set when the error is about one file that exists at a known location —
- * `config.yaml` once its directory has been found — so the finding names the
- * path the spec asks for.
+ * Turns the `UsageError` a workspace lookup throws into a finding. The path
+ * comes from `filePath` when the caller already knows it — `config.yaml`
+ * once its directory has been found — and otherwise from the error itself
+ * (`workspace-incomplete` names its own known file). `workspace-not-found`
+ * sets neither: its search crossed the whole directory tree, so there is no
+ * single path to name.
  */
 function workspaceFinding(error: UsageError, filePath?: string): DoctorFinding {
   const nextStep = error.nextStep ? ` Run: ${error.nextStep}` : "";
@@ -51,8 +53,9 @@ function workspaceFinding(error: UsageError, filePath?: string): DoctorFinding {
     level: "error",
     message: `${error.message}${nextStep}`,
   };
-  if (filePath) {
-    finding.path = filePath;
+  const foundPath = filePath ?? error.path;
+  if (foundPath) {
+    finding.path = foundPath;
   }
   return finding;
 }

@@ -24,6 +24,7 @@ export function findWorkspaceRoot(cwd: string): string {
         "workspace-incomplete",
         `${workspace} exists but holds no ${CONFIG_FILE}. Run the initialisation to finish it.`,
         "lexforge init",
+        path.join(workspace, CONFIG_FILE),
       );
     }
 

@@ -5,11 +5,13 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
-import { createGitWorkspace, createPlainWorkspace, type GitWorkspace } from "../helpers/git-workspace.js";
+import { createPlainWorkspace, type GitWorkspace } from "../helpers/git-workspace.js";
+import { healthyDoctorEnv, stubOnPath, type DoctorEnv } from "../helpers/doctor-env.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 const created: string[] = [];
 const repositories: GitWorkspace[] = [];
+const envs: DoctorEnv[] = [];
 
 afterEach(() => {
   while (created.length > 0) {
@@ -18,44 +20,19 @@ afterEach(() => {
   while (repositories.length > 0) {
     repositories.pop()!.remove();
   }
+  while (envs.length > 0) {
+    envs.pop()!.remove();
+  }
 });
 
-interface Env {
-  cwd: string;
-  home: string;
-  pathValue: string;
-  runningFile: string;
+/** `healthyDoctorEnv`, registered for cleanup on this file's own `afterEach`. */
+async function healthyEnv(): Promise<DoctorEnv> {
+  const env = await healthyDoctorEnv();
+  envs.push(env);
+  return env;
 }
 
-/** A `lexforge` stub on its own directory, so `checkPath` resolves it to itself. */
-function stubOnPath(root: string): { pathValue: string; runningFile: string } {
-  const runningFile = path.join(root, "bin", "lexforge");
-  mkdirSync(path.dirname(runningFile), { recursive: true });
-  writeFileSync(runningFile, "#!/usr/bin/env node\n", "utf8");
-  return { pathValue: path.dirname(runningFile), runningFile };
-}
-
-/** A workspace, a repository with a commit and skills matching the shipped ones. */
-async function healthyEnv(): Promise<Env> {
-  const workspace = createGitWorkspace();
-  repositories.push(workspace);
-  const home = makeWorkspace();
-  created.push(home);
-  const stub = stubOnPath(workspace.root);
-
-  const initCapture = createCapture();
-  const initExit = await run(["init", "--tools", "claude"], {
-    cwd: workspace.root,
-    home,
-    stdout: initCapture.stdout,
-    stderr: initCapture.stderr,
-  });
-  expect(initExit, initCapture.err).toBe(0);
-
-  return { cwd: workspace.root, home, ...stub };
-}
-
-async function call(argv: string[], env: Env) {
+async function call(argv: string[], env: DoctorEnv) {
   const capture = createCapture();
   const exitCode = await run(argv, {
     cwd: env.cwd,
@@ -112,7 +89,7 @@ describe("lexforge doctor", () => {
       stderr: initCapture.stderr,
     });
 
-    const env: Env = { cwd: workspace.root, home, ...stub };
+    const env: DoctorEnv = { cwd: workspace.root, home, ...stub, remove: () => {} };
     const { exitCode, capture } = await call(["doctor", "--json"], env);
     const data = JSON.parse(capture.out) as DoctorDocument;
 
@@ -132,7 +109,7 @@ describe("lexforge doctor", () => {
     created.push(home);
     const stub = stubOnPath(root);
 
-    const { exitCode, capture } = await call(["doctor"], { cwd: root, home, ...stub });
+    const { exitCode, capture } = await call(["doctor"], { cwd: root, home, ...stub, remove: () => {} });
 
     expect(exitCode).toBe(1);
     expect(capture.err).toContain("lexforge init");
@@ -150,8 +127,7 @@ describe("lexforge doctor", () => {
 
   it("на сломанной установке не меняет ни один файл на диске", async () => {
     const env = await healthyEnv();
-    // Ломаем: правим руками поставленный скилл и удаляем репозиторий-коммит
-    // недоступен, поэтому портим содержимое скилла.
+    // Ломаем: правим руками поставленный скилл.
     const installed = path.join(env.cwd, ".claude/skills/lexforge/SKILL.md");
     writeFileSync(installed, `${readFileSync(installed, "utf8")}\nhand-edited\n`, "utf8");
 
@@ -174,7 +150,7 @@ describe("lexforge doctor", () => {
     created.push(home);
     const stub = stubOnPath(root);
 
-    await call(["doctor"], { cwd: root, home, ...stub });
+    await call(["doctor"], { cwd: root, home, ...stub, remove: () => {} });
 
     expect(existsSync(path.join(root, "marker.txt"))).toBe(false);
   });
@@ -186,7 +162,12 @@ describe("lexforge doctor", () => {
     created.push(home);
     const stub = stubOnPath(workspace.root);
 
-    const { capture } = await call(["doctor", "--json"], { cwd: workspace.root, home, ...stub });
+    const { capture } = await call(["doctor", "--json"], {
+      cwd: workspace.root,
+      home,
+      ...stub,
+      remove: () => {},
+    });
     const data = JSON.parse(capture.out) as DoctorDocument;
 
     expect(data.outputVersion).toBe(1);
@@ -218,6 +199,31 @@ describe("lexforge doctor", () => {
     const data = JSON.parse(capture.out) as DoctorDocument;
 
     expect(data.version).toBe(versionCapture.out.trim());
+  });
+
+  it("вызов из подкаталога с битым config.yaml называет корень проекта, а не подкаталог", async () => {
+    // Воспроизводит поломку, найденную ревью: `readProjectConfig` бросает
+    // исключение после того, как `findWorkspaceRoot` уже нашёл верный корень,
+    // и общий `catch` не должен откатывать уже найденный корень к `cwd`.
+    const root = makeWorkspace({
+      "lexforge/config.yaml": "schema: [unterminated\n",
+      "src/nested/.keep": "",
+    });
+    created.push(root);
+    const home = makeWorkspace();
+    created.push(home);
+    const stub = stubOnPath(root);
+    const subdirectory = path.join(root, "src", "nested");
+
+    const { capture } = await call(["doctor", "--json"], {
+      cwd: subdirectory,
+      home,
+      ...stub,
+      remove: () => {},
+    });
+    const data = JSON.parse(capture.out) as DoctorDocument;
+
+    expect(data.workspaceRoot).toBe(root);
   });
 });
 

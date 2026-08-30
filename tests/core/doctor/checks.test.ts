@@ -97,6 +97,16 @@ describe("checkWorkspace", () => {
     expect(result.findings[0]!.rule).toBeTruthy();
     expect(result.findings[0]!.path).toBe(path.join(root, "lexforge/config.yaml"));
   });
+
+  it("на каталоге lexforge/ без config.yaml находка называет путь известного файла", () => {
+    const root = project({ "lexforge/": "" });
+
+    const result = checkWorkspace(root);
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]!.rule).toBe("workspace-incomplete");
+    expect(result.findings[0]!.path).toBe(path.join(root, "lexforge/config.yaml"));
+  });
 });
 
 describe("checkVerification", () => {

@@ -62,16 +62,25 @@ const FINDINGS_NEXT_STEP = "fix the findings above, then run: lexforge doctor";
 export function runDoctor(options: RunDoctorOptions): CommandResult<DoctorData> {
   const version = options.version ?? packageVersion();
 
-  let root: string;
-  let verification: Record<string, string> = {};
-
   const workspace = checkWorkspace(options.cwd);
 
+  // Root and readable configuration are two separate failures, and the second
+  // must not roll back the first: a project with a workspace but a broken
+  // `config.yaml` still has a real root, and `checkSkills`/`checkRepository`
+  // below must see it, not `cwd`.
+  let root: string;
   try {
     root = findWorkspaceRoot(options.cwd);
-    verification = readProjectConfig(root).verification;
   } catch {
     root = path.resolve(options.cwd);
+  }
+
+  let verification: Record<string, string> = {};
+  try {
+    verification = readProjectConfig(root).verification;
+  } catch {
+    // Missing or unreadable config.yaml is already reported by `workspace`
+    // above; `checkVerification` reports the empty section as its own finding.
   }
 
   const checks: HealthCheck[] = [

@@ -7,13 +7,11 @@
  * файла в `lexforge-gate-commands` — для четырёх команд-ворот. Если снимок разошёлся
  * с решением, правится код, а не снимок.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
-import path from "node:path";
-
 import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
+import { healthyDoctorEnv, stubOnPath, type DoctorEnv } from "../helpers/doctor-env.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
@@ -296,32 +294,19 @@ describe("коды возврата команды архивации", () => {
   });
 });
 
-/** A `lexforge` stub on its own directory, so `checkPath` resolves it to itself. */
-function stubOnPath(root: string): { pathValue: string; runningFile: string } {
-  const runningFile = path.join(root, "bin", "lexforge");
-  mkdirSync(path.dirname(runningFile), { recursive: true });
-  writeFileSync(runningFile, "#!/usr/bin/env node\n", "utf8");
-  return { pathValue: path.dirname(runningFile), runningFile };
-}
+const doctorEnvs: DoctorEnv[] = [];
 
-/** A project doctor reads as healthy: workspace, skills, repository, PATH, runtime. */
-async function healthyInstall(): Promise<{ root: string; home: string; pathValue: string; runningFile: string }> {
-  const workspace = createGitWorkspace();
-  repositories.push(workspace);
-  const home = makeWorkspace();
-  created.push(home);
-  const stub = stubOnPath(workspace.root);
+afterEach(() => {
+  while (doctorEnvs.length > 0) {
+    doctorEnvs.pop()!.remove();
+  }
+});
 
-  const initCapture = createCapture();
-  const initExit = await run(["init", "--tools", "claude"], {
-    cwd: workspace.root,
-    home,
-    stdout: initCapture.stdout,
-    stderr: initCapture.stderr,
-  });
-  expect(initExit, initCapture.err).toBe(0);
-
-  return { root: workspace.root, home, ...stub };
+/** `healthyDoctorEnv`, registered for cleanup on this file's own `afterEach`. */
+async function healthyInstall(): Promise<DoctorEnv> {
+  const env = await healthyDoctorEnv();
+  doctorEnvs.push(env);
+  return env;
 }
 
 describe("коды возврата команды doctor", () => {
@@ -330,7 +315,7 @@ describe("коды возврата команды doctor", () => {
     const capture = createCapture();
 
     const exitCode = await run(["doctor"], {
-      cwd: env.root,
+      cwd: env.cwd,
       home: env.home,
       pathValue: env.pathValue,
       runningFile: env.runningFile,
@@ -366,7 +351,7 @@ describe("коды возврата команды doctor", () => {
     const capture = createCapture();
 
     const exitCode = await run(["doctor", "--fix"], {
-      cwd: env.root,
+      cwd: env.cwd,
       home: env.home,
       pathValue: env.pathValue,
       runningFile: env.runningFile,
