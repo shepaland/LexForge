@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { Command, CommanderError } from "commander";
 
 import type { CommandResult, OutputStream } from "../core/types.js";
@@ -47,12 +51,27 @@ export function createCliContext(options: RunOptions): CliContext {
   };
 }
 
+/**
+ * The version has one home: the `version` field of the package. Reading it
+ * here keeps the printed number and the published one from drifting apart.
+ * The manifest sits two levels above this module, both in `src/` and `dist/`.
+ */
+function packageVersion(): string {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+  const manifest = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")) as {
+    version: string;
+  };
+
+  return manifest.version;
+}
+
 export function createProgram(context: CliContext): Command {
   const program = new Command();
 
   program
     .name("lexforge")
     .description("Spec-driven pipeline with gates that agents cannot skip")
+    .version(packageVersion())
     .exitOverride()
     // A refused call prints the help of the command that refused it, so the
     // reader sees the flags that command does take. Without this an unknown
