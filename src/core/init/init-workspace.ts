@@ -35,7 +35,7 @@ export function initWorkspace(options: InitOptions): CommandResult<InitData> {
 
   // First pass: work the whole installation out. An unknown tool name throws
   // here, before the first directory is made, so nothing is written by halves.
-  const skills = planSkillInstall({
+  const plan = planSkillInstall({
     root: paths.root,
     tools: options.tools ?? [],
     skillsDir: options.skillsDir,
@@ -61,7 +61,7 @@ export function initWorkspace(options: InitOptions): CommandResult<InitData> {
   }
 
   // Second pass: write the plan that is already complete.
-  for (const skill of skills) {
+  for (const skill of plan.files) {
     if (skill.state === "unchanged") {
       unchanged.push(skill.path);
       continue;
