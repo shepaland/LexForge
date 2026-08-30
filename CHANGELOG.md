@@ -9,6 +9,28 @@ contract — a renamed or removed field of a `--json` answer, or a moved exit co
 major number. A new command or flag raises the minor number. A wording change to a skill,
 a template or a message printed to a person raises the patch number.
 
+## 1.1.0 — 2026-08-30
+
+Windows. Three defects the run on three systems brought out, and none of them touches
+the shape of an answer: no field is renamed, `outputVersion` stays `1`, and the exit
+codes are the ones 1.0.0 gave.
+
+### Contract
+
+- A path in an answer is written with `/` on every system. Only the form of the value
+  changes, and only on Windows, where a path used to carry the separator of the system.
+  A path handed to a command in an argument comes back as it was passed.
+
+### Other
+
+- Reading an artifact no longer depends on the line endings of the file. A delta spec,
+  a plan, a main spec or a configuration written with `\r\n` gives the same findings,
+  the same line numbers and the same exit code as one written with `\n`. On Windows
+  `validate --strict` used to answer `0` on a spec it had to reject, and say nothing.
+- `doctor` finds the command on PATH on Windows: the search goes through the extensions
+  of `PATHEXT`, where that system keeps what may be run. The execute bit is still
+  required on Linux and macOS, and a directory of that name is still not a command.
+
 ## 1.0.0 — 2026-08-30
 
 First published release.

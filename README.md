@@ -1,6 +1,7 @@
 # LexForge
 
 [![lexforge on npm](https://img.shields.io/npm/v/lexforge.svg)](https://www.npmjs.com/package/lexforge)
+[![CI](https://github.com/shepaland/LexForge/actions/workflows/ci.yml/badge.svg)](https://github.com/shepaland/LexForge/actions/workflows/ci.yml)
 [![license MIT](https://img.shields.io/npm/l/lexforge.svg)](LICENSE)
 
 **English** · [Русский](README.ru.md)
