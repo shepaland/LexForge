@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 
+import { answerPath } from "../answer-path.js";
 import { UsageError } from "../../cli/errors.js";
 import { loadSchema } from "../schemas/load-schema.js";
 import type { CommandResult } from "../types.js";
@@ -49,10 +50,10 @@ export function createChange(options: CreateChangeOptions): CommandResult<Create
 
   const data: CreateChangeData = {
     outputVersion: 1,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     change: name,
     schema: schemaName,
-    created: [changeDir, configFile],
+    created: [answerPath(changeDir), answerPath(configFile)],
     nextStep,
   };
 

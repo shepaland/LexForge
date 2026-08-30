@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
+import { answerPath, workspacePath } from "../answer-path.js";
 import { capabilityOf, listSpecFiles } from "../gates/coverage-rules.js";
 import { verifyChange } from "../gates/verify-change.js";
 import { describedLabels, verificationEmpty } from "../gates/verification-labels.js";
@@ -108,7 +109,7 @@ export function archiveChange(options: ArchiveChangeOptions): CommandResult<Arch
 
   const data: ArchiveChangeData = {
     outputVersion: 1,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     change: options.change,
     findings,
     summary: summarise(checks, merge?.conflicts.length ?? 0, written.length),
@@ -184,7 +185,7 @@ function readMerges(root: string, change: string, state: ChangeState): Capabilit
     }
 
     return files.map((file) => {
-      const relative = path.relative(specsDir, file).split(path.sep).join("/");
+      const relative = answerPath(path.relative(specsDir, file));
       const capability = capabilityOf(relative);
       const specFile = path.join(paths.specs, capability, "spec.md");
 
@@ -274,14 +275,6 @@ function localDate(now: Date): string {
   const pad = (value: number): string => String(value).padStart(2, "0");
 
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-/**
- * The path a reader is shown: relative to the workspace root and written with
- * forward slashes, so the same file reads the same way on every machine.
- */
-function workspacePath(root: string, file: string): string {
-  return path.relative(root, file).split(path.sep).join("/");
 }
 
 /** Counters the skill reads to learn which measure it has to go back to. */

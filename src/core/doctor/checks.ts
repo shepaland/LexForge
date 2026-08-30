@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
+import { answerPath } from "../answer-path.js";
 import { tryGit } from "../git/repository.js";
 import { manifestPath, readManifest } from "../init/install-manifest.js";
 import { builtinSkillsDir, isBuiltinSkillName } from "../init/plan-install.js";
@@ -56,7 +57,7 @@ function workspaceFinding(error: UsageError, filePath?: string): DoctorFinding {
   };
   const foundPath = filePath ?? error.path;
   if (foundPath) {
-    finding.path = foundPath;
+    finding.path = answerPath(foundPath);
   }
   return finding;
 }
@@ -96,7 +97,7 @@ export function checkWorkspace(cwd: string): HealthCheck {
         rule: "config-unreadable",
         level: "error",
         message: `config.yaml could not be read: ${error.message}`,
-        path: configPath,
+        path: answerPath(configPath),
       });
     } else {
       throw error;
@@ -193,6 +194,7 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
         continue;
       }
 
+      const shownDir = answerPath(skillsDir);
       const manifestFile = manifestPath(skillsDir);
       if (!isInstallDirectory(skillsDir, manifestFile)) {
         continue;
@@ -208,9 +210,9 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
           rule: "skills-unmanaged",
           level: "error",
           message:
-            `${skillsDir} holds skills for ${tool} (${scope}) with no lexforge install ` +
+            `${shownDir} holds skills for ${tool} (${scope}) with no lexforge install ` +
             `manifest, so its contents are unknown. Run "${reinstallStep(tool, scope)}" to record it.`,
-          path: skillsDir,
+          path: shownDir,
         });
         continue;
       }
@@ -220,24 +222,25 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
           rule: "skills-version-mismatch",
           level: "error",
           message:
-            `${skillsDir} was installed by lexforge ${manifest.version}, this is ${version}. ` +
+            `${shownDir} was installed by lexforge ${manifest.version}, this is ${version}. ` +
             `Run "${reinstallStep(tool, scope)}" to update it.`,
-          path: skillsDir,
+          path: shownDir,
         });
       }
 
       for (const file of manifest.files) {
         const installed = path.join(skillsDir, ...file.split("/"));
         const shipped = path.join(source, ...file.split("/"));
+        const shownFile = answerPath(installed);
 
         if (!existsSync(installed)) {
           findings.push({
             rule: "skills-file-missing",
             level: "error",
             message:
-              `${installed} is listed in the install manifest but missing on disk. ` +
+              `${shownFile} is listed in the install manifest but missing on disk. ` +
               `Run "${reinstallStep(tool, scope)}" to reinstall it.`,
-            path: installed,
+            path: shownFile,
           });
           continue;
         }
@@ -254,9 +257,9 @@ export function checkSkills(options: CheckSkillsOptions): HealthCheck {
             rule: "skills-modified",
             level: "error",
             message:
-              `${installed} differs from the shipped skill. ` +
+              `${shownFile} differs from the shipped skill. ` +
               `Run "${reinstallStep(tool, scope)}" to reinstall it.`,
-            path: installed,
+            path: shownFile,
           });
         }
       }
@@ -432,9 +435,10 @@ export function checkPath(options: CheckPathOptions): HealthCheck {
       rule: "path-multiple-installs",
       level: "error",
       message:
-        `"${name}" on PATH resolves to ${resolved}, but this run is ${options.runningFile}. ` +
+        `"${name}" on PATH resolves to ${answerPath(resolved)}, but this run is ` +
+        `${answerPath(options.runningFile)}. ` +
         "Two installations answer the same question differently.",
-      path: resolved,
+      path: answerPath(resolved),
     });
   }
 

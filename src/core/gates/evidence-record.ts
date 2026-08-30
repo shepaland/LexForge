@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
+import { answerPath, workspacePath } from "../answer-path.js";
 import { assertRepository, readHead } from "../git/repository.js";
 import { worktreeDigest } from "../git/worktree-digest.js";
 import type { CommandResult, OutputStream } from "../types.js";
@@ -121,7 +122,7 @@ export async function recordEvidence(
 
   const data: EvidenceRecordData = {
     outputVersion: 1,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     change: options.change,
     label: options.label,
     record,
@@ -145,5 +146,5 @@ export async function recordEvidence(
 
 /** The ledger path as a finding shows it: relative to the root, forward slashes. */
 function relativeEvidenceFile(root: string, change: string): string {
-  return path.relative(root, evidenceFile(root, change)).split(path.sep).join("/");
+  return workspacePath(root, evidenceFile(root, change));
 }

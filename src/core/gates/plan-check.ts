@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
+import { answerPath, workspacePath } from "../answer-path.js";
 import { readTextFile } from "../read-text.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
@@ -95,7 +96,7 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
 
   const data: CheckPlanData = {
     outputVersion: 1,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     change: options.change,
     findings,
     summary: summarise(findings),
@@ -124,14 +125,6 @@ function summarise(findings: Finding[]): CheckPlanSummary {
     coverage: count(COVERAGE_RULES),
     identifiers: count(IDENTIFIER_RULES),
   };
-}
-
-/**
- * The path a finding is shown with: relative to the workspace root and written
- * with forward slashes, so the same file reads the same way on every machine.
- */
-function workspacePath(root: string, file: string): string {
-  return path.relative(root, file).split(path.sep).join("/");
 }
 
 /** The plan file on its own line, every finding of it underneath. */

@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
+import { answerPath, workspacePath } from "../answer-path.js";
 import { changeBase, changedFiles } from "../git/change-base.js";
 import { assertRepository, readHead } from "../git/repository.js";
 import { worktreeDigest } from "../git/worktree-digest.js";
@@ -87,7 +88,7 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
 
   const data: VerifyChangeData = {
     outputVersion: 1,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     change: options.change,
     findings,
     notChecked: NOT_CHECKED,
@@ -237,7 +238,7 @@ function missingTrace(tasks: PlanTask[], changed: string[]): string | undefined 
 function evidenceFindings(root: string, change: string, labels: string[]): Finding[] {
   const current: CodeState = { head: readHead(root), worktreeDigest: worktreeDigest(root) };
   const ledger = readLedger(root, change);
-  const file = path.relative(root, evidenceFile(root, change)).split(path.sep).join("/");
+  const file = workspacePath(root, evidenceFile(root, change));
 
   const findings: Finding[] = [];
 
@@ -280,14 +281,6 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
     requirementsWithoutTrace: count("requirement-without-trace"),
     staleLabels: count("evidence-not-fresh"),
   };
-}
-
-/**
- * The path a finding is shown with: relative to the workspace root and written
- * with forward slashes, so the same file reads the same way on every machine.
- */
-function workspacePath(root: string, file: string): string {
-  return path.relative(root, file).split(path.sep).join("/");
 }
 
 /**

@@ -366,3 +366,29 @@ describe("lexforge init повторно", () => {
     expect(capture.out).toContain(config);
   });
 });
+
+describe("lexforge init: форма путей в ответе", () => {
+  it("пути, сложенные командой, записаны через косую черту", async () => {
+    const root = project();
+
+    const { capture } = await init(["init", "--json"], root);
+    const data = JSON.parse(capture.out) as {
+      created: string[];
+      unchanged: string[];
+      workspaceRoot: string;
+    };
+
+    for (const file of [...data.created, ...data.unchanged, data.workspaceRoot]) {
+      expect(file.includes("\\")).toBe(false);
+    }
+  });
+
+  it("каталог, переданный команде, назван в ответе тем же каталогом", async () => {
+    const root = project();
+
+    const { capture } = await init(["init", "--json"], root);
+    const data = JSON.parse(capture.out) as { workspaceRoot: string };
+
+    expect(path.resolve(data.workspaceRoot)).toBe(path.resolve(root));
+  });
+});

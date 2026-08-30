@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { answerPath } from "../answer-path.js";
 import { packageVersion } from "../package-info.js";
 import type { CommandResult } from "../types.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
@@ -103,7 +104,7 @@ export function runDoctor(options: RunDoctorOptions): CommandResult<DoctorData> 
   const data: DoctorData = {
     outputVersion: 1,
     version,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     checks,
     findings,
     summary: {

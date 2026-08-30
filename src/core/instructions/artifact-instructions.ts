@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
+import { answerPath } from "../answer-path.js";
 import type { ArtifactStatus } from "../artifact-graph/graph.js";
 import { builtinSchemasDir, loadSchema } from "../schemas/load-schema.js";
 import type { OutputKind } from "../schemas/output-target.js";
@@ -86,13 +87,13 @@ export function artifactInstructions(
     return {
       id: required.id,
       status: required.status,
-      resolvedOutputPath: required.resolvedOutputPath,
+      resolvedOutputPath: answerPath(required.resolvedOutputPath),
     };
   });
 
   const data: ArtifactInstructionsData = {
     outputVersion: 1,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     change: options.change,
     schema: schemaName,
     artifact: {
@@ -108,7 +109,7 @@ export function artifactInstructions(
     languageExplicit: project.languageExplicit,
     dependencies,
     blockedBy,
-    resolvedOutputPath: artifactState.resolvedOutputPath,
+    resolvedOutputPath: answerPath(artifactState.resolvedOutputPath),
     outputKind: artifactState.outputKind,
     nextStep,
   };

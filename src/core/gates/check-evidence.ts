@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
+import { answerPath, workspacePath } from "../answer-path.js";
 import { assertRepository, readHead } from "../git/repository.js";
 import { worktreeDigest } from "../git/worktree-digest.js";
 import type { CommandResult } from "../types.js";
@@ -100,7 +101,7 @@ export function checkEvidence(options: CheckEvidenceOptions): CommandResult<Chec
 
   const data: CheckEvidenceData = {
     outputVersion: 1,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     change: options.change,
     findings,
     labels: reports,
@@ -171,7 +172,7 @@ function labelsToCheck(config: ProjectConfig, required: string | undefined): str
 
 /** The ledger path as a finding shows it: relative to the root, forward slashes. */
 function relativeEvidenceFile(root: string, change: string): string {
-  return path.relative(root, evidenceFile(root, change)).split(path.sep).join("/");
+  return workspacePath(root, evidenceFile(root, change));
 }
 
 /** One line per label: the label, its state, and the command behind it. */

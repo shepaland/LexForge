@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
+import { workspacePath } from "../answer-path.js";
 import { nextStepForChange } from "../next-step.js";
 import { readTextFile } from "../read-text.js";
 import { loadSchema } from "../schemas/load-schema.js";
@@ -136,14 +137,6 @@ export function validateChange(
     nextStep: data.nextStep,
     exitCode: findings.length > 0 ? 1 : 0,
   };
-}
-
-/**
- * The path a finding is shown with: relative to the workspace root and written
- * with forward slashes, so the same file reads the same way on every machine.
- */
-function workspacePath(root: string, file: string): string {
-  return path.relative(root, file).split(path.sep).join("/");
 }
 
 /** Files the artifact has written: one path for a file, the whole set for a glob. */

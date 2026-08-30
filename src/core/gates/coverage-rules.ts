@@ -1,6 +1,7 @@
 import { readdirSync } from "node:fs";
 import path from "node:path";
 
+import { answerPath } from "../answer-path.js";
 import { readTextFile } from "../read-text.js";
 import { loadSchema } from "../schemas/load-schema.js";
 import { parseOutputTarget, type OutputTarget } from "../schemas/output-target.js";
@@ -156,7 +157,7 @@ function readRequirements(changeDir: string, target: OutputTarget): DeltaRequire
   const requirements: DeltaRequirement[] = [];
 
   for (const file of listSpecFiles(specsDir, `.${target.extension}`)) {
-    const relative = path.relative(specsDir, file).split(path.sep).join("/");
+    const relative = answerPath(path.relative(specsDir, file));
     const capability = capabilityOf(relative);
     const scan = scanSpec(relative, readTextFile(file));
 

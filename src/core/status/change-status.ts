@@ -3,6 +3,7 @@ import {
   type ArtifactState,
   type ChangeState,
 } from "../artifact-graph/graph.js";
+import { answerPath } from "../answer-path.js";
 import { probeFilled } from "../artifact-graph/probe-filled.js";
 import { nextStepForChange } from "../next-step.js";
 import { loadSchema } from "../schemas/load-schema.js";
@@ -63,11 +64,14 @@ export function changeStatus(options: ChangeStatusOptions): CommandResult<Change
 
   const data: ChangeStatusData = {
     outputVersion: 1,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     change: options.change,
     schema,
     isPlanningComplete: state.isPlanningComplete,
-    artifacts: state.artifacts,
+    artifacts: state.artifacts.map((artifact) => ({
+      ...artifact,
+      resolvedOutputPath: answerPath(artifact.resolvedOutputPath),
+    })),
     nextStep,
   };
 

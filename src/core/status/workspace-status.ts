@@ -1,3 +1,4 @@
+import { answerPath } from "../answer-path.js";
 import { NEW_CHANGE_STEP, nextStepForChange } from "../next-step.js";
 import type { CommandResult } from "../types.js";
 import { listActiveChanges } from "../workspace/change-config.js";
@@ -54,7 +55,7 @@ export function workspaceStatus(
 
   const data: WorkspaceStatusData = {
     outputVersion: 1,
-    workspaceRoot: root,
+    workspaceRoot: answerPath(root),
     changes,
     nextStep: nextStep === "" ? NEW_CHANGE_STEP : nextStep,
   };

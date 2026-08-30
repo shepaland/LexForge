@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { answerPath } from "../answer-path.js";
 import { tryGit } from "../git/repository.js";
 import { packageVersion } from "../package-info.js";
 import type { CommandResult } from "../types.js";
@@ -151,12 +152,12 @@ export function initWorkspace(options: InitOptions): CommandResult<InitData> {
 
   const data: InitData = {
     outputVersion: 1,
-    workspaceRoot: paths.root,
-    created,
-    updated,
-    unchanged,
-    removed: plan.removed,
-    unmanaged: plan.unmanaged,
+    workspaceRoot: answerPath(paths.root),
+    created: created.map((file) => answerPath(file)),
+    updated: updated.map((file) => answerPath(file)),
+    unchanged: unchanged.map((file) => answerPath(file)),
+    removed: plan.removed.map((file) => answerPath(file)),
+    unmanaged: plan.unmanaged.map((file) => answerPath(file)),
     notes,
     nextStep,
   };
