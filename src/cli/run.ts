@@ -8,6 +8,7 @@ import { registerInstructions } from "./commands/instructions.js";
 import { registerNew } from "./commands/new-change.js";
 import { registerStatus } from "./commands/status.js";
 import { registerValidate } from "./commands/validate.js";
+import { registerVerify } from "./commands/verify.js";
 import { UsageError } from "./errors.js";
 import { renderUsageError } from "./render.js";
 
@@ -72,6 +73,7 @@ export function createProgram(context: CliContext): Command {
   registerValidate(program, context);
   registerCheck(program, context);
   registerEvidence(program, context);
+  registerVerify(program, context);
 
   return program;
 }

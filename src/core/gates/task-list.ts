@@ -36,6 +36,11 @@ export interface PlanTask {
   /** The whole task text, continuation lines joined with a space. */
   text: string;
   /**
+   * The first line of the task, without the number. A finding names it, so the
+   * reader recognises the task without opening the file.
+   */
+  firstLine: string;
+  /**
    * The task text with the number and the requirement references taken out:
    * what the author actually wrote about the work. Rules that measure the
    * task read this, so a reference does not pass for a description.
@@ -90,6 +95,7 @@ export function parseTaskList(content: string): PlanTask[] {
       line: startLine,
       done: match[1] !== " ",
       text: join(own),
+      firstLine: own[0]!,
       cleanText: join(own.map((part) => part.replace(REQUIREMENT_LINK, "").trim())),
       links: own.flatMap(readLink),
       files: readFiles(own),

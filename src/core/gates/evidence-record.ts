@@ -24,6 +24,13 @@ export interface RecordEvidenceOptions {
   stderr: OutputStream;
 }
 
+export interface EvidenceRecordSummary {
+  /** Stamps this call wrote: one, always. */
+  recorded: number;
+  /** Of them, the ones whose run came back with a non-zero code. */
+  failed: number;
+}
+
 export interface EvidenceRecordData {
   outputVersion: 1;
   workspaceRoot: string;
@@ -32,6 +39,7 @@ export interface EvidenceRecordData {
   /** The stamp as it was written to the ledger. */
   record: EvidenceRecord;
   findings: Finding[];
+  summary: EvidenceRecordSummary;
   nextStep: string;
 }
 
@@ -118,6 +126,9 @@ export async function recordEvidence(
     label: options.label,
     record,
     findings,
+    // The same six fields every gate answers with, so a skill reads one shape
+    // whichever gate it called.
+    summary: { recorded: 1, failed: failed ? 1 : 0 },
     nextStep,
   };
 

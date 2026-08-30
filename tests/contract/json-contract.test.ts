@@ -3,13 +3,15 @@
  * скиллы. Строки человеческого вывода меняются от версии к версии и контрактом
  * не считаются, поэтому в снимок не попадают.
  *
- * Имена полей заданы решением 10 файла `design.md`. Если снимок разошёлся
+ * Имена полей заданы решением 10 файла `design.md` этапа 1 и решением 13 того же
+ * файла в `lexforge-gate-commands` — для четырёх команд-ворот. Если снимок разошёлся
  * с решением, правится код, а не снимок.
  */
 import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
+import { createGitWorkspace, type GitWorkspace } from "../helpers/git-workspace.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 const created: string[] = [];
@@ -129,4 +131,111 @@ describe("человеческий вывод опирается на то же 
       expect(lines.at(-1)).toBe(`Next step: ${machine.nextStep as string}`);
     });
   }
+});
+
+/** Two checks: one that passes, one that fails, so both stamps can be taken. */
+const GATE_CONFIG = `schema: spec-driven
+verification:
+  tests: node -e "process.exit(0)"
+  red: node -e "process.exit(1)"
+`;
+
+/** A plan the gates have something to say about: one open task, one placeholder. */
+const GATE_PLAN = [
+  "## 1. Вход",
+  "",
+  "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
+  "      -> auth#Change carries a delta spec",
+  "- [ ] 1.2 TODO",
+  "",
+].join("\n");
+
+const repositories: GitWorkspace[] = [];
+
+afterEach(() => {
+  while (repositories.length > 0) {
+    repositories.pop()!.remove();
+  }
+});
+
+/** A project inside a repository: what the four gates need to run at all. */
+function gateProject(): string {
+  const made = createGitWorkspace({
+    "lexforge/config.yaml": GATE_CONFIG,
+    "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
+    "lexforge/changes/add-auth/specs/auth/spec.md": VALID_SPEC,
+    "lexforge/changes/add-auth/design.md": "## Context\n\nOne service, one database.\n",
+    "lexforge/changes/add-auth/tasks.md": GATE_PLAN,
+  });
+  repositories.push(made);
+  return made.root;
+}
+
+/** The four gates, each called so that it reports at least one finding. */
+const GATES: Array<[string, string[], string]> = [
+  ["check plan", ["check", "plan", "--change", "add-auth"], "lexforge check plan --change add-auth"],
+  [
+    "evidence record",
+    ["evidence", "record", "--change", "add-auth", "--label", "red"],
+    "lexforge evidence record --change add-auth --label red",
+  ],
+  [
+    "check evidence",
+    ["check", "evidence", "--change", "add-auth", "--require", "tests"],
+    "lexforge check evidence --change add-auth",
+  ],
+  ["verify", ["verify", "--change", "add-auth"], "lexforge verify --change add-auth"],
+];
+
+describe("следующий шаг ворот при находках", () => {
+  for (const [name, argv, gate] of GATES) {
+    it(`${name}: следующий шаг зовёт те же ворота повторно`, async () => {
+      const root = gateProject();
+      const { exitCode, capture } = await call([...argv, "--json"], root);
+      const answer = JSON.parse(capture.out) as { nextStep: string };
+
+      expect(exitCode, capture.err).toBe(1);
+      expect(answer.nextStep).toContain(`then run: ${gate}`);
+    });
+  }
+});
+
+describe("контракт машинного вывода ворот", () => {
+  it("check plan", async () => {
+    const answer = await data(["check", "plan", "--change", "add-auth"], gateProject());
+
+    expect(keys(answer)).toMatchSnapshot("check plan: ключи data");
+    expect(keys(answer.summary)).toMatchSnapshot("check plan: ключи summary");
+    expect(firstKeys(answer.findings)).toMatchSnapshot("check plan: ключи findings");
+  });
+
+  it("evidence record", async () => {
+    const answer = await data(
+      ["evidence", "record", "--change", "add-auth", "--label", "red"],
+      gateProject(),
+    );
+
+    expect(keys(answer)).toMatchSnapshot("evidence record: ключи data");
+    expect(keys(answer.summary)).toMatchSnapshot("evidence record: ключи summary");
+    expect(keys(answer.record)).toMatchSnapshot("evidence record: ключи record");
+    expect(firstKeys(answer.findings)).toMatchSnapshot("evidence record: ключи findings");
+  });
+
+  it("check evidence", async () => {
+    const answer = await data(["check", "evidence", "--change", "add-auth"], gateProject());
+
+    expect(keys(answer)).toMatchSnapshot("check evidence: ключи data");
+    expect(keys(answer.summary)).toMatchSnapshot("check evidence: ключи summary");
+    expect(firstKeys(answer.labels)).toMatchSnapshot("check evidence: ключи labels");
+    expect(firstKeys(answer.findings)).toMatchSnapshot("check evidence: ключи findings");
+  });
+
+  it("verify", async () => {
+    const answer = await data(["verify", "--change", "add-auth"], gateProject());
+
+    expect(keys(answer)).toMatchSnapshot("verify: ключи data");
+    expect(keys(answer.summary)).toMatchSnapshot("verify: ключи summary");
+    expect(firstKeys(answer.findings)).toMatchSnapshot("verify: ключи findings");
+  });
 });

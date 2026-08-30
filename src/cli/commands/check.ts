@@ -19,6 +19,9 @@ export function registerCheck(program: Command, context: CliContext): void {
   group
     .command("plan")
     .description(CHECK_PLAN_DESCRIPTION)
+    // Nothing beyond the flags below is taken: an argument the gate quietly
+    // ignores is the first place a way around it gets tried.
+    .allowExcessArguments(false)
     .requiredOption("--change <name>", "change whose plan is checked")
     .option("--json", "print one JSON document instead of human output")
     .action((options: { change: string; json?: boolean }) => {

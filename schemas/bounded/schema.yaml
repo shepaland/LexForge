@@ -64,5 +64,10 @@ artifacts:
       Leave no placeholder behind. Do not write TBD, TODO, or "same as task 3".
 
       Every requirement from the delta specs needs at least one task that covers it.
+      End the line of that task with -> <capability>#<requirement name>, the name
+      copied from the "### Requirement:" heading word for word.
 
-      Next step: implement the change task by task, ticking each checkbox in tasks.md.
+      Then run the gate. Fix what it reports and run it again. Only when it returns
+      exit code 0 do you implement the change, task by task.
+
+      Next step: lexforge check plan --change <name>

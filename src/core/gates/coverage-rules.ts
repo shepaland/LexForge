@@ -72,12 +72,14 @@ export function checkCoverage(plan: PlanTasks, delta: DeltaSpecs): Finding[] {
   const planned = new Set<string>();
 
   const written = new Set(
-    delta.requirements.map((requirement) => keyOf(requirement.capability, requirement.name)),
+    delta.requirements.map((requirement) =>
+      requirementKey(requirement.capability, requirement.name),
+    ),
   );
 
   for (const task of plan.tasks) {
     for (const link of task.links) {
-      const key = keyOf(link.capability, link.requirement);
+      const key = requirementKey(link.capability, link.requirement);
       planned.add(key);
 
       if (written.has(key)) {
@@ -98,7 +100,7 @@ export function checkCoverage(plan: PlanTasks, delta: DeltaSpecs): Finding[] {
   }
 
   for (const requirement of delta.requirements) {
-    if (planned.has(keyOf(requirement.capability, requirement.name))) {
+    if (planned.has(requirementKey(requirement.capability, requirement.name))) {
       continue;
     }
 
@@ -139,7 +141,7 @@ function knownNames(delta: DeltaSpecs, capability: string): string {
  * the case stays as it is. A requirement name is a heading, and a heading that
  * differs in case is a difference worth seeing.
  */
-function keyOf(capability: string, requirement: string): string {
+export function requirementKey(capability: string, requirement: string): string {
   return `${capability}#${requirement.replace(/\s+/g, " ").trim()}`;
 }
 

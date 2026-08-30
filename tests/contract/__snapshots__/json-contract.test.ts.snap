@@ -122,3 +122,144 @@ exports[`контракт машинного вывода > отказ при м
   "message",
 ]
 `;
+
+exports[`контракт машинного вывода ворот > check evidence > check evidence: ключи data 1`] = `
+[
+  "change",
+  "findings",
+  "labels",
+  "nextStep",
+  "outputVersion",
+  "summary",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода ворот > check evidence > check evidence: ключи findings 1`] = `
+[
+  "file",
+  "level",
+  "line",
+  "message",
+  "rule",
+]
+`;
+
+exports[`контракт машинного вывода ворот > check evidence > check evidence: ключи labels 1`] = `
+[
+  "command",
+  "head",
+  "label",
+  "recordedAt",
+  "state",
+]
+`;
+
+exports[`контракт машинного вывода ворот > check evidence > check evidence: ключи summary 1`] = `
+[
+  "checked",
+  "fresh",
+]
+`;
+
+exports[`контракт машинного вывода ворот > check plan > check plan: ключи data 1`] = `
+[
+  "change",
+  "findings",
+  "nextStep",
+  "outputVersion",
+  "summary",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода ворот > check plan > check plan: ключи findings 1`] = `
+[
+  "file",
+  "level",
+  "line",
+  "message",
+  "rule",
+]
+`;
+
+exports[`контракт машинного вывода ворот > check plan > check plan: ключи summary 1`] = `
+[
+  "coverage",
+  "identifiers",
+  "placeholders",
+]
+`;
+
+exports[`контракт машинного вывода ворот > evidence record > evidence record: ключи data 1`] = `
+[
+  "change",
+  "findings",
+  "label",
+  "nextStep",
+  "outputVersion",
+  "record",
+  "summary",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода ворот > evidence record > evidence record: ключи findings 1`] = `
+[
+  "file",
+  "level",
+  "line",
+  "message",
+  "rule",
+]
+`;
+
+exports[`контракт машинного вывода ворот > evidence record > evidence record: ключи record 1`] = `
+[
+  "command",
+  "durationMs",
+  "exitCode",
+  "head",
+  "outputTail",
+  "outputTruncated",
+  "startedAt",
+  "worktreeDigest",
+]
+`;
+
+exports[`контракт машинного вывода ворот > evidence record > evidence record: ключи summary 1`] = `
+[
+  "failed",
+  "recorded",
+]
+`;
+
+exports[`контракт машинного вывода ворот > verify > verify: ключи data 1`] = `
+[
+  "change",
+  "findings",
+  "nextStep",
+  "notChecked",
+  "outputVersion",
+  "summary",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода ворот > verify > verify: ключи findings 1`] = `
+[
+  "file",
+  "level",
+  "line",
+  "message",
+  "rule",
+]
+`;
+
+exports[`контракт машинного вывода ворот > verify > verify: ключи summary 1`] = `
+[
+  "openTasks",
+  "requirementsWithoutTrace",
+  "staleLabels",
+]
+`;

@@ -34,6 +34,13 @@ describe.each(SCHEMAS)("инструкции схемы %s", (name) => {
     });
   });
 
+  it("инструкция плана называет ворота check plan", () => {
+    const tasks = schema.artifacts.find((artifact) => artifact.id === "tasks")!;
+
+    expect(tasks.instruction).toContain("lexforge check plan --change");
+    expect(lastNonEmptyLine(tasks.instruction)).toContain("lexforge check plan --change");
+  });
+
   it("инструкция последнего артефакта называет переход к реализации", () => {
     const last = schema.artifacts[schema.artifacts.length - 1]!;
 

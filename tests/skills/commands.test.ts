@@ -30,6 +30,7 @@ describe("список команд читается из программы CLI
       "record",
       "status",
       "validate",
+      "verify",
     ]);
   });
 });

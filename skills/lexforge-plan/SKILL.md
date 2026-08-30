@@ -55,7 +55,8 @@ step you do not understand is a question for the user, asked now.
 - Numbered sections; tasks `- [ ] 1.1`, one action each.
 - Every task names the file it touches and the command that confirms it.
 - Every requirement of the delta specs is closed by at least one task, and that task
-  names the requirement.
+  ends a line with `-> <capability>#<requirement name>`, the name copied word for word
+  from its `### Requirement:` heading. A typo there leaves the requirement unplanned.
 - A task that changes code is three tasks: write the failing test with the assertion in
   it, run it and see it fail, write the implementation. A ten-line diff does not merge
   them, and a green suite that never touches the new behaviour proves nothing.
@@ -77,6 +78,7 @@ step you do not understand is a question for the user, asked now.
 - A task pointing at another task instead of naming the file and the field.
 - A code task with no step that runs the test and sees it fail.
 - A requirement of the delta specs no task names.
+- A reference to a requirement no delta spec of the change carries.
 - A defect announced in a note and left in the file.
 - Your recommendation standing in for the user's decision.
 
@@ -86,5 +88,7 @@ Stop and ask the question you avoided.
 
 Follow `template` from `lexforge instructions tasks --change <name> --json`; read every
 delta spec of the change first, so the tasks cover its requirements. Run
-`lexforge validate <name> --strict` until it exits `0`. Then show the user the finished
-artifacts and stop: implementation starts on their next request.
+`lexforge validate <name> --strict` and then `lexforge check plan --change <name>`, each
+until it exits `0`. Every finding of the gate is a task not written yet; rewrite the
+task, never the rule. Then show the user the finished artifacts and stop: implementation
+starts on their next request.
