@@ -105,7 +105,11 @@ describe("recordEvidence: команда не запустилась", () => {
       error = thrown;
     }
 
-    expect(error).toBeInstanceOf(UsageError);
+    // Сообщение называет записанный штамп: отказа не было — значит, оболочка
+    // ответила кодом, которого `commandNeverStarted` не знает, и он виден здесь.
+    expect(error, readFileSync(join(workspace.root, LEDGER_PATH), "utf8")).toBeInstanceOf(
+      UsageError,
+    );
     expect((error as UsageError).code).toBe("evidence-command-failed");
     expect((error as UsageError).message).toContain("ghost");
     expect((error as UsageError).message).toContain("lexforge-no-such-binary-here");

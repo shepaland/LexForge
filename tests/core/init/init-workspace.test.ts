@@ -79,7 +79,7 @@ describe("initWorkspace, повторный запуск", () => {
     expect(result.data.unchanged).toEqual(
       expect.arrayContaining([
         answerPath(path.join(root, "lexforge/config.yaml")),
-        path.join(root, "lexforge/changes/archive"),
+        answerPath(path.join(root, "lexforge/changes/archive")),
       ]),
     );
   });

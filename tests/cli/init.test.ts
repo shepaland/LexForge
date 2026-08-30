@@ -225,7 +225,7 @@ describe("lexforge init, вывод путей", () => {
     for (const entry of paths) {
       expect(path.isAbsolute(entry), entry).toBe(true);
     }
-    expect(paths.some((entry) => entry.startsWith(home))).toBe(true);
+    expect(paths.some((entry) => entry.startsWith(answerPath(home)))).toBe(true);
   });
 });
 
@@ -282,7 +282,7 @@ describe("lexforge init, правленый скилл", () => {
       readFileSync(path.join(SKILLS_DIR, "lexforge/SKILL.md"), "utf8"),
     );
     expect(capture.out).toContain("Updated:");
-    expect(capture.out).toContain(installed);
+    expect(capture.out).toContain(answerPath(installed));
   });
 });
 
@@ -368,7 +368,7 @@ describe("lexforge init повторно", () => {
       "# Why\n",
     );
     expect(capture.out).toContain("Left as is:");
-    expect(capture.out).toContain(config);
+    expect(capture.out).toContain(answerPath(config));
   });
 });
 
