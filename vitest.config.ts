@@ -18,11 +18,16 @@ export default defineConfig({
     // Два проекта заведены ради одного: архив пакета нужен только файлам
     // `tests/e2e`, собирается их `globalSetup` до первого файла тестов,
     // и прогон одних модульных тестов за эту сборку не платит.
+    //
+    // Идут они по очереди, а не вместе: сквозные тесты ставят пакет через npm,
+    // и пока это шло рядом с модульными, главный процесс не успевал отвечать
+    // рабочим процессам. Очередь названа через `groupOrder`.
     projects: [
       {
         test: {
           name: "unit",
           ...limits,
+          sequence: { groupOrder: 0 },
           include: ["tests/**/*.test.ts"],
           exclude: ["**/node_modules/**", "tests/e2e/**"],
         },
@@ -31,6 +36,7 @@ export default defineConfig({
         test: {
           name: "e2e",
           ...limits,
+          sequence: { groupOrder: 1 },
           include: ["tests/e2e/**/*.test.ts"],
           exclude: ["**/node_modules/**"],
           // Гонку за общий каталог `dist/` разбирает `tests/e2e/pack-tarball.ts`.
