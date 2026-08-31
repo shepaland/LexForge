@@ -1,6 +1,7 @@
-# skill-routing Specification
+# skill-routing
 
 ## Purpose
+
 How the agent enters the planning pipeline and how it moves from one skill to the next: the
 frontmatter's form, how triggers are split across the five descriptions, the single entry
 point through skill `lexforge`, request classification, and handing work onward.

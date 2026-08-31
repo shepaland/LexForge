@@ -1,6 +1,7 @@
-# planning-skills-content Specification
+# planning-skills-content
 
 ## Purpose
+
 What each of the five planning skills does: required steps, the boundary of planning, the
 form of behavior rules inside `SKILL.md`, and the bans that code cannot check.
 

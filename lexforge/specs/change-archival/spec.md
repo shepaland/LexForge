@@ -1,6 +1,7 @@
-# change-archival Specification
+# change-archival
 
 ## Purpose
+
 What the `lexforge archive` command checks before touching disk, where the change directory
 moves to, what happens to the stamp log, and what the `lexforge-archive` skill does after a
 successful merge.

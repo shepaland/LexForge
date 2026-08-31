@@ -1,6 +1,7 @@
-# artifact-graph Specification
+# artifact-graph
 
 ## Purpose
+
 A change's state in machine-readable form: which artifact is already written, which one
 can be written now, which one is blocked by unmet dependencies. Skills rely on this answer
 for their queue rule: a skill whose artifact isn't in the `ready` status stops and names

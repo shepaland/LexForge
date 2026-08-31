@@ -1,6 +1,7 @@
-# implementation-loop Specification
+# implementation-loop
 
 ## Purpose
+
 What happens inside a single plan task: what the TDD loop looks like, who looks at the
 result before the checkbox closes, what goes into the reviewer's context, and what the
 skill does when a task pulls in work that no delta requirement describes.

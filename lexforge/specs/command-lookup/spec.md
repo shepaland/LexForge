@@ -1,6 +1,7 @@
-# command-lookup Specification
+# command-lookup
 
 ## Purpose
+
 How `lexforge doctor` looks up a bare command name on PATH, and why that lookup works
 differently on Windows. Read by whoever installed the package and got a finding that a command
 is missing when it's actually installed.

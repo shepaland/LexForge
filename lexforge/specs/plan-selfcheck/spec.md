@@ -1,6 +1,7 @@
-# plan-selfcheck Specification
+# plan-selfcheck
 
 ## Purpose
+
 Checking a plan before anyone starts writing code from it. A plan with a task that says "same
 pattern from here on" looks finished and falls apart halfway through: the person doing the work
 ends up inventing what the plan's author never worked out. This spec records what counts as an

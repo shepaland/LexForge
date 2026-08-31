@@ -1,6 +1,7 @@
-# artifact-validation Specification
+# artifact-validation
 
 ## Purpose
+
 Checking that a change's artifacts are filled in, and that requirements are written in a
 form a program can read: every requirement carries a scenario, and every scenario carries
 a condition and a result. Each finding prints with a file path and a line number.

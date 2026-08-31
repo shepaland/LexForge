@@ -1,6 +1,7 @@
-# evidence-freshness Specification
+# evidence-freshness
 
 ## Purpose
+
 Stamp freshness: how the state of the code at run time differs from the state of the code now.
 A stamp taken ten commits ago confirms work that no longer exists, and a stamp taken before an
 edit in the working tree confirms a file that has since been rewritten. This spec records what

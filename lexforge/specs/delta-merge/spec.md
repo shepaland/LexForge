@@ -1,6 +1,7 @@
-# delta-merge Specification
+# delta-merge
 
 ## Purpose
+
 How a change's delta gets into the long-lived spec at
 `lexforge/specs/<capability-path>/spec.md`: what form the main spec takes, in what order
 the four operations apply, what counts as a conflict, and why running the merge again is

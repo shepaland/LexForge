@@ -1,6 +1,7 @@
-# gate-command-contract Specification
+# gate-command-contract
 
 ## Purpose
+
 Common behavior of the four gate commands: `check plan`, `evidence record`, `check evidence`,
 `verify`. This spec records how a gate's exit code differs from a normal command's exit code,
 why gates carry no flag that lowers requirements, and what happens when a project has nothing

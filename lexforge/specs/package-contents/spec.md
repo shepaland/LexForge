@@ -1,6 +1,7 @@
-# package-contents Specification
+# package-contents
 
 ## Purpose
+
 What the published package archive holds and what it leaves out, how the entry point
 behaves on the wrong runtime and without a build, what metadata the package carries, and what
 the README tells someone installing LexForge into their project.

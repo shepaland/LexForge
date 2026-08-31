@@ -1,6 +1,7 @@
-# skill-pressure-testing Specification
+# skill-pressure-testing
 
 ## Purpose
+
 How a skill gets tested: the pressure-scenario file format, the order of runs without and
 with the skill, what gets recorded after each run, and the sign that marks a skill done.
 

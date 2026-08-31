@@ -1,6 +1,7 @@
-# skill-packaging Specification
+# skill-packaging
 
 ## Purpose
+
 Where skill files live in the repository, how they reach the published package and the
 user's project, and which properties of their structure the automated tests check.
 

@@ -1,6 +1,7 @@
-# installation-health Specification
+# installation-health
 
 ## Purpose
+
 The `lexforge doctor` command: how it answers the question "is this installation healthy,"
 what conditions it checks, what it does with findings, and what exit codes it returns.
 

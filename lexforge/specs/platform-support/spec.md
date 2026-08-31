@@ -1,6 +1,7 @@
-# platform-support Specification
+# platform-support
 
 ## Purpose
+
 Which systems the package's operation is confirmed on, what confirms it, and what a person
 deciding whether to install LexForge is told about it.
 

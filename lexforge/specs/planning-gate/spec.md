@@ -1,6 +1,7 @@
-# planning-gate Specification
+# planning-gate
 
 ## Purpose
+
 The queue rule and how skills behave on CLI failures: check status before work, stop on any
 status other than `ready`, no soft gates, error codes handled by code, and one question about
 artifact language.

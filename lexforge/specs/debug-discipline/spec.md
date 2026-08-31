@@ -1,6 +1,7 @@
-# debug-discipline Specification
+# debug-discipline
 
 ## Purpose
+
 What `lexforge-debug` does when a test fails unexpectedly or behavior diverges from what
 was expected: the order the investigation follows, what counts as a found cause, and when
 the conversation moves from a fix to the system's design.

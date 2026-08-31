@@ -1,6 +1,7 @@
-# release-readiness Specification
+# release-readiness
 
 ## Purpose
+
 What version the package carries and the rule it grows by, how a person and an agent learn
 that version, what the changelog records, and what set of checks closes out a release.
 

@@ -1,6 +1,7 @@
-# answer-paths Specification
+# answer-paths
 
 ## Purpose
+
 What form a path takes in a command's answer — in a finding, in `nextStep`, and in `--json`
 fields. Read by an agent: it compares the path from the answer against paths recorded in the
 spec, in the plan, and in its own instructions.

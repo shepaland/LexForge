@@ -1,6 +1,7 @@
-# skill-install Specification
+# skill-install
 
 ## Purpose
+
 Where the init command puts skills for each agent, how the project install scope differs
 from the user scope, how installation reports what it wrote, and how a second installation
 removes files the first one left behind.

@@ -1,6 +1,7 @@
-# line-endings Specification
+# line-endings
 
 ## Purpose
+
 What change artifacts are parsed with, and why the team's answer doesn't depend on whether a
 file is saved with Unix or Windows line endings. Read by whoever runs a project on Windows or
 keeps files in the repo that came from an editor on the other side.

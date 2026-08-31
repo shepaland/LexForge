@@ -1,6 +1,7 @@
-# change-workspace Specification
+# change-workspace
 
 ## Purpose
+
 LexForge's layout in the target project, and how a unit of work gets created: where the
 long-lived specs live, where active changes live, where the archive is, and how any
 command finds the workspace root from any subdirectory of the project.

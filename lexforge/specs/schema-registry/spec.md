@@ -1,6 +1,7 @@
-# schema-registry Specification
+# schema-registry
 
 ## Purpose
+
 Data describes the artifact pipeline: which artifacts belong to a schema, in what order,
 what depends on what, where the template comes from, and what path the result is written
 to. Adding a schema with its own artifact order doesn't require touching the `status`,

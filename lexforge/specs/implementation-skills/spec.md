@@ -1,6 +1,7 @@
-# implementation-skills Specification
+# implementation-skills
 
 ## Purpose
+
 Where the four implementation skills live, how their shared queue-rule block differs from
 the planning skills' block, what the word limit on the body is, and what each file gets
 checked against. This is for whoever adds a ninth skill or edits the shared block.

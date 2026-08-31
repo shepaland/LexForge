@@ -1,6 +1,7 @@
-# completion-report Specification
+# completion-report
 
 ## Purpose
+
 What the `lexforge-verify` report before archival is made of: which part comes from the
 command, which part a person reads, what threshold counts as passing, and why its result is
 never saved.

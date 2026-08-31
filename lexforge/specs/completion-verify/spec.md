@@ -1,6 +1,7 @@
-# completion-verify Specification
+# completion-verify
 
 ## Purpose
+
 The machine part of the check before work is declared done. An agent who has reached the end of
 the task list judges its own work, and judges it generously: an open checkbox gets explained
 away as a minor thing, a requirement with no implementation gets explained as "covered by the

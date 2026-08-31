@@ -1,6 +1,7 @@
-# evidence-ledger Specification
+# evidence-ledger
 
 ## Purpose
+
 The run log for checks: where the command comes from, how it runs, and what stays on disk
 after the run. A claim of "tests are green" does not confirm itself, so a machine takes the
 stamp: it knows the exit code, the time, the state of the code, and the tail of the output.

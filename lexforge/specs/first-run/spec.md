@@ -1,6 +1,7 @@
-# first-run Specification
+# first-run
 
 ## Purpose
+
 The path from an empty repository to the first change set up: what a person installs and
 runs, what shows up on disk along the way, and where the agent starts work.
 

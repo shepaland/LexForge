@@ -1,6 +1,7 @@
-# cli-contract Specification
+# cli-contract
 
 ## Purpose
+
 Common behavior across every LexForge command that skills rely on: what each exit code
 means, how to get a machine-readable answer, and why parsing human-readable output
 doesn't count as a reliable way to check status.
