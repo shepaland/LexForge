@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { UsageError } from "../../../src/cli/errors.js";
 import { answerPath } from "../../../src/core/answer-path.js";
 import { initWorkspace } from "../../../src/core/init/init-workspace.js";
+import { SHIPPED_PROVIDERS as SHIPPED_CATALOGUE } from "../../../src/core/models/catalogue.js";
 import { readProjectConfig } from "../../../src/core/workspace/project-config.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
 
@@ -152,5 +153,55 @@ describe("initWorkspace, установка скиллов", () => {
     expect((caught as UsageError).code).toBe("tool-unknown");
     expect(existsSync(path.join(root, ".claude"))).toBe(false);
     expect(existsSync(path.join(root, "lexforge"))).toBe(false);
+  });
+});
+
+describe("initWorkspace: раздел models в созданном конфиге", () => {
+  const SHIPPED_PROVIDERS = ["anthropic", "openai", "google", "deepseek", "z.ai"];
+
+  it("пишет default с провайдером и моделью, читаемый обратно", () => {
+    const root = project();
+
+    initWorkspace({ cwd: root });
+    const config = readProjectConfig(root);
+
+    expect(config.models.default).toEqual({
+      provider: "anthropic",
+      model: "claude-opus-5",
+    });
+  });
+
+  it("три роли лежат закомментированными переопределениями, а не назначением", () => {
+    const root = project();
+
+    initWorkspace({ cwd: root });
+    const text = readFileSync(path.join(root, "lexforge/config.yaml"), "utf8");
+
+    for (const role of ["analysis", "development", "review"]) {
+      expect(text, `роль ${role} не названа в конфиге`).toMatch(
+        new RegExp(`^\\s*#\\s*${role}:$`, "m"),
+      );
+    }
+    expect(readProjectConfig(root).models.roles).toEqual({});
+  });
+
+  it("каталог providers переносит поставляемый список именем в имя", () => {
+    const root = project();
+
+    initWorkspace({ cwd: root });
+    const providers = readProjectConfig(root).models.providers;
+
+    expect(Object.keys(providers).sort()).toEqual([...SHIPPED_PROVIDERS].sort());
+    expect(providers).toEqual(SHIPPED_CATALOGUE);
+  });
+
+  it("каталог стоит после default и переопределений ролей", () => {
+    const root = project();
+
+    initWorkspace({ cwd: root });
+    const text = readFileSync(path.join(root, "lexforge/config.yaml"), "utf8");
+
+    expect(text.indexOf("providers:")).toBeGreaterThan(text.indexOf("default:"));
+    expect(text.indexOf("providers:")).toBeGreaterThan(text.indexOf("# review:"));
   });
 });

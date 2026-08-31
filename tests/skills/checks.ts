@@ -9,7 +9,10 @@ export const MAX_DESCRIPTION_CHARS = 1024;
 
 /** The body is loaded whole, so it competes with the conversation for attention. */
 /**
- * Words a skill may spend on its own material; the shared queue rule is not counted.
+ * Words a skill may spend on its own material; the shared blocks are not counted - the
+ * queue rule, and the model gate that sits inside it. Both are repeated word for word
+ * across the skills that carry them, so counting either would leave a skill a fraction
+ * of its budget and shrink it again on every edit of the shared text.
  * 500 left no room for a rationalization the runs kept finding, and the only way to add
  * a row was to cut a rule whose scenario then went unchecked. 650 buys that room.
  */
@@ -123,9 +126,9 @@ export function checkBodyLength(skill: SkillFile): SkillFinding[] {
 }
 
 /**
- * The body without the shared queue rule. Every planning skill repeats that block
- * word for word, so counting it would leave a skill half its budget for its own
- * material and would shrink further on any edit of the shared text.
+ * The body without the shared block. The five planning skills repeat one queue rule, the
+ * three implementation skills another, and all nine repeat the model gate inside it - so
+ * what is measured here is the material a skill wrote for itself.
  */
 function bodyWithoutQueueRule(body: string): string {
   const start = body.indexOf(QUEUE_RULE_START);
@@ -167,14 +170,45 @@ export const QUEUE_RULE_IMPLEMENTATION_SKILLS = [
 ];
 
 /**
- * Skills that carry no queue rule. `lexforge-debug` fires on any bug, including one in a
- * project that has no LexForge workspace at all, and a block that stops on
- * `workspace-not-found` would forbid exactly that work.
+ * Skills whose block holds the model gate and nothing else. `lexforge-debug` fires on any
+ * bug, including one in a project that has no LexForge workspace at all, so a block that
+ * stops on `workspace-not-found` would forbid exactly that work; the gate itself costs it
+ * nothing, because an empty assignment demands no model.
  */
-export const SKILLS_WITHOUT_QUEUE_RULE = ["lexforge-debug"];
+export const GATE_ONLY_SKILLS = ["lexforge-debug"];
+
+/**
+ * The queue-rule markers of `lexforge-debug` fence a block that holds no queue rule, only
+ * the gate. The name is kept because the markers are also what the word count skips, and
+ * a test asserts the block holds nothing but the gate, so the exemption cannot grow.
+ */
 
 export const QUEUE_RULE_START = "<!-- queue-rule:start -->";
 export const QUEUE_RULE_END = "<!-- queue-rule:end -->";
+
+/** Every skill of the package, planning and implementation alike. */
+export const ALL_SKILLS = [...PLANNING_SKILLS, ...IMPLEMENTATION_SKILLS];
+
+/**
+ * The model gate sits inside the queue rule of every skill, marked off on its
+ * own so the nine copies can be compared without comparing the blocks around
+ * them: the planning skills, the implementation skills and the debugging skill
+ * carry three different queue rules and one identical gate.
+ */
+export const MODEL_GATE_START = "<!-- model-gate:start -->";
+export const MODEL_GATE_END = "<!-- model-gate:end -->";
+
+/** The gate of one skill, or null when the skill carries none. */
+export function readModelGate(skill: SkillFile): string | null {
+  const start = skill.body.indexOf(MODEL_GATE_START);
+  const end = skill.body.indexOf(MODEL_GATE_END);
+
+  if (start === -1 || end === -1 || end < start) {
+    return null;
+  }
+
+  return skill.body.slice(start + MODEL_GATE_START.length, end);
+}
 
 /**
  * The shared block of a skill: everything between the two markers, or null when the

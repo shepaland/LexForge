@@ -84,3 +84,57 @@ describe("README на двух языках", () => {
     ).toBe(countHeadings(readme["README.md"]));
   });
 });
+
+/**
+ * The section on the model assignment. It is checked apart from the seven
+ * headings above, because it answers a question the others do not: which model
+ * each stage runs on, and how the handover happens in the runtime the reader
+ * installed the skills into.
+ */
+const ASSIGNMENT_HEADING: Record<string, string> = {
+  "README.md": "## Model assignment",
+  "README.ru.md": "## Назначение моделей",
+};
+
+function assignmentSection(file: string): string {
+  const text = readme[file];
+  const start = text.indexOf(`\n${ASSIGNMENT_HEADING[file]}\n`);
+
+  if (start === -1) {
+    return "";
+  }
+
+  const rest = text.slice(start + 1);
+  const end = rest.indexOf("\n## ", 1);
+
+  return end === -1 ? rest : rest.slice(0, end);
+}
+
+describe.each(Object.keys(ASSIGNMENT_HEADING))("README о назначении моделей: %s", (file) => {
+  it("несёт раздел назначения", () => {
+    expect(assignmentSection(file), `в ${file} нет раздела назначения моделей`).not.toBe("");
+  });
+
+  it("называет три роли, default и каталог providers", () => {
+    const section = assignmentSection(file);
+
+    for (const part of ["analysis", "development", "review", "default", "providers"]) {
+      expect(section, `раздел ${file} не называет «${part}»`).toContain(part);
+    }
+  });
+
+  it("говорит, что проект прежней версии работает без изменений и правится вручную", () => {
+    const section = assignmentSection(file);
+
+    expect(section).toContain("lexforge init");
+    expect(section).toContain("models:");
+  });
+
+  it("называет каждый рантайм реестра и способ передачи в нём", () => {
+    const section = assignmentSection(file);
+
+    for (const tool of knownTools()) {
+      expect(section, `раздел ${file} не называет рантайм «${tool}»`).toContain(tool);
+    }
+  });
+});

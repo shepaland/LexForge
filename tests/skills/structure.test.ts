@@ -9,9 +9,13 @@ import {
   MAX_BODY_WORDS,
   MAX_DESCRIPTION_CHARS,
   PLANNING_SKILLS,
+  ALL_SKILLS,
   QUEUE_RULE_IMPLEMENTATION_SKILLS,
-  SKILLS_WITHOUT_QUEUE_RULE,
+  GATE_ONLY_SKILLS,
+  MODEL_GATE_END,
+  MODEL_GATE_START,
   checkSkillStructure,
+  readModelGate,
   readQueueRule,
   type SkillFinding,
 } from "./checks.js";
@@ -176,15 +180,96 @@ describe("общий блок правила очереди", () => {
     expect(sharedText(QUEUE_RULE_IMPLEMENTATION_SKILLS)).not.toBe(sharedText(PLANNING_SKILLS));
   });
 
-  it("скилл отладки блока не несёт: он срабатывает и там, где рабочего пространства нет", () => {
-    expect(blocksOf(SKILLS_WITHOUT_QUEUE_RULE)).toEqual(
-      SKILLS_WITHOUT_QUEUE_RULE.map((dir) => ({ dir, text: null })),
-    );
+  it("блок скилла отладки — это один модельный гейт: он работает и без рабочего пространства", () => {
+    const skills = readSkills(SKILLS).filter((skill) => GATE_ONLY_SKILLS.includes(skill.dir));
+
+    expect(skills).toHaveLength(GATE_ONLY_SKILLS.length);
+    for (const skill of skills) {
+      const block = readQueueRule(skill);
+      const gate = readModelGate(skill);
+
+      expect(block, `у скилла ${skill.dir} нет блока`).not.toBeNull();
+      expect(gate, `у скилла ${skill.dir} нет гейта`).not.toBeNull();
+      const withMarkers = `${MODEL_GATE_START}${gate!}${MODEL_GATE_END}`;
+
+      expect(block!.replace(withMarkers, "").trim()).toBe("");
+      expect(block).not.toContain("workspace-not-found");
+    }
+  });
+
+  it("блок отладки не совпадает ни с планирующим, ни с реализующим", () => {
+    const debugBlock = blocksOf(GATE_ONLY_SKILLS)[0]!.text;
+
+    expect(debugBlock).not.toBe(sharedText(PLANNING_SKILLS));
+    expect(debugBlock).not.toBe(sharedText(QUEUE_RULE_IMPLEMENTATION_SKILLS));
   });
 
   it("группы блока и каталог скиллов сходятся", () => {
-    expect([...QUEUE_RULE_IMPLEMENTATION_SKILLS, ...SKILLS_WITHOUT_QUEUE_RULE].sort()).toEqual(
+    expect([...QUEUE_RULE_IMPLEMENTATION_SKILLS, ...GATE_ONLY_SKILLS].sort()).toEqual(
       IMPLEMENTATION_SKILLS.slice().sort(),
     );
+  });
+});
+
+describe("модельный гейт", () => {
+  function gatesOf(group: string[]): { dir: string; text: string | null }[] {
+    const skills = readSkills(SKILLS).filter((skill) => group.includes(skill.dir));
+
+    expect(group.filter((name) => !skills.some((skill) => skill.dir === name))).toEqual([]);
+
+    return skills.map((skill) => ({ dir: skill.dir, text: readModelGate(skill) }));
+  }
+
+  it("несут все девять скиллов", () => {
+    const missing = gatesOf(ALL_SKILLS)
+      .filter((gate) => gate.text === null)
+      .map((gate) => gate.dir);
+
+    expect(missing).toEqual([]);
+  });
+
+  it("совпадает посимвольно у всех девяти", () => {
+    const gates = gatesOf(ALL_SKILLS);
+    const first = gates[0]!;
+
+    expect(gates.filter((gate) => gate.text !== first.text).map((gate) => gate.dir)).toEqual([]);
+  });
+
+  it("называет оба источника назначения, свою запись и обе развилки", () => {
+    for (const { dir, text } of gatesOf(ALL_SKILLS)) {
+      const gate = text ?? "";
+
+      for (const part of ["instructions", "stages", "lexforge-", "subagent", "lexforge/config.yaml"]) {
+        expect(gate, `гейт скилла ${dir} не называет «${part}»`).toContain(part);
+      }
+    }
+  });
+
+  it("не требует назначения там, где рабочего пространства и change нет", () => {
+    for (const { dir, text } of gatesOf(ALL_SKILLS)) {
+      expect(text ?? "", `гейт скилла ${dir} молчит о проекте без рабочего пространства`).toContain(
+        "no workspace",
+      );
+    }
+  });
+
+  it("запрещает делать работу, а не только писать файл: три скилла файлов не пишут", () => {
+    for (const { dir, text } of gatesOf(ALL_SKILLS)) {
+      const gate = (text ?? "").toLowerCase();
+
+      expect(gate, `гейт скилла ${dir} запрещает только запись файла`).toContain(
+        "do none of it yourself",
+      );
+    }
+  });
+
+  it("рантайм в тексте гейта не назван: скиллы ставятся в пять разных", () => {
+    for (const { dir, text } of gatesOf(ALL_SKILLS)) {
+      const gate = (text ?? "").toLowerCase();
+
+      for (const runtime of ["claude code", "codex", "cursor", "opencode", "task tool"]) {
+        expect(gate, `гейт скилла ${dir} называет рантайм ${runtime}`).not.toContain(runtime);
+      }
+    }
   });
 });

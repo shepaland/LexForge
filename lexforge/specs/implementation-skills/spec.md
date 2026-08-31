@@ -148,3 +148,38 @@ and `archive` pass the check, because by this stage they are registered.
 
 - **WHEN** an implementation skill's body gains a line with a command the CLI does not have
 - **THEN** the test fails and names the command and the file
+
+### Requirement: The four implementation skills carry the model gate
+
+The shared queue-rule block of `lexforge-apply`, `lexforge-verify` and `lexforge-archive`
+SHALL carry the same model gate as the planning skills.
+
+`lexforge-debug` fires on a bug in a project that has no LexForge workspace at all, so it
+SHALL carry a block of its own holding the model gate and nothing else: no workspace, no
+change and no assignment leave it working as it works today.
+
+`lexforge-apply` and `lexforge-debug` SHALL resolve to the role `development`,
+`lexforge-verify` to the role `review`, and `lexforge-archive` SHALL demand no model, because
+archival carries no role.
+
+#### Scenario: The implementation loop
+
+- **WHEN** `lexforge-apply` starts in a project whose `development` role names a model other
+  than the one at work
+- **THEN** it hands the work to a subagent on that model and writes no code itself
+
+#### Scenario: Debugging inside the loop
+
+- **WHEN** `lexforge-debug` starts while `lexforge-apply` is running on the `development`
+  model
+- **THEN** both resolve to the same model and no handover happens between them
+
+#### Scenario: Debugging outside a workspace
+
+- **WHEN** `lexforge-debug` starts on a bug in a project that has no LexForge workspace
+- **THEN** it demands no model and debugs on whichever model is at work
+
+#### Scenario: Archival on any model
+
+- **WHEN** `lexforge-archive` starts in the same project
+- **THEN** it demands no model and merges the delta on whichever model is at work

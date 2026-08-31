@@ -31,6 +31,21 @@ Then ask the agent for work in the usual words — "add X", "fix Y". The `lexfor
 class of work and the pipeline starts from there; the steps in full are in
 [First run](#first-run).
 
+## What's new in 1.2.0
+
+A project now says which model each stage of a change runs on, and the skills obey it.
+
+- The `models` section of `lexforge/config.yaml` holds a `default`, overrides for the roles
+  `analysis`, `development` and `review`, and a `providers` catalogue of the names on hand.
+- `lexforge instructions` and `lexforge status` answer with the role and the model of every
+  stage, so a skill reads the assignment from the call it already makes.
+- All nine skills carry the same gate: work in silence when the model matches, hand the work
+  to a subagent on the assigned model when it does not, stop when that model cannot be
+  reached.
+- Nothing changes for a project installed earlier. `lexforge init` leaves an existing
+  `config.yaml` untouched, and a project without the section runs exactly as before. Details
+  in [Model assignment](#model-assignment).
+
 ## Supported platforms
 
 | What | Value |
@@ -185,6 +200,65 @@ verification:
 
 A label name is lowercase letters and hyphens, and `evidence record --label tests` runs its command
 from the workspace root. From here the commands are called by the agent.
+
+## Model assignment
+
+The stages of a change reward different models: cutting a proposal is not grinding through
+`tasks.md`. The `models` section of `lexforge/config.yaml` names them once, and every stage
+resolves through one of three roles.
+
+| Role | Stages it covers |
+|---|---|
+| `analysis` | `proposal`, `specs`, `design`, `tasks` |
+| `development` | the implementation loop and debugging |
+| `review` | the completion check |
+
+Archival carries no role: it merges the delta into the long-lived specs on whichever model is
+at work. A role that is not named falls back to `default`, so one model everywhere is one
+entry, and lifting review onto a stronger model is three lines more:
+
+```yaml
+models:
+  default:
+    provider: anthropic
+    model: claude-opus-5
+  review:
+    provider: anthropic
+    model: claude-opus-5
+  providers:
+    anthropic:
+      - claude-opus-5
+      - claude-sonnet-5
+```
+
+`lexforge init` writes the whole section into a new project, `providers` seeded from the list
+that ships with the version installed. That catalogue is yours from then on: add a provider or
+a model name by editing the file, and it counts as known here without waiting for a release.
+Nothing is checked against it, so a model released after your installation works the day it
+ships.
+
+`lexforge instructions` and `lexforge status` answer with the role and the model of every
+stage, and the skills read the assignment from the call they already make. A skill running on
+another model hands the work to a subagent started on the assigned one; a skill that cannot
+reach that model stops and says so.
+
+### A project installed before this version
+
+Nothing changes until you ask for it. `lexforge init` leaves an existing `config.yaml`
+untouched, the missing `models` section included, and a project without the section gets an
+empty assignment: no command refuses, no stage names a model, no skill demands one. Switching
+the feature on is one edit — paste the block above into `lexforge/config.yaml` and fill in the
+names you use. Removing the section puts the project back exactly as it was.
+
+### The handover in each runtime
+
+The gate names no runtime, because the same nine skills install into five of them. Whether a
+skill can start a subagent on a named model is the runtime's own business.
+
+| Runtime | Model selection for a subagent |
+|---|---|
+| `claude` | Confirmed: a subagent is started on a named model, and the handover works as described. |
+| `agents`, `codex`, `cursor`, `opencode` | Not confirmed here. Until a run shows otherwise, name one model in `default` and write no role overrides: every stage then resolves to the same model and no handover is asked for. |
 
 ## The nine skills
 

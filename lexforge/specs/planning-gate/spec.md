@@ -143,3 +143,80 @@ At `true`, the question SHALL NOT be asked. Artifacts are written in the languag
 - **WHEN** the instructions command's response carries `languageExplicit: true` and
   `language` set to `ru`
 - **THEN** no question is asked, the artifact is written in Russian
+
+### Requirement: The model gate fires when the model differs
+
+A skill SHALL read the role, the provider and the model before it writes anything, and SHALL
+compare that model against the model it is running on.
+
+The assignment SHALL be read from the answer the queue rule already asks for: a skill that
+writes an artifact reads the instructions response of that artifact, and a skill that carries
+a stage writing no artifact reads the entry of its own stage in the status response.
+
+The two matching, the skill SHALL work without a word about models. An empty assignment SHALL
+demand nothing. Only a difference SHALL open the gate.
+
+#### Scenario: The assigned model is at work
+
+- **WHEN** the instructions response names a model, and the skill is running on that model
+- **THEN** the skill goes on to write the artifact and asks for no handover
+
+#### Scenario: A skill that writes no artifact
+
+- **WHEN** a skill that carries a stage writing no artifact starts on a change
+- **THEN** it reads the model of its own stage from the status response and needs no other
+  call
+
+#### Scenario: Two roles on the same model
+
+- **WHEN** two stages in a row resolve to the same model through different roles
+- **THEN** no handover happens between them
+
+#### Scenario: An empty assignment
+
+- **WHEN** the answer carries an empty provider and an empty model
+- **THEN** the skill demands no model and writes the artifact
+
+### Requirement: A handover starts a subagent on the assigned model
+
+Running on a model other than the assigned one, the skill SHALL hand the artifact to a
+subagent started on the assigned model, and SHALL write no file itself.
+
+The gate SHALL name the handover without naming the runtime that carries it out, because the
+same text ships to every runtime the skills are installed for.
+
+Asking the user to switch models and come back SHALL NOT count as a handover, and neither
+SHALL writing the artifact after naming the assigned model.
+
+#### Scenario: Another model is at work
+
+- **WHEN** the instructions response names a model the skill is not running on
+- **THEN** the skill starts a subagent on that model, hands it the artifact, and writes
+  nothing itself
+
+#### Scenario: A handover offered as a request
+
+- **WHEN** the skill is pushed to name the assigned model and let the user switch by hand
+- **THEN** the skill still starts the subagent, because a request is not a handover
+
+### Requirement: An unavailable model stops the work
+
+A skill that cannot reach the assigned model - the runtime cannot start a subagent on it, or
+the provider is out of reach - SHALL stop: it names the assigned model, says it cannot be
+reached, and writes no file.
+
+The skill SHALL NOT ask for permission to write the artifact on the model it is running on,
+and SHALL NOT write it after saying the model is unavailable.
+
+#### Scenario: The runtime cannot start the model
+
+- **WHEN** a subagent cannot be started on the assigned model in the runtime at hand
+- **THEN** the skill names it, reports that it cannot be reached, and stops without writing
+  the artifact
+
+#### Scenario: A deadline pressed on the skill
+
+- **WHEN** the assigned model is unavailable and the user asks to write the artifact anyway
+  because of a deadline
+- **THEN** the skill still writes no file and names the two ways out: make the model
+  reachable, or change the assignment in `lexforge/config.yaml`

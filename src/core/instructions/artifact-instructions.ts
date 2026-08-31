@@ -4,6 +4,7 @@ import path from "node:path";
 import { UsageError } from "../../cli/errors.js";
 import { answerPath } from "../answer-path.js";
 import type { ArtifactStatus } from "../artifact-graph/graph.js";
+import { resolveStage } from "../models/assignment.js";
 import { builtinSchemasDir, loadSchema } from "../schemas/load-schema.js";
 import type { OutputKind } from "../schemas/output-target.js";
 import { readChangeState } from "../status/change-status.js";
@@ -42,6 +43,11 @@ export interface ArtifactInstructionsData {
   rules: string[];
   language: string;
   languageExplicit: boolean;
+  /** The role this artifact belongs to; empty for an artifact outside the stage table. */
+  role: string;
+  /** Provider and model of that role. Both empty in a project with no assignment. */
+  provider: string;
+  model: string;
   dependencies: InstructionsDependency[];
   /** Direct dependencies that are still open. Empty for an artifact that can be written. */
   blockedBy: string[];
@@ -91,6 +97,8 @@ export function artifactInstructions(
     };
   });
 
+  const assignment = resolveStage(project.models, artifactState.id);
+
   const data: ArtifactInstructionsData = {
     outputVersion: 1,
     workspaceRoot: answerPath(root),
@@ -107,6 +115,9 @@ export function artifactInstructions(
     rules: project.rules[definition.id] ?? [],
     language: project.language,
     languageExplicit: project.languageExplicit,
+    role: assignment.role,
+    provider: assignment.provider,
+    model: assignment.model,
     dependencies,
     blockedBy,
     resolvedOutputPath: answerPath(artifactState.resolvedOutputPath),
@@ -136,6 +147,10 @@ function renderLines(data: ArtifactInstructionsData): string[] {
     "",
     data.instruction.trimEnd(),
   ];
+
+  if (data.model !== "") {
+    lines.push("", `Model: role ${data.role}, provider ${data.provider}, model ${data.model}`);
+  }
 
   if (data.context !== "") {
     lines.push("", "Project context:", data.context.trimEnd());

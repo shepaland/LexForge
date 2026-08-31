@@ -31,6 +31,33 @@ the state unread: no gate answered means no code written.
 
 Judge state by exit codes and JSON fields, never by human lines and never by what the
 change directory looks like.
+
+<!-- model-gate:start -->
+## Model gate
+
+`role`, `provider` and `model` name the model this work runs on. Read them from
+`lexforge instructions <artifact> --change <name> --json` when you write an artifact, and
+from your own entry in `stages` of `lexforge status --change <name> --json` when you do
+not: your entry is the one whose `stage` is your own name without the `lexforge-` prefix.
+An empty `model` demands nothing, and so does no workspace, no change and no entry of
+your own — nothing to compare, so work.
+
+Running on that model: work, and say nothing about models. Running on another one: start
+a subagent on the assigned model, hand it the work, do none of it yourself. Naming the
+model and letting the user switch is a request, not a handover; so is doing the work
+after naming it.
+
+Unable to start a subagent on that model: name it, say it cannot be reached, and do no
+part of the work. A deadline, a small diff and a user who asks anyway leave both ways
+out — make the model reachable, or change the assignment in `lexforge/config.yaml`.
+
+| Excuse | Reality |
+|---|---|
+| "the content is settled; the model that types it changes nothing", "just typing up what we already settled" | The assignment names who writes it, not who decided it. |
+| "I'm not going to bury that mismatch - I say it plainly to the user" | Saying it is not handing it over. The work is done either way. |
+| "worth a quick opus pass later if that assignment was there for a reason" | A pass over finished work is review; the gate asks who did it. |
+| "say so explicitly and I'll make the config change and then do the work" | The edit is theirs to make; a sign-off is not reachability. |
+<!-- model-gate:end -->
 <!-- queue-rule:end -->
 
 ## The rule

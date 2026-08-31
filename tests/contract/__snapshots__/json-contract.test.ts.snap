@@ -18,10 +18,13 @@ exports[`контракт машинного вывода > instructions по о
   "instruction",
   "language",
   "languageExplicit",
+  "model",
   "nextStep",
   "outputKind",
   "outputVersion",
+  "provider",
   "resolvedOutputPath",
+  "role",
   "rules",
   "schema",
   "template",
@@ -61,9 +64,11 @@ exports[`контракт машинного вывода > status по одно
   "blockedBy",
   "description",
   "id",
+  "model",
   "outputKind",
   "requires",
   "resolvedOutputPath",
+  "role",
   "status",
 ]
 `;
@@ -76,7 +81,17 @@ exports[`контракт машинного вывода > status по одно
   "nextStep",
   "outputVersion",
   "schema",
+  "stages",
   "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода > status по одному change > status --change: ключи stages 1`] = `
+[
+  "model",
+  "provider",
+  "role",
+  "stage",
 ]
 `;
 

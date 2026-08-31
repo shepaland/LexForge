@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { UsageError } from "../../../src/cli/errors.js";
-import { readProjectConfig } from "../../../src/core/workspace/project-config.js";
+import { MODEL_ROLES, readProjectConfig } from "../../../src/core/workspace/project-config.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
 
 const created: string[] = [];
@@ -114,5 +114,83 @@ describe("readProjectConfig: свои маркеры плейсхолдеров"
     const config = readProjectConfig(workspace("schema: bounded\n"));
 
     expect(config.planPlaceholders).toEqual([]);
+  });
+});
+
+const MODELS_SECTION = `models:
+  default:
+    provider: anthropic
+    model: claude-opus-5
+  review:
+    provider: openai
+    model: gpt-5.6-sol
+  providers:
+    anthropic:
+      - claude-opus-5
+      - claude-sonnet-5
+    acme-internal:
+      - acme-coder-2
+`;
+
+describe("readProjectConfig: раздел models", () => {
+  it("default, переопределение роли и каталог читаются вместе", () => {
+    const config = readProjectConfig(workspace(MODELS_SECTION));
+
+    expect(config.models.default).toEqual({ provider: "anthropic", model: "claude-opus-5" });
+    expect(config.models.roles.review).toEqual({ provider: "openai", model: "gpt-5.6-sol" });
+    expect(config.models.roles.analysis).toBeUndefined();
+    expect(config.models.providers).toEqual({
+      anthropic: ["claude-opus-5", "claude-sonnet-5"],
+      "acme-internal": ["acme-coder-2"],
+    });
+  });
+
+  it("без раздела models назначение пустое", () => {
+    const config = readProjectConfig(workspace("schema: bounded\n"));
+
+    expect(config.models.default).toBeNull();
+    expect(config.models.roles).toEqual({});
+    expect(config.models.providers).toEqual({});
+  });
+});
+
+describe("readProjectConfig: сломанный раздел models", () => {
+  it("роль строкой вместо пары останавливает чтение и называет роль и форму", () => {
+    let caught: unknown;
+    try {
+      readProjectConfig(workspace("models:\n  development: claude-opus-5\n"));
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(UsageError);
+    expect((caught as UsageError).code).toBe("project-config-invalid");
+    expect((caught as UsageError).message).toContain("models.development");
+    expect((caught as UsageError).message).toMatch(/a provider and a model/);
+  });
+});
+
+describe("readProjectConfig: пустой заголовок models", () => {
+  it("раздел без содержимого читается как пустое назначение, а не как поломка", () => {
+    const config = readProjectConfig(workspace("schema: spec-driven\nmodels:\n"));
+
+    expect(config.models.default).toBeNull();
+    expect(config.models.roles).toEqual({});
+    expect(config.models.providers).toEqual({});
+  });
+});
+
+describe("readProjectConfig: список ролей и схема не расходятся", () => {
+  it("каждая роль из MODEL_ROLES читается из конфига как переопределение", () => {
+    for (const role of MODEL_ROLES) {
+      const config = readProjectConfig(
+        workspace(`models:\n  ${role}:\n    provider: acme-internal\n    model: acme-coder-2\n`),
+      );
+
+      expect(config.models.roles[role], `роль ${role} схемой не читается`).toEqual({
+        provider: "acme-internal",
+        model: "acme-coder-2",
+      });
+    }
   });
 });

@@ -37,6 +37,7 @@ describe("состав ответа changeStatus", () => {
       "schema",
       "isPlanningComplete",
       "artifacts",
+      "stages",
       "nextStep",
     ]);
     expect(result.data.outputVersion).toBe(1);
@@ -47,7 +48,7 @@ describe("состав ответа changeStatus", () => {
     expect(result.exitCode).toBe(0);
   });
 
-  it("каждый артефакт несёт семь полей своего состояния", () => {
+  it("каждый артефакт несёт девять полей своего состояния", () => {
     const root = workspace();
 
     const { data } = changeStatus({ cwd: root, change: "add-auth" });
@@ -67,6 +68,8 @@ describe("состав ответа changeStatus", () => {
       "blockedBy",
       "resolvedOutputPath",
       "outputKind",
+      "role",
+      "model",
     ]);
     expect(proposal.status).toBe("ready");
     expect(proposal.requires).toEqual([]);
@@ -128,5 +131,90 @@ describe("следующий шаг changeStatus", () => {
     expect(result.data.isPlanningComplete).toBe(true);
     expect(result.data.nextStep).toContain("implement");
     expect(result.lines.join("\n")).toContain("Planning is complete");
+  });
+});
+
+describe("назначение по стадиям в ответе changeStatus", () => {
+  const MODELS = `schema: spec-driven
+models:
+  default:
+    provider: anthropic
+    model: claude-opus-5
+  review:
+    provider: openai
+    model: gpt-5.6-sol
+`;
+
+  it("каждая стадия пайплайна названа с ролью, провайдером и моделью", () => {
+    const root = workspace({ "lexforge/config.yaml": MODELS });
+
+    const { data } = changeStatus({ cwd: root, change: "add-auth" });
+
+    expect(data.stages.map((entry) => entry.stage)).toEqual([
+      "proposal",
+      "specs",
+      "design",
+      "tasks",
+      "apply",
+      "debug",
+      "verify",
+      "archive",
+    ]);
+    expect(Object.keys(data.stages[0]!)).toEqual(["stage", "role", "provider", "model"]);
+  });
+
+  it("стадии без артефакта несут свою роль и свою модель", () => {
+    const root = workspace({ "lexforge/config.yaml": MODELS });
+
+    const { data } = changeStatus({ cwd: root, change: "add-auth" });
+    const byStage = Object.fromEntries(data.stages.map((entry) => [entry.stage, entry]));
+
+    expect(byStage.apply).toEqual({
+      stage: "apply",
+      role: "development",
+      provider: "anthropic",
+      model: "claude-opus-5",
+    });
+    expect(byStage.debug!.role).toBe("development");
+    expect(byStage.verify).toEqual({
+      stage: "verify",
+      role: "review",
+      provider: "openai",
+      model: "gpt-5.6-sol",
+    });
+  });
+
+  it("архивация приходит с пустыми ролью, провайдером и моделью", () => {
+    const root = workspace({ "lexforge/config.yaml": MODELS });
+
+    const { data } = changeStatus({ cwd: root, change: "add-auth" });
+    const archive = data.stages.find((entry) => entry.stage === "archive")!;
+
+    expect(archive).toEqual({ stage: "archive", role: "", provider: "", model: "" });
+  });
+
+  it("артефакты несут роль и модель рядом со своим статусом", () => {
+    const root = workspace({ "lexforge/config.yaml": MODELS });
+
+    const { data } = changeStatus({ cwd: root, change: "add-auth" });
+
+    for (const artifact of data.artifacts) {
+      expect(artifact.role).toBe("analysis");
+      expect(artifact.model).toBe("claude-opus-5");
+    }
+  });
+
+  it("проект без раздела models оставляет провайдера и модель пустыми, код возврата ноль", () => {
+    const root = workspace();
+
+    const result = changeStatus({ cwd: root, change: "add-auth" });
+
+    expect(result.exitCode).toBe(0);
+    for (const entry of result.data.stages) {
+      expect(entry.provider).toBe("");
+      expect(entry.model).toBe("");
+    }
+    expect(result.data.stages.find((entry) => entry.stage === "specs")!.role).toBe("analysis");
+    expect(result.data.artifacts[0]!.model).toBe("");
   });
 });

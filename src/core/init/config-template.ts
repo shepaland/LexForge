@@ -1,9 +1,11 @@
+import { modelsSectionText } from "../models/catalogue.js";
 import { DEFAULT_SCHEMA } from "../workspace/project-config.js";
 
 /**
- * The `config.yaml` written by the initialisation. Only `schema` is live; every
- * other section ships commented out, so the file shows what can be set without
- * setting it. Without an explicit language the `language` field is left out on
+ * The `config.yaml` written by the initialisation. `schema` and the `models`
+ * section ship live - a project needs a schema and resolves every stage against
+ * the default from the first run; every other section ships commented out, so the
+ * file shows what can be set without setting it. Without an explicit language the `language` field is left out on
  * purpose: a missing field means the project has not chosen a language yet.
  */
 export function projectConfigText(language = ""): string {
@@ -34,5 +36,6 @@ ${head}
 # verification:
 #   tests: npm test
 #   lint: npm run lint
-`;
+
+${modelsSectionText()}`;
 }

@@ -43,6 +43,9 @@ describe("состав ответа artifactInstructions", () => {
       "rules",
       "language",
       "languageExplicit",
+      "role",
+      "provider",
+      "model",
       "dependencies",
       "blockedBy",
       "resolvedOutputPath",
@@ -229,5 +232,49 @@ describe("артефакт вне схемы", () => {
       expect(usage.message).toContain("bounded");
       expect(usage.message).toContain("proposal, specs, tasks");
     }
+  });
+});
+
+describe("назначенная модель в ответе instructions", () => {
+  const MODELS = `schema: spec-driven
+models:
+  default:
+    provider: anthropic
+    model: claude-opus-5
+  review:
+    provider: openai
+    model: gpt-5.6-sol
+`;
+
+  it("артефакт планирования несёт роль analysis с провайдером и моделью", () => {
+    const root = workspace({
+      "lexforge/config.yaml": MODELS,
+      "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
+    });
+
+    const { data } = artifactInstructions({
+      cwd: root,
+      change: "add-auth",
+      artifact: "specs",
+    });
+
+    expect(data.role).toBe("analysis");
+    expect(data.provider).toBe("anthropic");
+    expect(data.model).toBe("claude-opus-5");
+  });
+
+  it("проект без раздела models несёт роль с пустыми провайдером и моделью", () => {
+    const root = workspace();
+
+    const result = artifactInstructions({
+      cwd: root,
+      change: "add-auth",
+      artifact: "proposal",
+    });
+
+    expect(result.data.role).toBe("analysis");
+    expect(result.data.provider).toBe("");
+    expect(result.data.model).toBe("");
+    expect(result.exitCode).toBe(0);
   });
 });

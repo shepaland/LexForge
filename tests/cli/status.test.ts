@@ -116,3 +116,92 @@ describe("разделение потоков при машинном вывод
     expect(data.nextStep).toBe("lexforge init");
   });
 });
+
+describe("lexforge status: назначенные модели в человеческом выводе", () => {
+  const MODELS = `schema: spec-driven
+models:
+  default:
+    provider: anthropic
+    model: claude-opus-5
+  review:
+    provider: openai
+    model: gpt-5.6-sol
+`;
+
+  it("модель стоит рядом с каждым артефактом", async () => {
+    const root = workspace({
+      "lexforge/config.yaml": MODELS,
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    });
+
+    const { exitCode, capture } = await call(["status", "--change", "add-auth"], root);
+
+    expect(exitCode).toBe(0);
+    expect(capture.out).toMatch(/^ +proposal +ready +claude-opus-5$/m);
+  });
+
+  it("стадии без артефакта печатаются со своими моделями, архивация — без роли", async () => {
+    const root = workspace({
+      "lexforge/config.yaml": MODELS,
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    });
+
+    const { capture } = await call(["status", "--change", "add-auth"], root);
+
+    expect(capture.out).toContain("Stages without an artifact:");
+    expect(capture.out).toMatch(/^ +apply +development +claude-opus-5$/m);
+    expect(capture.out).toMatch(/^ +verify +review +gpt-5\.6-sol$/m);
+    expect(capture.out).toMatch(/^ +archive +no role$/m);
+  });
+
+  it("проект без раздела models печатает статус как раньше", async () => {
+    const root = workspace({
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    });
+
+    const { capture } = await call(["status", "--change", "add-auth"], root);
+
+    expect(capture.out).not.toContain("Stages without an artifact:");
+    expect(capture.out).toMatch(/^ +proposal +ready$/m);
+  });
+});
+
+describe("lexforge status: схема bounded и неполное назначение", () => {
+  const MODELS = `schema: spec-driven
+models:
+  default:
+    provider: anthropic
+    model: claude-opus-5
+`;
+
+  const REVIEW_ONLY = `schema: spec-driven
+models:
+  review:
+    provider: openai
+    model: gpt-5.6-sol
+`;
+
+  it("стадия, которой в схеме нет артефакта, попадает в блок стадий", async () => {
+    const root = workspace({
+      "lexforge/config.yaml": MODELS,
+      "lexforge/changes/rename-menu/.lexforge.yaml": "schema: bounded\n",
+    });
+
+    const { capture } = await call(["status", "--change", "rename-menu"], root);
+
+    expect(capture.out).toMatch(/^ +design +analysis +claude-opus-5$/m);
+    expect(capture.out).not.toMatch(/^ +design +(ready|blocked)/m);
+  });
+
+  it("роль без default печатается как стадия без модели, архивация — как стадия без роли", async () => {
+    const root = workspace({
+      "lexforge/config.yaml": REVIEW_ONLY,
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    });
+
+    const { capture } = await call(["status", "--change", "add-auth"], root);
+
+    expect(capture.out).toMatch(/^ +apply +no model$/m);
+    expect(capture.out).toMatch(/^ +archive +no role$/m);
+  });
+});

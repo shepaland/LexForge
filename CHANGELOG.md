@@ -9,6 +9,42 @@ contract — a renamed or removed field of a `--json` answer, or a moved exit co
 major number. A new command or flag raises the minor number. A wording change to a skill,
 a template or a message printed to a person raises the patch number.
 
+## 1.2.0 — 2026-08-31
+
+Model assignment. A project names which model each stage of a change runs on, and the
+skills hand the work to that model instead of writing it themselves. Nothing is renamed
+and nothing is removed: `outputVersion` stays `1`, the exit codes are the ones 1.1.0
+gave, and a project without the new section behaves exactly as before.
+
+### Contract
+
+- `instructions` answers with three more fields: `role`, `provider` and `model` of the
+  requested artifact. A project with no assignment gets the role filled and the other two
+  empty.
+- `status --change` answers with `stages`: one entry per stage of the pipeline, including
+  the four that write no artifact, each with `stage`, `role`, `provider` and `model`.
+  Archival comes back with all three empty, because it carries no role.
+- Every artifact of `status --change` carries `role` and `model` beside its status.
+
+### Other
+
+- `lexforge/config.yaml` reads a `models` section: a `default` naming a provider and a
+  model, optional overrides for the roles `analysis`, `development` and `review`, and a
+  `providers` catalogue. A role left out falls back to the `default`; an incomplete
+  section is not refused, and a role that is not a mapping of a provider and a model is,
+  with exit code `2` naming the role.
+- `lexforge init` writes that section into a new project and seeds the catalogue from the
+  list shipped with the installed version. An existing `config.yaml` is left byte for
+  byte as it was, the missing section included.
+- Names are never checked against the catalogue: a model released after the installation
+  is passed through exactly as the config wrote it.
+- The nine skills carry one model gate, word for word the same in all of them: work in
+  silence when the model matches, hand the work to a subagent on the assigned model when
+  it does not, and stop without writing when that model cannot be reached.
+- `README.md` and `README.ru.md` carry the section on the assignment: the three roles,
+  the block to paste, what a project installed earlier does, and which runtime the
+  handover is confirmed in.
+
 ## 1.1.0 — 2026-08-30
 
 Windows. Three defects the run on three systems brought out, and none of them touches

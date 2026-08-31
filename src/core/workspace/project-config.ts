@@ -14,6 +14,27 @@ export const DEFAULT_LANGUAGE = "en";
  */
 export const VERIFICATION_LABEL = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+/** The three roles a stage of the pipeline runs under. */
+export const MODEL_ROLES = ["analysis", "development", "review"] as const;
+
+export type ModelRole = (typeof MODEL_ROLES)[number];
+
+/** One provider and one model of that provider, as the config names them. */
+export interface ModelChoice {
+  provider: string;
+  model: string;
+}
+
+/** The `models` section, read into the shape the pipeline resolves against. */
+export interface ModelAssignment {
+  /** The model every unnamed role falls back to; `null` in a project without the section. */
+  default: ModelChoice | null;
+  /** Overrides written for a role. A role left out resolves to the `default`. */
+  roles: Partial<Record<ModelRole, ModelChoice>>;
+  /** Provider name to the model names of that provider. Never checked against. */
+  providers: Record<string, string[]>;
+}
+
 /**
  * Checks every label of the `verification` section. The check sits here rather
  * than on the record key, because a key rejected by the key schema is reported
@@ -38,6 +59,42 @@ const VerificationSchema = z
   })
   .default({});
 
+/**
+ * One provider and one model of it, used for the `default` and for every role.
+ * The message spells the shape out, because the default "expected object,
+ * received string" leaves the reader guessing what the mapping holds.
+ */
+const ModelChoiceSchema = z.object(
+  {
+    provider: z.string(),
+    model: z.string(),
+  },
+  {
+    error:
+      "write it as a mapping of a provider and a model, " +
+      "such as provider: anthropic and model: claude-opus-5",
+  },
+);
+
+/**
+ * The `models` section: the `default`, the three role overrides and the
+ * catalogue. An incomplete section is not refused - a half-written assignment
+ * resolves through the `default` rather than stopping a pipeline that ran a
+ * minute ago.
+ */
+const ModelsSchema = z
+  .object({
+    default: ModelChoiceSchema.optional(),
+    analysis: ModelChoiceSchema.optional(),
+    development: ModelChoiceSchema.optional(),
+    review: ModelChoiceSchema.optional(),
+    providers: z.record(z.string(), z.array(z.string())).default({}),
+  })
+  // `nullish`, not `optional`: YAML reads a bare `models:` header as null, and a
+  // section header with nothing under it is the extreme of incomplete, which the
+  // requirement forbids refusing.
+  .nullish();
+
 /** Unknown top-level sections are dropped, not rejected: config.yaml grows over time. */
 const ProjectConfigSchema = z.object({
   schema: z.string().default(DEFAULT_SCHEMA),
@@ -46,6 +103,7 @@ const ProjectConfigSchema = z.object({
   rules: z.record(z.string(), z.array(z.string())).default({}),
   verification: VerificationSchema,
   plan_placeholders: z.array(z.string()).default([]),
+  models: ModelsSchema,
 });
 
 export interface ProjectConfig {
@@ -59,6 +117,8 @@ export interface ProjectConfig {
   language: string;
   /** True when `language` is written in config.yaml, so the choice was made on purpose. */
   languageExplicit: boolean;
+  /** The model assignment of this project. Empty in a project without the section. */
+  models: ModelAssignment;
 }
 
 export function readProjectConfig(root: string): ProjectConfig {
@@ -84,5 +144,27 @@ export function readProjectConfig(root: string): ProjectConfig {
     planPlaceholders: result.data.plan_placeholders,
     language: result.data.language ?? DEFAULT_LANGUAGE,
     languageExplicit: explicit,
+    models: toAssignment(result.data.models),
+  };
+}
+
+/** The parsed section as the pipeline reads it; an absent section is an empty assignment. */
+function toAssignment(section: z.infer<typeof ModelsSchema>): ModelAssignment {
+  if (!section) {
+    return { default: null, roles: {}, providers: {} };
+  }
+
+  const roles: Partial<Record<ModelRole, ModelChoice>> = {};
+  for (const role of MODEL_ROLES) {
+    const choice = section[role];
+    if (choice) {
+      roles[role] = choice;
+    }
+  }
+
+  return {
+    default: section.default ?? null,
+    roles,
+    providers: section.providers,
   };
 }

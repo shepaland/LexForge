@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { UsageError } from "../../src/cli/errors.js";
 import { createCliContext, createProgram, run, runProgram } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
+import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 const COMMANDS = ["init", "new", "status", "instructions", "validate"];
 
@@ -100,5 +101,30 @@ describe("единый перехват результата команды", ()
     expect(capture.err).toContain("internal error");
     expect(capture.err).toContain("TypeError");
     expect(capture.out).toBe("");
+  });
+});
+
+describe("код возврата на сломанном разделе models", () => {
+  it("instructions в проекте с ролью-строкой даёт 2 и называет роль", async () => {
+    const root = makeWorkspace({
+      "lexforge/config.yaml": "schema: spec-driven\nmodels:\n  development: claude-opus-5\n",
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+      "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
+    });
+    const capture = createCapture();
+
+    try {
+      const exitCode = await run(["instructions", "specs", "--change", "add-auth"], {
+        cwd: root,
+        stdout: capture.stdout,
+        stderr: capture.stderr,
+      });
+
+      expect(exitCode).toBe(2);
+      expect(capture.err).toContain("models.development");
+      expect(capture.err).toMatch(/a provider and a model/);
+    } finally {
+      removeWorkspace(root);
+    }
   });
 });

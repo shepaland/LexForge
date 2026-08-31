@@ -192,3 +192,24 @@ describing the required form of the result, not by a ban.
 
 - **WHEN** the agent follows the rule but writes the artifact in the wrong form
 - **THEN** a description of the required form is added to the skill, not another ban
+
+### Requirement: The five planning skills carry the model gate
+
+The shared queue-rule block of `lexforge`, `lexforge-propose`, `lexforge-spec`,
+`lexforge-design` and `lexforge-plan` SHALL carry the model gate: compare the model at work
+against the model from the instructions response, hand the artifact to a subagent on the
+assigned model when they differ, and write nothing when that model cannot be reached.
+
+Each of the five SHALL carry a pressure scenario in which the agent is pushed to write the
+artifact itself, and the run SHALL show the agent handing the work over instead.
+
+#### Scenario: The block of every planning skill
+
+- **WHEN** the five planning skills are checked against the shared block
+- **THEN** each of them carries the model gate in the same words
+
+#### Scenario: A pressure run on the gate
+
+- **WHEN** the pressure scenario runs on a subagent that is not the assigned model and is
+  told the handover costs too much time
+- **THEN** the run ends with no artifact written by that subagent and with the handover made

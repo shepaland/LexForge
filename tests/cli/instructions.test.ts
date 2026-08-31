@@ -102,3 +102,36 @@ describe("lexforge instructions", () => {
     expect(data.error.message).toContain("proposal, specs, tasks");
   });
 });
+
+describe("lexforge instructions: строка назначенной модели", () => {
+  const MODELS = `schema: spec-driven
+models:
+  default:
+    provider: anthropic
+    model: claude-opus-5
+`;
+
+  it("человеческий вывод печатает роль, провайдера и модель одной строкой", async () => {
+    const root = workspace({ "lexforge/config.yaml": MODELS });
+
+    const { exitCode, capture } = await call(
+      ["instructions", "proposal", "--change", "add-auth"],
+      root,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(capture.out).toMatch(/^Model: role analysis, provider anthropic, model claude-opus-5$/m);
+  });
+
+  it("проект без раздела models строки о модели не печатает", async () => {
+    const root = workspace();
+
+    const { exitCode, capture } = await call(
+      ["instructions", "proposal", "--change", "add-auth"],
+      root,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(capture.out).not.toContain("Model: role");
+  });
+});

@@ -3,9 +3,10 @@
  * скиллы. Строки человеческого вывода меняются от версии к версии и контрактом
  * не считаются, поэтому в снимок не попадают.
  *
- * Имена полей заданы решением 10 файла `design.md` этапа 1 и решением 13 того же
- * файла в `lexforge-gate-commands` — для четырёх команд-ворот. Если снимок разошёлся
- * с решением, правится код, а не снимок.
+ * Имена полей заданы решением 10 файла `design.md` этапа 1, решением 13 того же
+ * файла в `lexforge-gate-commands` — для четырёх команд-ворот — и решением 5
+ * файла `design.md` в `pipeline-model-selection` — для полей назначенной модели.
+ * Если снимок разошёлся с решением, правится код, а не снимок.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -82,6 +83,7 @@ describe("контракт машинного вывода", () => {
 
     expect(keys(answer)).toMatchSnapshot("status --change: ключи data");
     expect(firstKeys(answer.artifacts)).toMatchSnapshot("status --change: ключи artifacts");
+    expect(firstKeys(answer.stages)).toMatchSnapshot("status --change: ключи stages");
   });
 
   it("status по всему рабочему пространству", async () => {

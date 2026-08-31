@@ -147,3 +147,68 @@ ask the user about language or whether it was already settled earlier.
 
 - **WHEN** `config.yaml` holds `language: ru`
 - **THEN** the response names the language `ru` and reports that the choice has been made
+
+### Requirement: Instructions name the assigned model
+
+The instructions response SHALL carry the role of the requested artifact, the provider and
+the model assigned to that role. In a project with an empty assignment the three fields SHALL
+come back empty.
+
+The human-readable output SHALL print the assignment on a line of its own where the project
+names one. A project with an empty assignment SHALL get no such line: a line naming an empty
+provider and an empty model tells its reader nothing they did not know.
+
+#### Scenario: A project with an assignment
+
+- **WHEN** instructions are requested for the `specs` artifact in a project whose `models`
+  section is complete
+- **THEN** the response names the role `analysis`, its provider and its model, and the
+  human-readable output prints the same three values
+
+#### Scenario: A project with no assignment
+
+- **WHEN** instructions are requested in a project whose `config.yaml` has no `models`
+  section
+- **THEN** the response carries the role of the artifact with an empty provider and an empty
+  model, the human-readable output carries no line about a model, and the command exits with
+  code `0`
+
+### Requirement: Status shows the assignment per stage
+
+The status response of a change SHALL carry the assignment of every stage of the pipeline,
+the stages that write no artifact included: the implementation loop, debugging, the
+completion check and archival. Each entry SHALL name its stage, its role, its provider and
+its model, so a skill that writes no artifact reads its own model from the call its queue
+rule already makes.
+
+Archival carries no role, so its entry SHALL come back with an empty role, an empty provider
+and an empty model.
+
+Every artifact of the change SHALL additionally carry, beside its status, the role it belongs
+to and the model that role resolves to.
+
+#### Scenario: The layout of a change
+
+- **WHEN** the status of a change is requested in a project whose `models` section is
+  complete
+- **THEN** every artifact in the answer carries its role and its model beside its status
+
+#### Scenario: A stage that writes no artifact
+
+- **WHEN** the status of a change is requested in a project whose `models` section is
+  complete
+- **THEN** the answer names the implementation loop, debugging and the completion check, each
+  with its role, its provider and its model
+
+#### Scenario: The stage without a role
+
+- **WHEN** the status of a change is requested in a project whose `models` section is
+  complete
+- **THEN** the entry of archival carries an empty role, an empty provider and an empty model
+
+#### Scenario: A project with no assignment
+
+- **WHEN** the status of a change is requested in a project whose `config.yaml` has no
+  `models` section
+- **THEN** every stage of the answer carries its role with an empty provider and an empty
+  model, and the command exits with code `0`

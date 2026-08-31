@@ -397,3 +397,60 @@ describe("lexforge init: форма путей в ответе", () => {
     expect(path.resolve(data.workspaceRoot)).toBe(path.resolve(root));
   });
 });
+
+/**
+ * The guard for a project installed before the models section existed: seeding
+ * writes the section into a new config only, and a repeated run leaves an
+ * existing file exactly as its owner wrote it. Adding the section to such a
+ * project is an edit made by hand.
+ */
+describe("lexforge init, проект без раздела models", () => {
+  const HAND_WRITTEN = "schema: spec-driven\ncontext: a project set up before models existed\n";
+
+  it("повторный запуск оставляет config.yaml побайтно прежним", async () => {
+    const root = project({ "lexforge/config.yaml": HAND_WRITTEN });
+
+    const { exitCode } = await init(["init"], root);
+
+    expect(exitCode).toBe(0);
+    expect(readFileSync(path.join(root, "lexforge/config.yaml"), "utf8")).toBe(HAND_WRITTEN);
+  });
+
+  it("конвейер такого проекта работает с пустым назначением", async () => {
+    const root = project({
+      "lexforge/config.yaml": HAND_WRITTEN,
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    });
+
+    await init(["init"], root);
+    const capture = createCapture();
+    const exitCode = await run(["status", "--change", "add-auth", "--json"], {
+      cwd: root,
+      stdout: capture.stdout,
+      stderr: capture.stderr,
+    });
+    const data = JSON.parse(capture.out) as {
+      stages: { stage: string; model: string }[];
+      artifacts: { model: string }[];
+    };
+
+    expect(exitCode).toBe(0);
+    expect(data.stages).toHaveLength(8);
+    for (const stage of data.stages) {
+      expect(stage.model, `стадия ${stage.stage} назвала модель`).toBe("");
+    }
+    for (const artifact of data.artifacts) {
+      expect(artifact.model).toBe("");
+    }
+  });
+
+  it("каталог, написанный проектом, второй запуск не трогает", async () => {
+    const own = "schema: spec-driven\nmodels:\n  providers:\n    acme:\n      - house-model\n";
+    const root = project({ "lexforge/config.yaml": own });
+
+    const { exitCode } = await init(["init"], root);
+
+    expect(exitCode).toBe(0);
+    expect(readFileSync(path.join(root, "lexforge/config.yaml"), "utf8")).toBe(own);
+  });
+});

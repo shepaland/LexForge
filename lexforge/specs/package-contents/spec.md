@@ -133,3 +133,44 @@ scenarios, and the stage order.
 
 - **WHEN** a row is added to the tool registry
 - **THEN** the README installation section names its name and directory
+
+### Requirement: The README names the model assignment and how to switch it on
+
+The README SHALL carry a section on the model assignment: the three roles, the stages each
+role covers, the `default` every unnamed role falls back to, and the `providers` catalogue
+that names which model names are on hand.
+
+The section SHALL name what a project installed before this version does to switch the
+assignment on - `lexforge init` leaves an existing `config.yaml` alone, so the `models`
+section is added by hand - and SHALL say that a project without the section keeps working
+unchanged.
+
+#### Scenario: A reader on an earlier version
+
+- **WHEN** a person who installed LexForge before this version opens the README
+- **THEN** they find the `models` block to paste into their `config.yaml` and read that
+  nothing breaks until they add it
+
+#### Scenario: A reader choosing model names
+
+- **WHEN** a person fills in the `models` section and looks for the names they may use
+- **THEN** the README points at the `providers` catalogue in their own `config.yaml` and says
+  a name outside it is passed through unchanged
+
+### Requirement: The README names how each runtime carries out the handover
+
+The gate names the handover without naming a runtime, so the README SHALL name, for every
+runtime of the tool registry, how a subagent is started on a chosen model there.
+
+A runtime that cannot start a subagent on a chosen model SHALL be named as one where the
+assignment stays a single `default` and no role override is written.
+
+#### Scenario: A reader on one runtime
+
+- **WHEN** a person who installed the skills into one runtime reads the section
+- **THEN** they find how a subagent is started on a chosen model in that runtime
+
+#### Scenario: A runtime without model selection
+
+- **WHEN** a runtime cannot start a subagent on a chosen model
+- **THEN** the README names it and says to leave the assignment at a single `default`
