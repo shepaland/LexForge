@@ -30,6 +30,14 @@ codes are the ones 1.0.0 gave.
 - `doctor` finds the command on PATH on Windows: the search goes through the extensions
   of `PATHEXT`, where that system keeps what may be run. The execute bit is still
   required on Linux and macOS, and a directory of that name is still not a command.
+- `doctor` no longer reports a healthy Windows installation as two. The name on PATH there
+  resolves to a wrapper, `lexforge.cmd`, and the wrapper starts the JavaScript beside it:
+  what is compared is the tree they live in, not the two paths.
+- `evidence record` refuses to stamp a command Windows could not start. Its shell answers
+  the same number for a name it cannot find and for a check that failed, so the question
+  asked there is whether the first word of the command lies on PATH.
+- The suite runs on Linux, macOS and Windows, on Node 20.19 and 22, on every push and
+  every pull request.
 
 ## 1.0.0 — 2026-08-30
 

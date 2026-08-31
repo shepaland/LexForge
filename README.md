@@ -178,7 +178,7 @@ stamps of the runs.
 | npm | the one shipped with Node |
 | git | a repository with at least one commit; without it `evidence record`, `check evidence`, `verify` and `archive` answer with exit code `2` |
 | Agent | one of the five runtimes in the installation table |
-| Operating system | the runs were done on macOS; the package has not been tested on Linux or Windows |
+| Operating system | Linux, macOS or Windows: the suite runs on all three, on both versions of Node above |
 
 `lexforge init` neither requires nor creates a repository. Without `.git` it sets up the workspace
 and names the gates that will need one.
