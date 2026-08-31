@@ -18,7 +18,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const REQUIRED_HEADINGS: Record<string, readonly string[]> = {
   "README.md": [
     "## What the merge buys you",
-    "## Requirements",
+    "## Supported platforms",
     "## Installation",
     "## First run",
     "## The nine skills",
@@ -27,7 +27,7 @@ const REQUIRED_HEADINGS: Record<string, readonly string[]> = {
   ],
   "README.ru.md": [
     "## Что даёт объединение",
-    "## Требования",
+    "## Поддерживаемые платформы",
     "## Установка",
     "## Первый запуск",
     "## Девять скиллов",

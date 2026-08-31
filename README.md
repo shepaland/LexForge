@@ -6,18 +6,18 @@
 
 **English** · [Русский](README.ru.md)
 
-A spec-driven pipeline for coding agents, with gates the agent cannot skip. Nine skills carry a
-change from the user's request to the archived spec, and `lexforge verify` answers with an exit
-code whether the work is done: a claim of completion that has no fresh command output behind it
-does not pass.
+A spec-driven pipeline for coding agents, with gates the agent cannot skip. Nine skills carry
+a change from the request to the archived spec, and `lexforge verify` answers with an exit code
+whether the work is done: a completion claim with no fresh command output behind it does not pass.
 
 ![The agent says the change is done; `lexforge verify` answers exit 1 until the checks have actually been run](https://raw.githubusercontent.com/shepaland/LexForge/main/docs/media/verify.gif)
 
-The agent has written the code and ticked every box. `lexforge verify` answers `1`: the
-ledger holds no stamp for either check. `evidence record` runs the command itself and
-writes the stamp, and only then does `verify` answer `0` — while still naming what no
-command can check for you. The change on the recording is kept in
-[`examples/notes`](examples/notes): proposal, spec, design, plan, stamps and the code.
+The agent has written the code and ticked every box. `verify` answers `1`: the ledger holds no
+stamp for either check. `evidence record` runs the command itself and writes the stamp, and only
+then does `verify` answer `0`. That change is kept in [`examples/notes`](examples/notes).
+
+LexForge is built out of two systems: the artifacts and the machine-checkable shape of requirements
+come from **OpenSpec**, the gates and behavioural rules for the agent from **superpowers**.
 
 ## Quick start
 
@@ -28,189 +28,112 @@ lexforge doctor               # six conditions, each named with or without a fin
 ```
 
 Then ask the agent for work in the usual words — "add X", "fix Y". The `lexforge` skill names the
-class of work and the pipeline starts from there; the four steps in full are in
+class of work and the pipeline starts from there; the steps in full are in
 [First run](#first-run).
 
-LexForge is built out of two systems: it takes the artifacts and the machine-checkable shape of
-requirements from **OpenSpec**, and the process gates and behavioural rules for the agent from
-**superpowers**.
+## Supported platforms
+
+| What | Value |
+| --- | --- |
+| Operating system | Linux, macOS and Windows — the suite runs on all three in CI |
+| Node.js | 20.19.0 or newer, the version from `engines`; CI covers 20.19 and 22 |
+| Agent runtime | `agents`, `claude`, `codex`, `cursor`, `opencode` |
+| git | a repository with at least one commit; without it `evidence record`, `check evidence`, `verify` and `archive` answer `2`. `lexforge init` needs none |
+
+Windows is a first-class target, not a best effort: a file is read whatever line ending it carries,
+paths come back in answers with `/`, `doctor` looks the command name up through `PATHEXT`, and one
+healthy installation is counted as one.
 
 ## What the merge buys you
 
-OpenSpec and superpowers solve two halves of the same problem, and each half breaks without the
-other. OpenSpec describes the steps but does nothing to stop an agent from walking around them.
-superpowers keeps the agent disciplined, but once the branch is merged nothing is left that anyone
-will read later.
+Each donor solves half the problem and breaks without the other. OpenSpec describes the steps but
+does nothing to stop an agent from walking around them; superpowers keeps the agent disciplined,
+but once the branch is merged nothing is left that anyone will read later.
 
-### Strengths that were taken
+| Taken from | What LexForge does with it |
+| --- | --- |
+| OpenSpec: the order `proposal → specs → design → tasks` | the schema fixes it, `status` shows the queue, a `blocked` artifact is not written |
+| OpenSpec: requirements a program can check | `### Requirement:` with `WHEN`/`THEN` scenarios, checked by `validate --strict` |
+| OpenSpec: specs that stay in the repository | the delta is merged on `archive`, the change moves to `lexforge/changes/archive/` |
+| superpowers: the class of work named before design | the `lexforge` skill picks the schema: spike, `bounded`, `spec-driven` |
+| superpowers: TDD and subagent review | `lexforge-apply` runs both inside every task |
+| superpowers: no completion claim without fresh output | `evidence record` runs the command and stamps the commit and the tree |
 
-| Donor | Strength | Where it lives in LexForge |
-| --- | --- | --- |
-| OpenSpec | A change moves through `proposal → specs → design → tasks` | the change schema fixes the order, `lexforge status` shows the queue |
-| OpenSpec | Requirements written so a program can check them: `### Requirement:` with one or more `#### Scenario:` on `WHEN`/`THEN` | `lexforge validate --strict` |
-| OpenSpec | Specs live in the repository, the delta is merged on archive | `lexforge/specs/`, `lexforge archive` |
-| OpenSpec | The instruction for an artifact is assembled together with the project's context and rules | `lexforge instructions <artifact> --change <name>` |
-| OpenSpec | A change that alters no behaviour is not forced to invent a requirement | `skip_specs: true` in `.lexforge.yaml`, artifact status `skipped` |
-| superpowers | The class of work is named before any design starts | the `lexforge` skill picks the schema: spike, `bounded`, `spec-driven` |
-| superpowers | One question at a time, and 2–3 approaches with a recommendation before the artifact is written | `lexforge-propose` |
-| superpowers | TDD with the failing test actually observed | `lexforge-apply` inside every task |
-| superpowers | Subagent review with a narrow context instead of the whole session history | `lexforge-apply` between tasks |
-| superpowers | A claim of completion is backed by fresh command output | `lexforge evidence record`, `check evidence`, `lexforge-verify` |
-| superpowers | The cause of a bug is found before a fix is proposed | `lexforge-debug` |
-| superpowers | A text format proven on live agents: an Iron Law, a "rationalization → reality" table, Red Flags | the prose part of every `SKILL.md` |
-
-### Weaknesses that were closed
-
-| Donor | Weakness | What LexForge does instead |
-| --- | --- | --- |
-| OpenSpec | Not a single behavioural prohibition for the agent: the steps are described, nothing prevents skipping them | the gates compute the state themselves: `status` returns `blocked`, and `check plan`, `check evidence` and `verify` answer with an exit code; no command has a flag that turns a rule off |
-| OpenSpec | `proposal.md` is written straight from the user's first message, freezing an unverified reading of the task into the artifact | `lexforge-propose` asks one question at a time and puts approaches with a recommendation on the table before writing the "Why" section |
-| OpenSpec | "Done" can be claimed without running a single check | `evidence record` runs the labelled command itself and writes a stamp carrying the exit code, the commit and a fingerprint of the working tree; it accepts no arbitrary command as an argument |
-| OpenSpec | `SKILL.md` is generated by a TypeScript function, so editing a skill means rebuilding the package | skills are plain files and are edited as text |
-| superpowers | Nothing durable survives the merge: the design sits in `docs/superpowers/specs/` and is never read again | the delta is merged into `lexforge/specs/<capability>/spec.md`, and the whole change moves to `lexforge/changes/archive/` |
-| superpowers | Requirements are written as prose, which no program can check | delta specs with `Requirement` and `Scenario`, checked by `validate --strict` |
-| superpowers | Discipline is held by text alone, and an agent finds a rationalization for text | part of the rules moved into the CLI: a plan free of placeholders, requirement coverage by tasks and stamp freshness are checked by a command, not by persuasion |
-| superpowers | The skills share no state, so a skill cannot tell what has already been done | `lexforge status --change <name> --json` returns artifact statuses, `blockedBy` and `isPlanningComplete`; every skill opens with that call |
-| superpowers | The agent assembles the order of fourteen general-purpose skills on its own | the order comes from the change schema, and a skill whose artifact is `blocked` stops and names what is missing |
-
-Two duplications are cut. The design lives only in the change directory; no separate
-`docs/superpowers/specs/` is created. The plan is not a second file: `tasks.md` is written to the
-writing-plans standard and serves as the plan.
+Neither donor had the rest. Placeholder-free plans, requirement coverage and stamp freshness are
+checked by a command instead of by persuasion, and no command has a flag that turns a rule off. The
+skills share state through `lexforge status --change <name> --json`, so none of them guesses what
+is already done. Two duplications are cut: the design lives only in the change directory, and
+`tasks.md` serves as the plan.
 
 ## How it works
 
 ```
-                 request: "build X", "add Y", "fix Z"
-                                    │
-                                    ▼
-                     ┌──────────────────────────┐
-                     │  skill: lexforge         │  ──►  spike: answer and recommendation,
-                     │  class of work           │       no change is created
-                     └──────────────┬───────────┘
-                                    │ bounded · spec-driven
-                                    ▼
-          lexforge new change <name>  [--schema bounded|spec-driven]
-                                    │
-                                    ▼
-┌─ PLANNING · project code is not touched ───────────────────────────────┐
-│ every skill starts with:  lexforge status --change <name> --json       │
-│ ready → work            blocked → name blockedBy and stop              │
-│                                                                        │
-│   lexforge-propose  ──►  proposal.md                                   │
-│       gate: one question at a time, 2–3 approaches before "Why"        │
-│             │                                                          │
-│             ▼                                                          │
-│   lexforge-spec     ──►  specs/<capability>/spec.md                    │
-│       gate: lexforge validate --strict → exit 0                        │
-│             │                                                          │
-│             ▼                                                          │
-│   lexforge-design   ──►  design.md        (spec-driven schema)         │
-│       gate: agreed section by section, not as a whole document         │
-│             │                                                          │
-│             ▼                                                          │
-│   lexforge-plan     ──►  tasks.md                                      │
-│       gate: lexforge check plan → exit 0                               │
-└────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-          lexforge status:  isPlanningComplete = true
-                                    │
-                                    ▼
-┌─ IMPLEMENTATION · lexforge-apply, one task at a time ──────────────────┐
-│    ┌──────────────────────────────────────────────────┐                │
-│    │  failing test  ──►  minimal implementation       │                │
-│    │        ▲                        │                │                │
-│    │        │                        ▼                │                │
-│    │  next task  ◄──────────  subagent review         │                │
-│    │        ▲                        │                │                │
-│    │        └───── evidence record ◄─┘                │                │
-│    └──────────────────────────────────────────────────┘                │
-│                                                                        │
-│    task grew past the spec → stop and ask the user                     │
-└────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-                       skill: lexforge-verify
-                  lexforge verify --change <name>
-         check plan · check evidence · unchecked tasks
-                                    │
-           ┌────────────────────────┴────────────────────────┐
-           │ CRITICAL found                                  │ zero CRITICAL
-           ▼                                                 ▼
-   back to lexforge-apply                        skill: lexforge-archive
-                                                 lexforge archive <change>
-                                                   │
-                                                   ├──► delta → lexforge/specs/<capability>/spec.md
-                                                   └──► change → lexforge/changes/archive/<date>-<name>/
+request: "build X", "add Y", "fix Z"
+    │
+    ▼
+skill: lexforge — names the class of work  ──►  spike: answer only, no change
+    │  bounded · spec-driven
+    ▼
+lexforge new change <name>
+    │
+    ▼
+PLANNING — project code is not touched. Every skill first calls
+lexforge status --change <name> --json and works only on status `ready`;
+on `blocked` it names what is missing and stops.
+    lexforge-propose ──► proposal.md          one question at a time
+    lexforge-spec    ──► specs/<cap>/spec.md  validate --strict → 0
+    lexforge-design  ──► design.md            agreed section by section
+    lexforge-plan    ──► tasks.md             check plan → 0
+    │
+    ▼  isPlanningComplete = true
+IMPLEMENTATION — lexforge-apply, one task at a time
+    failing test ──► implementation ──► subagent review ──► evidence record
+    task grew past the spec → stop and ask the user
+    │
+    ▼
+lexforge-verify · lexforge verify --change <name>
+    CRITICAL found → back to lexforge-apply
+    zero CRITICAL  → lexforge archive <change>
+                     delta  → lexforge/specs/<capability>/spec.md
+                     change → lexforge/changes/archive/<date>-<name>/
 
-   off the pipeline: skill lexforge-debug — failing test, broken build, unexpected
-   behaviour. It works in projects with no LexForge workspace too.
+off the pipeline: lexforge-debug — failing test, broken build, unexpected
+behaviour; it works without a LexForge workspace too.
 ```
 
 ## Artifacts, gates, archive
 
-Every change lives in `lexforge/changes/<name>/`: `proposal.md`, the delta specs, `design.md`,
-`tasks.md`. The order comes from the change schema. An artifact in status `blocked` is not written
-until the one it depends on is ready. The agent reads the queue with
-`lexforge status --change <name> --json`.
+Every change lives in `lexforge/changes/<name>/`: `proposal.md`, the delta specs, `design.md` and
+`tasks.md`, in the order the schema fixes.
 
-The gates work out the state of the work themselves. `lexforge check plan --change <name>` looks
-for work the plan has not written down: template placeholders, references to a neighbouring task,
-a delta requirement no task covers. `lexforge evidence record --change <name> --label <label>` runs
-the verification command the project declared and records a stamp with the exit code, the commit
-and a fingerprint of the working tree. `lexforge check evidence --change <name>` compares the
-stamps against the code on disk, so an edit made after a run leaves the stamp stale.
-`lexforge verify --change <name>` collects these checks before the work is called finished, but it
-only reads stamps: verification commands are run by `evidence record`, and a fresh stamp has to be
-taken before `verify` is called. No command has a flag that switches a rule off or downgrades
-a finding.
+The gates work out the state of the work themselves. `check plan` looks for work the plan has not
+written down: placeholders, references to a neighbouring task, a delta requirement no task covers.
+`evidence record` runs the verification command the project declared and stamps it with the exit
+code, the commit and a fingerprint of the tree. `check evidence` compares the stamps against the
+code on disk, so an edit after a run leaves a stamp stale. `verify` collects these checks, but only
+reads stamps: a fresh one has to be taken before it is called.
 
-`lexforge archive <change>` merges the delta into `lexforge/specs/<capability>/spec.md` and moves
-the change directory to `lexforge/changes/archive/<date>-<name>/`. What stays in the repository is
-the specs describing the shipped behaviour, plus the whole change: proposal, design, plan and the
-stamps of the runs.
-
-## Requirements
-
-| What | Value |
-| --- | --- |
-| Node.js | 20.19.0 or newer, the version from the package's `engines` field |
-| npm | the one shipped with Node |
-| git | a repository with at least one commit; without it `evidence record`, `check evidence`, `verify` and `archive` answer with exit code `2` |
-| Agent | one of the five runtimes in the installation table |
-| Operating system | Linux, macOS or Windows: the suite runs on all three, on both versions of Node above |
-
-`lexforge init` neither requires nor creates a repository. Without `.git` it sets up the workspace
-and names the gates that will need one.
+`archive` merges the delta into `lexforge/specs/<capability>/spec.md` and moves the change
+directory to `lexforge/changes/archive/<date>-<name>/`. The repository keeps the specs of the
+shipped behaviour, plus the whole change with the stamps of its runs.
 
 ## Installation
 
-The package is published on npm as [`lexforge`](https://www.npmjs.com/package/lexforge).
-A global install puts the command on `PATH`, which is how the skills call it:
+A global install from [npm](https://www.npmjs.com/package/lexforge) puts the command on `PATH`,
+which is how the skills call it. A project install pins the version and is called through `npx`:
 
 ```bash
-npm install -g lexforge
+npm install --save-dev lexforge && npx lexforge --version
 ```
 
-`lexforge --version` prints the installed version and confirms the name resolved.
-
-Installing it as a project dependency pins the version to the project, and then the command is
-called through `npx`:
-
-```bash
-npm install --save-dev lexforge
-npx lexforge --version
-```
-
-The two ways are not equivalent. The skills call the command by the name `lexforge`, and
-`lexforge doctor` looks for that name on `PATH`: with a `devDependencies`-only install it reports
-`path-not-resolved`, and with both installs at once, global and local, it reports
+The two ways are not equivalent. `doctor` looks for the name `lexforge` on `PATH`: with
+a `devDependencies`-only install it reports `path-not-resolved`, and with both installs at once
 `path-multiple-installs`, because the call reaches a package other than the one answering.
 
-The skills themselves are installed by `lexforge init --tools <list>`, names separated by commas.
-The `--scope project` flag (the default) puts them in the project directory, `--scope user` in the
-home directory. The `--language <code>` flag names the language the project writes its artifacts
-in. Every runtime keeps its skills in its own place:
+The skills are installed by `lexforge init --tools <list>`, names separated by commas.
+`--scope project` (the default) puts them in the project, `--scope user` in the home directory, and
+`--language <code>` names the language the project writes its artifacts in. Every runtime keeps its
+skills in its own place:
 
 | Runtime | Project directory | User directory |
 | --- | --- | --- |
@@ -224,35 +147,21 @@ The name `agents` is the shared directory that several agents read.
 
 ## First run
 
-Four steps from an empty directory to the first change. None of them requires editing files by
-hand.
-
-### 1. Install the package
-
-```bash
-npm install -g lexforge
-```
-
-### 2. Set up the workspace and install the skills
+### 1. Set up the workspace and install the skills
 
 ```bash
 lexforge init --tools claude
 ```
 
-The command prints what it created: `lexforge/config.yaml`, `lexforge/specs/`,
-`lexforge/changes/archive/` and nine skill directories under `.claude/skills/`. As the next step it
-names `lexforge doctor`.
+It prints what it created: `lexforge/config.yaml`, `lexforge/specs/`, `lexforge/changes/archive/`
+and nine skill directories. Without `--tools` it installs no skills and lists the runtimes whose
+directories already exist — the choice stays with a human.
 
-Called without `--tools` it sets up the workspace, installs no skills and lists the runtimes whose
-directories already exist in the project or in the home directory. The choice stays with a human.
-
-### 3. Check the installation
+### 2. Check the installation
 
 ```bash
 lexforge doctor
 ```
-
-Six conditions, each named with or without a finding:
 
 ```
 OK    Workspace and configuration
@@ -264,10 +173,9 @@ OK    Node version
 Next step: installation is healthy. Ask your agent to start work, for example: lexforge new change <name>
 ```
 
-Right after installation the check gives two findings and exit code `1`. `lexforge init` does not
-create a git repository and does not fill in the `verification` section of the configuration, and
-the gates need both. The repository comes from `git init` and a first commit; the verification
-labels are added to `lexforge/config.yaml`:
+Right after installation it gives two findings and exit code `1`: `init` creates no git repository
+and fills in no `verification` section, and the gates need both. The repository comes from
+`git init` and a first commit; the labels are added to `lexforge/config.yaml`:
 
 ```yaml
 verification:
@@ -275,112 +183,91 @@ verification:
   lint: npm run lint
 ```
 
-A label name is written in lowercase letters and hyphens.
-`lexforge evidence record --change <name> --label tests` will run its command from the root of the
-workspace.
-
-### 4. Ask the agent for work
-
-From here the commands are called by the agent. On a request to build, add or fix something it
-enters through the `lexforge` skill, names the class of work and creates a change with
-`lexforge new change <name>`.
+A label name is lowercase letters and hyphens, and `evidence record --label tests` runs its command
+from the workspace root. From here the commands are called by the agent.
 
 ## The nine skills
 
-The agent picks a skill by the `description` line in the `SKILL.md` front matter. Planning is
-carried by five skills.
+The agent picks a skill by the `description` line in its `SKILL.md`. Planning is carried by five.
 
 | Skill | Fires when | Result |
 | --- | --- | --- |
-| `lexforge` | Someone asks to build, add, fix or figure something out, and no existing change covers it | The class of work named and a change created with the right schema |
-| `lexforge-propose` | A proposal is requested, or `lexforge status` shows the `proposal` artifact as `ready` | `proposal.md` built from the user's answers: the reason, the chosen approach, the boundaries |
-| `lexforge-spec` | Requirements and scenarios are requested, or `lexforge validate` finds a defect in a delta spec | Delta specs per capability with requirements and `WHEN`/`THEN` scenarios |
-| `lexforge-design` | Decisions and their cost are requested, and the change runs on the `spec-driven` schema | `design.md`, agreed with the user one section at a time |
-| `lexforge-plan` | A plan, a task list or a breakdown is requested, or `lexforge validate` finds a defect in `tasks.md` | `tasks.md` where every task names a file and a verification command |
+| `lexforge` | Building, adding or fixing something no change covers | The class of work named, a change created with the right schema |
+| `lexforge-propose` | A proposal is asked for, or `proposal` is `ready` | `proposal.md`: the reason, the approach, the boundaries |
+| `lexforge-spec` | Requirements are asked for, or `validate` finds a defect | Delta specs per capability with `WHEN`/`THEN` scenarios |
+| `lexforge-design` | Decisions are asked for, on the `spec-driven` schema | `design.md`, agreed one section at a time |
+| `lexforge-plan` | A plan is asked for, or `validate` finds a defect in it | `tasks.md`, each task naming a file and a verification command |
 
-Each of the five opens with `lexforge status --change <name> --json` and looks at the status of its
-own artifact: only `ready` allows work. On `blocked` the skill names the unfinished artifacts from
-`blockedBy` and stops. There is no "warn and write the file anyway" branch: a deadline, the size of
-the edit and a request to skip an artifact do not open a closed gate.
-
-The second half of the pipeline is carried by four skills.
+There is no "warn and write the file anyway" branch: a deadline, the size of the edit and a request
+to skip an artifact do not open a closed gate.
 
 | Skill | Fires when | Result |
 | --- | --- | --- |
-| `lexforge-apply` | The artifacts are written or skipped and implementation is requested | The plan's tasks closed one at a time: failing test, minimal implementation, subagent review, run stamp |
-| `lexforge-verify` | Implementation is finished, before archiving | A report across three dimensions with levels `CRITICAL`, `IMPORTANT`, `MINOR`; a single `CRITICAL` finding stops archiving |
-| `lexforge-archive` | The verification report has no `CRITICAL` findings and closing the change is requested | The delta in `lexforge/specs/`, the change directory in the archive, and a question to the user about the branch |
-| `lexforge-debug` | A test fails, a build breaks, code behaves differently than expected | The cause named, a failing test for the bug, one edit at the point of the cause |
+| `lexforge-apply` | The artifacts are done, implementation is asked for | Tasks closed one at a time: failing test, implementation, subagent review, stamp |
+| `lexforge-verify` | Implementation is finished, before archiving | A report on three dimensions; one `CRITICAL` finding stops archiving |
+| `lexforge-archive` | The report has no `CRITICAL` findings | The delta in `lexforge/specs/`, the change in the archive, a question about the branch |
+| `lexforge-debug` | A test fails, a build breaks, code behaves unexpectedly | The cause named, a failing test for the bug, one edit at that point |
 
-In the same response the implementation skills read the `isPlanningComplete` field: while a single
-artifact is neither written nor skipped, work does not start. `lexforge-debug` carries no such
-block, because a bug also happens in a project that has no LexForge workspace.
+The implementation skills read `isPlanningComplete`: while a single artifact is neither written nor
+skipped, work does not start. `lexforge-debug` carries no such block, because a bug also happens
+where there is no LexForge workspace.
 
-An edit to an installed skill does not survive. `lexforge doctor` compares the file byte for byte
-with what the package ships, and the next `lexforge init` restores the shipped text. Project rules
-are set through the `context` and `rules` sections in `lexforge/config.yaml`, from where they reach
-the artifact instruction served by `lexforge instructions`.
+An edit to an installed skill does not survive: `doctor` compares the file byte for byte with what
+the package ships, and the next `init` restores it. Project rules go into the `context` and `rules`
+sections of `lexforge/config.yaml`, from where they reach `lexforge instructions`.
 
 ## Commands and exit codes
 
-| Command | What it does |
+| Command, after `lexforge` | What it does |
 | --- | --- |
-| `lexforge init` | Sets up the `lexforge/` workspace and installs the skills for the listed runtimes; `--tools`, `--scope`, `--language` |
-| `lexforge doctor` | Checks whether the local installation is healthy |
-| `lexforge new change <name>` | Creates `lexforge/changes/<name>/` together with `.lexforge.yaml`; `--schema` takes a schema other than the project default |
-| `lexforge status` | Shows the artifact statuses of one change or lists all active ones; without `--change` it lists the active changes |
-| `lexforge instructions <artifact> --change <name>` | Serves the template, the context, the rules and the instruction for one artifact |
-| `lexforge validate <change>` | Checks the artifacts and requirements of a change; `--strict` adds completeness checks |
-| `lexforge check plan --change <name>` | Looks for work the change's plan has not written down |
-| `lexforge check evidence --change <name>` | Compares the change's stamps against the code on disk; `--require` narrows the list of labels |
-| `lexforge evidence record --change <name> --label <label>` | Runs the command of one verification label and records a stamp |
-| `lexforge verify --change <name>` | Checks a change before the work is called finished |
-| `lexforge archive <change>` | Merges the change's delta into the specs and moves its directory to the archive |
+| `init` | Sets up the `lexforge/` workspace and installs the skills; `--tools`, `--scope`, `--language` |
+| `doctor` | Checks whether the local installation is healthy |
+| `new change <name>` | Creates the change directory with `.lexforge.yaml`; `--schema` overrides the project default |
+| `status` | Shows the artifact statuses of one change, or lists the active changes |
+| `instructions <artifact> --change <name>` | Serves the template, the context, the rules and the instruction |
+| `validate <change>` | Checks the artifacts and requirements; `--strict` adds completeness checks |
+| `check plan --change <name>` | Looks for work the plan has not written down |
+| `check evidence --change <name>` | Compares the stamps against the code on disk; `--require` narrows the labels |
+| `evidence record --change <name> --label <label>` | Runs the command of one label and records a stamp |
+| `verify --change <name>` | Checks a change before the work is called finished |
+| `archive <change>` | Merges the delta into the specs and moves the change to the archive |
 
-Every command in the table accepts a `--json` flag. With it a single JSON document and nothing else
-goes to standard output, while the lines for humans go to standard error. The wording of the human
-output changes between versions; the JSON field names and the exit codes do not.
+Every command accepts `--json`: a single JSON document goes to standard output and nothing else,
+the lines for humans go to standard error. The wording of the human output changes between
+versions; the JSON field names and the exit codes do not.
 
 | Code | When |
 | --- | --- |
 | `0` | The command ran and found nothing |
-| `1` | The command ran and found a violation: an unmet dependency, a requirement without a scenario, a leftover template placeholder |
+| `1` | The command ran and found a violation: an unmet dependency, a requirement without a scenario, a leftover placeholder |
 | `2` | The command cannot run: an unknown argument, a missing change, no workspace, no git repository |
 
-There are no other codes. Code `1` reports a problem in the project, code `2` a wrong call.
-
-`lexforge doctor` has one exception. A missing workspace is a finding for it, so it answers with
-code `1` rather than `2`. That is a state of the installation, which is exactly what it is asked
-about.
+Code `1` reports a problem in the project, code `2` a wrong call, and there are no other codes.
+`doctor` has one exception: a missing workspace is a finding for it, so it answers `1`, not `2`.
 
 ## What to commit
 
 | Path | Where |
 | --- | --- |
-| `lexforge/config.yaml` | Into the repository: the schema, the context, the artifact rules and the verification labels are needed by the whole team |
-| `lexforge/specs/` | Into the repository: the specs describe the shipped behaviour |
-| `lexforge/changes/<name>/` together with `evidence.json` | Into the repository: a stamp is tied to a commit, and review shows what it was taken on |
-| `lexforge/changes/archive/` | Into the repository: closed changes with their artifacts and stamps |
-| The runtime skill directories and the `lexforge-install.json` next to them | Locally: `lexforge init` writes them, and the same command brings them back on another machine |
+| `lexforge/config.yaml` | Repository: the schema, the context, the rules and the labels are needed by the whole team |
+| `lexforge/specs/` | Repository: the specs describe the shipped behaviour |
+| `lexforge/changes/<name>/` with `evidence.json` | Repository: a stamp is tied to a commit, and review shows what it was taken on |
+| `lexforge/changes/archive/` | Repository: closed changes with their artifacts and stamps |
+| The runtime skill directories and `lexforge-install.json` | Locally: `lexforge init` brings them back on another machine |
 
 `evidence.json` changes on every run, so two people working on the same change in parallel will get
 a merge conflict on it.
 
 ## Limits
 
-Three things LexForge does not check, and they are better known upfront.
+`check plan` looks for placeholders with regular expressions, so a phrase like "add error handling"
+in the author's own words will not match. The set grows as findings come in.
 
-`check plan` looks for placeholders with regular expressions. A phrase like "add error handling"
-written in the author's own words will not match the pattern list. The set grows as findings come
-in.
+A stamp is tied to the commit and a fingerprint of the working tree. An edit after a run leaves it
+stale, but the reverse does not hold: a stamp does not say the coverage is sufficient.
 
-Stamp freshness is tied to the commit and to a fingerprint of the working tree. An edit made after
-a run leaves the stamp stale, but the reverse does not hold: a stamp does not say the coverage is
-sufficient.
-
-Whether the implementation follows the decisions in `design.md` is not computed by a machine. If
-the agent departs from the design, only the `lexforge-verify` skill will catch it — that is, the
-same agent.
+Whether the implementation follows `design.md` is not computed by a machine. If the agent departs
+from the design, only the `lexforge-verify` skill will catch it — that is, the same agent.
 
 ## License
 
