@@ -36,6 +36,10 @@ export default defineConfig({
         test: {
           name: "e2e",
           ...limits,
+          // На Windows файлы сквозных тестов идут по одному: каждый ставит пакет
+          // через npm, а две установки разом занимают раннер целиком, и главный
+          // процесс не успевает ответить рабочим за минуту.
+          ...(windows ? { fileParallelism: false } : {}),
           sequence: { groupOrder: 1 },
           include: ["tests/e2e/**/*.test.ts"],
           exclude: ["**/node_modules/**"],
