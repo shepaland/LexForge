@@ -1,11 +1,10 @@
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { afterAll, describe, expect, inject, it } from "vitest";
 
 import { git } from "../helpers/git-workspace.js";
-import { npmCall, npxCall } from "../helpers/npm.js";
+import { npmCall, npxCall, runProcess, type ProcessResult } from "../helpers/npm.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 /** The nine skills the package installs: five planning, four implementation. */
@@ -47,30 +46,23 @@ interface Project {
   home: string;
 }
 
-function installTarball(root: string): void {
+async function installTarball(root: string): Promise<void> {
   const call = npmCall(["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"]);
-  const install = spawnSync(call.file, call.args, {
-    cwd: root,
-    encoding: "utf8",
-    shell: call.shell,
-  });
+  const install = await runProcess(call, { cwd: root });
   expect(install.status, install.stderr).toBe(0);
 }
 
 /** A fresh directory with the tarball installed into it, nothing else. */
-function installProject(): Project {
+async function installProject(): Promise<Project> {
   const root = tempDir();
-  installTarball(root);
+  await await installTarball(root);
   return { root, home: tempDir() };
 }
 
 /** Runs the installed CLI the way a project would: through `npx`, by its bare name. */
-function lexforge(argv: string[], project: Project) {
-  const npx = npxCall(["lexforge", ...argv]);
-  return spawnSync(npx.file, npx.args, {
+function lexforge(argv: string[], project: Project): Promise<ProcessResult> {
+  return runProcess(npxCall(["lexforge", ...argv]), {
     cwd: project.root,
-    encoding: "utf8",
-    shell: npx.shell,
     env: { ...process.env, HOME: project.home, USERPROFILE: project.home },
   });
 }
@@ -78,10 +70,10 @@ function lexforge(argv: string[], project: Project) {
 describe("установка в чистый каталог", () => {
   it(
     "init --tools claude заводит рабочее пространство и девять скиллов",
-    () => {
-      const project = installProject();
+    async () => {
+      const project = await installProject();
 
-      const result = lexforge(["init", "--tools", "claude"], project);
+      const result = await lexforge(["init", "--tools", "claude"], project);
 
       expect(result.status, result.stderr).toBe(0);
       expect(existsSync(path.join(project.root, "lexforge/config.yaml"))).toBe(true);
@@ -94,10 +86,10 @@ describe("установка в чистый каталог", () => {
 
   it(
     "называет следующим шагом lexforge doctor",
-    () => {
-      const project = installProject();
+    async () => {
+      const project = await installProject();
 
-      const result = lexforge(["init", "--tools", "claude"], project);
+      const result = await lexforge(["init", "--tools", "claude"], project);
       const lines = result.stdout.trimEnd().split("\n");
 
       expect(result.status, result.stderr).toBe(0);
@@ -110,7 +102,7 @@ describe("установка в чистый каталог", () => {
 describe("круг из четырёх вызовов", () => {
   it(
     "init, doctor, new change и status --json завершаются кодом 0",
-    () => {
+    async () => {
       const root = tempDir();
       // `doctor` needs a repository with a commit and at least one
       // verification label; both are set up here, not by any of the four
@@ -118,10 +110,10 @@ describe("круг из четырёх вызовов", () => {
       // before the pipeline is asked to check itself.
       git(root, "init", "--initial-branch=main", "--quiet");
       git(root, "commit", "--allow-empty", "--message", "start", "--quiet");
-      installTarball(root);
+      await installTarball(root);
       const project: Project = { root, home: tempDir() };
 
-      const init = lexforge(["init", "--tools", "claude"], project);
+      const init = await lexforge(["init", "--tools", "claude"], project);
       expect(init.status, init.stderr).toBe(0);
 
       const configPath = path.join(root, "lexforge/config.yaml");
@@ -131,13 +123,13 @@ describe("круг из четырёх вызовов", () => {
         "utf8",
       );
 
-      const doctor = lexforge(["doctor"], project);
+      const doctor = await lexforge(["doctor"], project);
       expect(doctor.status, doctor.stderr).toBe(0);
 
-      const change = lexforge(["new", "change", "smoke"], project);
+      const change = await lexforge(["new", "change", "smoke"], project);
       expect(change.status, change.stderr).toBe(0);
 
-      const status = lexforge(["status", "--change", "smoke", "--json"], project);
+      const status = await lexforge(["status", "--change", "smoke", "--json"], project);
       expect(status.status, status.stderr).toBe(0);
 
       const data = JSON.parse(status.stdout) as { outputVersion: number; change: string };
@@ -151,13 +143,13 @@ describe("круг из четырёх вызовов", () => {
 describe("проверка сразу после установки", () => {
   it(
     "doctor даёт код 1 и называет отсутствие репозитория и пустой verification",
-    () => {
-      const project = installProject();
+    async () => {
+      const project = await installProject();
 
-      const init = lexforge(["init", "--tools", "claude"], project);
+      const init = await lexforge(["init", "--tools", "claude"], project);
       expect(init.status, init.stderr).toBe(0);
 
-      const doctor = lexforge(["doctor", "--json"], project);
+      const doctor = await lexforge(["doctor", "--json"], project);
       const data = JSON.parse(doctor.stdout) as {
         findings: Array<{ rule: string }>;
       };
@@ -174,10 +166,10 @@ describe("проверка сразу после установки", () => {
 describe("пакет потерял шаблон", () => {
   it(
     "new change падает на вызове, которому нужен пропавший шаблон",
-    () => {
-      const project = installProject();
+    async () => {
+      const project = await installProject();
 
-      const init = lexforge(["init", "--tools", "claude"], project);
+      const init = await lexforge(["init", "--tools", "claude"], project);
       expect(init.status, init.stderr).toBe(0);
 
       const templatePath = path.join(
@@ -192,7 +184,7 @@ describe("пакет потерял шаблон", () => {
       expect(existsSync(templatePath)).toBe(true);
       rmSync(templatePath);
 
-      const change = lexforge(["new", "change", "smoke"], project);
+      const change = await lexforge(["new", "change", "smoke"], project);
 
       expect(change.status).not.toBe(0);
       expect(change.stderr).toContain("template");
@@ -204,8 +196,8 @@ describe("пакет потерял шаблон", () => {
 describe("вторая установка", () => {
   it(
     "убирает скилл, который называет манифест прошлой версии, и оставляет девять текущих",
-    () => {
-      const project = installProject();
+    async () => {
+      const project = await installProject();
 
       // A skill left by a version that carried it, and its manifest — the
       // shape `renderManifest` writes, but a version this package no longer
@@ -231,7 +223,7 @@ describe("вторая установка", () => {
         "utf8",
       );
 
-      const result = lexforge(["init", "--tools", "claude"], project);
+      const result = await lexforge(["init", "--tools", "claude"], project);
 
       expect(result.status, result.stderr).toBe(0);
       expect(existsSync(path.join(skillsDir, "lexforge-retired"))).toBe(false);

@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import path from "node:path";
 
 /**
@@ -43,4 +44,39 @@ export function npxCall(args: string[]): Call {
   }
 
   return { file: WINDOWS ? "npx.cmd" : "npx", args, shell: WINDOWS };
+}
+
+/** Что вернул запущенный процесс: код возврата и оба потока целиком. */
+export interface ProcessResult {
+  status: number;
+  stdout: string;
+  stderr: string;
+}
+
+/**
+ * Запускает процесс, не занимая событийный цикл. Синхронный вызов держит его
+ * до конца: пока npm ставит пакет, рабочий процесс vitest не читает ответы
+ * главного, и прогон, где прошли все тесты, падает по сроку обмена.
+ */
+export function runProcess(
+  call: Call,
+  options: { cwd: string; env?: NodeJS.ProcessEnv },
+): Promise<ProcessResult> {
+  return new Promise((resolve) => {
+    execFile(
+      call.file,
+      call.args,
+      {
+        cwd: options.cwd,
+        encoding: "utf8",
+        shell: call.shell,
+        env: options.env,
+        maxBuffer: 32 * 1024 * 1024,
+      },
+      (error, stdout, stderr) => {
+        const status = error === null ? 0 : typeof error.code === "number" ? error.code : 1;
+        resolve({ status, stdout, stderr });
+      },
+    );
+  });
 }

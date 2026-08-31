@@ -1,11 +1,11 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { copyFileSync, cpSync, existsSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
-import { npmCall, npxCall } from "../helpers/npm.js";
+import { npmCall, npxCall, runProcess } from "../helpers/npm.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -159,7 +159,7 @@ describe("состав пакета, следы разработки", () => {
 describe("сборка перед упаковкой", () => {
   it(
     "упаковка без каталога dist даёт архив со сборкой",
-    () => {
+    async () => {
       const copy = tempDir();
 
       // A copy of the sources without `dist/`: the packing has to build them
@@ -179,13 +179,10 @@ describe("сборка перед упаковкой", () => {
 
       const destination = tempDir();
       const pack = npmCall(["pack", "--pack-destination", destination, "--loglevel", "error"]);
-      const output = execFileSync(pack.file, pack.args, {
-        cwd: copy,
-        encoding: "utf8",
-        shell: pack.shell,
-      });
+      const packed = await runProcess(pack, { cwd: copy });
+      expect(packed.status, packed.stderr).toBe(0);
 
-      const archive = path.join(destination, output.trim().split("\n").at(-1)!);
+      const archive = path.join(destination, packed.stdout.trim().split("\n").at(-1)!);
       const opened = tempDir();
       execFileSync("tar", ["-xf", archive, "-C", opened], { encoding: "utf8" });
 
@@ -198,15 +195,11 @@ describe("сборка перед упаковкой", () => {
 describe("установка в чужой проект", () => {
   it(
     "поставленный пакет проходит init, new change и status",
-    () => {
+    async () => {
       const project = tempDir();
 
       const call = npmCall(["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"]);
-      const install = spawnSync(call.file, call.args, {
-        cwd: project,
-        encoding: "utf8",
-        shell: call.shell,
-      });
+      const install = await runProcess(call, { cwd: project });
       expect(install.stderr).toBe("");
       expect(install.status).toBe(0);
 
@@ -216,14 +209,10 @@ describe("установка в чужой проект", () => {
         ["lexforge", "status", "--change", "smoke", "--json"],
       ];
 
-      const results = calls.map((argv) => {
-        const npx = npxCall(argv);
-        return spawnSync(npx.file, npx.args, {
-          cwd: project,
-          encoding: "utf8",
-          shell: npx.shell,
-        });
-      });
+      const results = [];
+      for (const argv of calls) {
+        results.push(await runProcess(npxCall(argv), { cwd: project }));
+      }
 
       for (const [index, result] of results.entries()) {
         expect(result.status, `${calls[index]!.join(" ")} → ${result.stderr}`).toBe(0);
@@ -242,22 +231,15 @@ describe("установка в чужой проект", () => {
 
   it(
     "init со списком инструментов раскладывает девять скиллов по каталогу агента",
-    () => {
+    async () => {
       const project = tempDir();
 
       const call = npmCall(["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"]);
-      const install = spawnSync(call.file, call.args, {
-        cwd: project,
-        encoding: "utf8",
-        shell: call.shell,
-      });
+      const install = await runProcess(call, { cwd: project });
       expect(install.status).toBe(0);
 
-      const npx = npxCall(["lexforge", "init", "--tools", "claude"]);
-      const result = spawnSync(npx.file, npx.args, {
+      const result = await runProcess(npxCall(["lexforge", "init", "--tools", "claude"]), {
         cwd: project,
-        encoding: "utf8",
-        shell: npx.shell,
       });
 
       expect(result.status, result.stderr).toBe(0);
