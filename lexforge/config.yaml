@@ -1,0 +1,37 @@
+# LexForge project configuration.
+
+# The schema every new change starts from.
+schema: spec-driven
+
+# The language the artifacts of this project are written in.
+language: en
+
+
+# context: what this project is. Every artifact instruction is given this text.
+# context: |
+#   A command line tool that keeps the pipeline honest.
+context: |
+  LexForge is a spec-driven pipeline for coding agents, published on npm as `lexforge`.
+  TypeScript, Node 20.19+, vitest. The suite runs on Linux, macOS and Windows.
+  The repository develops LexForge through LexForge itself.
+
+# rules: extra rules per artifact id, added to the instruction of that artifact.
+# rules:
+#   proposal:
+#     - Name the user facing change in one sentence.
+rules:
+  proposal:
+    - Name the class of work before any design
+  tasks:
+    - Every task names a file and a verification command
+
+# operations: commands the pipeline runs for you.
+# operations:
+#   apply: npm run build
+
+# verification: named checks, one command per label.
+# verification:
+#   tests: npm test
+#   lint: npm run lint
+verification:
+  tests: npm run test:all

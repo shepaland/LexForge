@@ -1,6 +1,6 @@
 # Артефакты процесса разработки — нужны в сессии, не пользователю продукта
-openspec/
 docs/superpowers/
+.superpowers/
 
 # Changes в работе — процесс. Спеки в lexforge/specs/ коммитятся: они описывают
 # поведение выпущенного продукта.
@@ -18,6 +18,10 @@ lexforge/changes/
 node_modules/
 dist/
 *.tsbuildinfo
+
+# Следы рантайма — остаются локальными, не часть репозитория продукта
+.claude/skills/
+.claude/lexforge-install.json
 
 # Изолированные рабочие деревья сессий
 .claude/worktrees/
