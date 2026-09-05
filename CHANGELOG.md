@@ -9,6 +9,14 @@ contract — a renamed or removed field of a `--json` answer, or a moved exit co
 major number. A new command or flag raises the minor number. A wording change to a skill,
 a template or a message printed to a person raises the patch number.
 
+The owner may keep a contract change on the minor number, and `1.3.0` is such a release: it
+removed the `role` field. The skills and the CLI ship in one package and are upgraded
+together, so the caller that breaks on a change like this is a skill installed from an
+earlier version, not somebody's own code. Two things hold whichever number a release gets:
+the entry lists the contract change in its own section, and an upgrade that touches the
+skills says so - after `npm install lexforge@<version>` comes
+`lexforge init --tools <list>`, which rewrites them in place.
+
 ## 1.3.0 — 2026-09-05
 
 Model sets per runtime, and the roles removed. Agents of different vendors work in one
