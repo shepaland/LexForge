@@ -17,6 +17,8 @@ export interface ArtifactInstructionsOptions {
   cwd: string;
   change: string;
   artifact: string;
+  /** The runtime the call comes from; empty when the caller names none. */
+  tool?: string;
 }
 
 export interface InstructionsArtifact {
@@ -43,9 +45,7 @@ export interface ArtifactInstructionsData {
   rules: string[];
   language: string;
   languageExplicit: boolean;
-  /** The role this artifact belongs to; empty for an artifact outside the stage table. */
-  role: string;
-  /** Provider and model of that role. Both empty in a project with no assignment. */
+  /** Provider and model of the calling runtime. Both empty with no assignment. */
   provider: string;
   model: string;
   dependencies: InstructionsDependency[];
@@ -97,7 +97,7 @@ export function artifactInstructions(
     };
   });
 
-  const assignment = resolveStage(project.models, artifactState.id);
+  const assignment = resolveStage(project.models, artifactState.id, options.tool ?? "");
 
   const data: ArtifactInstructionsData = {
     outputVersion: 1,
@@ -115,7 +115,6 @@ export function artifactInstructions(
     rules: project.rules[definition.id] ?? [],
     language: project.language,
     languageExplicit: project.languageExplicit,
-    role: assignment.role,
     provider: assignment.provider,
     model: assignment.model,
     dependencies,
@@ -148,8 +147,8 @@ function renderLines(data: ArtifactInstructionsData): string[] {
     data.instruction.trimEnd(),
   ];
 
-  if (data.model !== "") {
-    lines.push("", `Model: role ${data.role}, provider ${data.provider}, model ${data.model}`);
+  if (data.model !== "" && data.provider !== "") {
+    lines.push("", `Model: provider ${data.provider}, model ${data.model}`);
   }
 
   if (data.context !== "") {

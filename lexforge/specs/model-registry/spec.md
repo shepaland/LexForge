@@ -35,6 +35,12 @@ The catalogue SHALL belong to the project: a user adds a provider or a model nam
 package. After that the shipped list SHALL NOT be read again: an upgrade of LexForge SHALL
 NOT change the catalogue of a project that already has one.
 
+The same call SHALL write a `tools` entry for each runtime named in `--tools` that has a
+vendor of its own - `claude` for Anthropic and `codex` for OpenAI - each entry naming that
+provider and the first model the shipped catalogue lists for it. A runtime that fronts
+several vendors - `cursor`, `opencode` and `agents` - SHALL get no entry. No top-level
+`default` SHALL be written.
+
 #### Scenario: A new project
 
 - **WHEN** `lexforge init` runs in a project that has no `lexforge/` directory
@@ -45,6 +51,18 @@ NOT change the catalogue of a project that already has one.
 
 - **WHEN** LexForge is upgraded in a project whose `config.yaml` already holds a catalogue
 - **THEN** the catalogue stays exactly as the project wrote it
+
+#### Scenario: A project set up for two runtimes
+
+- **WHEN** `lexforge init --tools claude,codex` runs in an empty project
+- **THEN** the `models` section holds a `tools` entry for `claude` naming the Anthropic
+  provider, an entry for `codex` naming the OpenAI provider, and no top-level `default`
+
+#### Scenario: A runtime that fronts several vendors
+
+- **WHEN** `lexforge init --tools cursor` runs in an empty project
+- **THEN** the `models` section holds the catalogue, no `tools` entry and no top-level
+  `default`, and every stage resolves to an empty assignment
 
 ### Requirement: A name outside the catalogue passes through unchanged
 

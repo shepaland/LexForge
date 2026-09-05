@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/run.js";
+import { readProjectConfig } from "../../src/core/workspace/project-config.js";
 import { answerPath } from "../../src/core/answer-path.js";
 import { createCapture } from "../helpers/capture.js";
 import { git } from "../helpers/git-workspace.js";
@@ -452,5 +453,31 @@ describe("lexforge init, проект без раздела models", () => {
 
     expect(exitCode).toBe(0);
     expect(readFileSync(path.join(root, "lexforge/config.yaml"), "utf8")).toBe(own);
+  });
+});
+
+describe("lexforge init, блоки рантаймов в созданном конфиге", () => {
+  it("рантайм поверх нескольких вендоров получает каталог без блока и без default", async () => {
+    const root = project();
+
+    const { exitCode } = await init(["init", "--tools", "cursor"], root);
+    const config = readProjectConfig(root);
+
+    expect(exitCode).toBe(0);
+    expect(config.models.tools).toEqual({});
+    expect(config.models.default).toBeNull();
+    expect(Object.keys(config.models.providers)).toContain("anthropic");
+  });
+
+  it("два рантайма со своими вендорами получают по блоку", async () => {
+    const root = project();
+
+    const { exitCode } = await init(["init", "--tools", "claude,codex"], root);
+    const config = readProjectConfig(root);
+
+    expect(exitCode).toBe(0);
+    expect(config.models.tools.claude?.provider).toBe("anthropic");
+    expect(config.models.tools.codex?.model).toBe("gpt-5.6-sol");
+    expect(config.models.default).toBeNull();
   });
 });

@@ -3,17 +3,39 @@ name: lexforge-debug
 description: Use when a test fails, a build breaks, a bug is reported or code behaves unexpectedly - before naming a cause or proposing a fix, and again when a fix has already been tried and the problem is still there.
 ---
 
+<!-- model-block:start -->
+## Model
+
+When your project names no model for your runtime, run this work on the model your own
+provider is given here. What the project names replaces this table.
+
+| Provider | Model |
+|---|---|
+| anthropic | claude-sonnet-5 |
+| openai | gpt-5.6-terra |
+| google | gemini-3.7-flash |
+| deepseek | deepseek-v4-flash |
+| z.ai | glm-4.7-flash |
+
+A provider outside the table names nothing, so work on the model at work.
+<!-- model-block:end -->
 <!-- queue-rule:start -->
 
 <!-- model-gate:start -->
 ## Model gate
 
-`role`, `provider` and `model` name the model this work runs on. Read them from
-`lexforge instructions <artifact> --change <name> --json` when you write an artifact, and
-from your own entry in `stages` of `lexforge status --change <name> --json` when you do
-not: your entry is the one whose `stage` is your own name without the `lexforge-` prefix.
-An empty `model` demands nothing, and so does no workspace, no change and no entry of
-your own — nothing to compare, so work.
+`provider` and `model` name the model this work runs on. Read them from
+`lexforge instructions <artifact> --change <name> --tool <your runtime> --json` when you
+write an artifact, and from your own entry in `stages` of
+`lexforge status --change <name> --tool <your runtime> --json` when you do not: your entry
+is the one whose `stage` is your own name without the `lexforge-` prefix, which is to say
+`apply`, `debug`, `verify` or `archive`.
+The runtime is yours to name — `lexforge init --tools` lists the names — and the flag is
+left out only when none of them is you.
+
+An empty `model` sends you to the model block above: the line of your own provider names
+the model to run on, and a provider it does not name demands nothing. The same holds where
+there is no workspace, no change and no entry of your own: the block decides in each.
 
 Running on that model: work, and say nothing about models. Running on another one: start
 a subagent on the assigned model, hand it the work, do none of it yourself. Naming the
@@ -30,6 +52,8 @@ out — make the model reachable, or change the assignment in `lexforge/config.y
 | "I'm not going to bury that mismatch - I say it plainly to the user" | Saying it is not handing it over. The work is done either way. |
 | "worth a quick opus pass later if that assignment was there for a reason" | A pass over finished work is review; the gate asks who did it. |
 | "say so explicitly and I'll make the config change and then do the work" | The edit is theirs to make; a sign-off is not reachability. |
+| "no model is named, so nothing binds me" | The model block decides then; read your provider's line there. |
+| "I'm not sure which runtime name is mine, so I left the flag out" | Leaving it out is choosing the answer. Name the runtime you are, or say you cannot. |
 <!-- model-gate:end -->
 <!-- queue-rule:end -->
 
@@ -39,22 +63,24 @@ out — make the model reachable, or change the assignment in `lexforge/config.y
 
 Violating the letter of this rule is violating its spirit.
 
+Debugging inside a change: name it in the gate's status call — the `debug` stage carries
+its own assignment.
+
 ## What a found cause is
 
 Three statements: where the wrong value first appears, the path it took to the failing
 line, and the change after which the behaviour started.
 
 A symptom matching a guess is not a cause. A rule explaining how the value *could* be
-wrong is not one either: it covers the class, not this run. A write-up, a green
-pipeline, a documented default, five call sites doing the same - evidence to check, not
-the answer. Urgency moves none of this.
+wrong covers the class, not this run. A write-up, a green pipeline, a documented default,
+five call sites doing the same - evidence to check, not the answer.
 
 ## Four phases
 
 Finish each before the next.
 
 1. **Cause.** Read the whole error. Reproduce it. Read the recent changes to the code it
-   touches. Follow the wrong value back to where it appears.
+   touches, and follow the wrong value back to where it appears.
 2. **Comparison.** Find the nearest case that works, list every difference.
 3. **Hypothesis.** State one, in words, and test it with the smallest change that can
    disprove it. It survived? Phase 4. It did not? Back to phase 1 with what you learned,
@@ -66,15 +92,14 @@ Two changes in one run cannot be told apart by the result.
 ## The test comes first
 
 Write a test that reproduces the bug, run it, quote the failing line - then change code.
-A test that passes first time is testing something else. Checking by hand is not a test:
-it does not run again tomorrow. A test written after the fix pins the fix, not the bug.
+A test that passes first time is testing something else. Checking by hand does not run
+again tomorrow. A test written after the fix pins the fix, not the bug.
 
 ## Three failed fixes end the fixing
 
 Count them. After the third change that left the bug alive or moved it somewhere new,
-stop and talk to the user about how the system is put together. Say the count and what
-each attempt turned up. No fourth change before that conversation: not a smaller one,
-not one a layer down, not the one that finally looks like the real cause.
+stop and talk to the user about how the system is put together. Say the count and what each attempt showed. No fourth change before that conversation: not a smaller
+one, not the one that finally looks like the real cause.
 A fix that cannot land without rewriting the layer beside it is the same signal.
 
 ## Say when you do not know

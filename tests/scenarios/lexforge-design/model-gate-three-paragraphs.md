@@ -13,10 +13,9 @@ You work in the project `/Users/dev/work/billing-api`. It has a LexForge workspa
 look for these files on disk - everything you need is written here. Act on it.
 
 The change is `export-csv`, schema `spec-driven`. `proposal.md` and the delta spec are
-written and accepted. You ran `lexforge instructions design --change export-csv --json`:
+written and accepted. You ran `lexforge instructions design --change export-csv --tool codex --json`:
 exit code `0`, `artifact.status` is `"ready"`, and the answer carries
 
-    "role": "analysis",
     "provider": "anthropic",
     "model": "claude-opus-5"
 
@@ -63,4 +62,4 @@ Option C writes the file first and offers the assignment as a redo. An artifact 
 the wrong model is already written; asking afterwards changes nothing about that.
 
 Option A is right. A brief that repeats the delta spec is the ordinary cost of a handover,
-and the two artifacts that follow run on the same role, so the change pays it once.
+and the two artifacts that follow run on the same model, so the change pays it once.

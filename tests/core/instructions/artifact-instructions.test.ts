@@ -43,7 +43,6 @@ describe("состав ответа artifactInstructions", () => {
       "rules",
       "language",
       "languageExplicit",
-      "role",
       "provider",
       "model",
       "dependencies",
@@ -258,12 +257,12 @@ models:
       artifact: "specs",
     });
 
-    expect(data.role).toBe("analysis");
     expect(data.provider).toBe("anthropic");
     expect(data.model).toBe("claude-opus-5");
+    expect("role" in data).toBe(false);
   });
 
-  it("проект без раздела models несёт роль с пустыми провайдером и моделью", () => {
+  it("проект без раздела models несёт пустые провайдера и модель", () => {
     const root = workspace();
 
     const result = artifactInstructions({
@@ -272,7 +271,6 @@ models:
       artifact: "proposal",
     });
 
-    expect(result.data.role).toBe("analysis");
     expect(result.data.provider).toBe("");
     expect(result.data.model).toBe("");
     expect(result.exitCode).toBe(0);

@@ -159,30 +159,41 @@ describe("initWorkspace, установка скиллов", () => {
 describe("initWorkspace: раздел models в созданном конфиге", () => {
   const SHIPPED_PROVIDERS = ["anthropic", "openai", "google", "deepseek", "z.ai"];
 
-  it("пишет default с провайдером и моделью, читаемый обратно", () => {
+  it("на каждый названный рантайм со своим вендором пишется свой блок", () => {
+    const root = project();
+
+    initWorkspace({ cwd: root, tools: ["claude", "codex"], skillsDir: SKILLS_DIR });
+    const config = readProjectConfig(root);
+
+    expect(config.models.tools.claude).toEqual({
+      provider: "anthropic",
+      model: "claude-opus-5",
+    });
+    expect(config.models.tools.codex).toEqual({
+      provider: "openai",
+      model: "gpt-5.6-sol",
+    });
+    expect(config.models.default).toBeNull();
+  });
+
+  it("рантайм поверх нескольких вендоров блока не получает", () => {
+    const root = project();
+
+    initWorkspace({ cwd: root, tools: ["cursor"], skillsDir: SKILLS_DIR });
+    const config = readProjectConfig(root);
+
+    expect(config.models.tools).toEqual({});
+    expect(config.models.default).toBeNull();
+  });
+
+  it("установка без рантаймов оставляет назначение пустым", () => {
     const root = project();
 
     initWorkspace({ cwd: root });
     const config = readProjectConfig(root);
 
-    expect(config.models.default).toEqual({
-      provider: "anthropic",
-      model: "claude-opus-5",
-    });
-  });
-
-  it("три роли лежат закомментированными переопределениями, а не назначением", () => {
-    const root = project();
-
-    initWorkspace({ cwd: root });
-    const text = readFileSync(path.join(root, "lexforge/config.yaml"), "utf8");
-
-    for (const role of ["analysis", "development", "review"]) {
-      expect(text, `роль ${role} не названа в конфиге`).toMatch(
-        new RegExp(`^\\s*#\\s*${role}:$`, "m"),
-      );
-    }
-    expect(readProjectConfig(root).models.roles).toEqual({});
+    expect(config.models.tools).toEqual({});
+    expect(config.models.default).toBeNull();
   });
 
   it("каталог providers переносит поставляемый список именем в имя", () => {
@@ -195,13 +206,13 @@ describe("initWorkspace: раздел models в созданном конфиг�
     expect(providers).toEqual(SHIPPED_CATALOGUE);
   });
 
-  it("каталог стоит после default и переопределений ролей", () => {
+  it("каталог стоит после блоков рантаймов", () => {
     const root = project();
 
-    initWorkspace({ cwd: root });
+    initWorkspace({ cwd: root, tools: ["codex"], skillsDir: SKILLS_DIR });
     const text = readFileSync(path.join(root, "lexforge/config.yaml"), "utf8");
 
-    expect(text.indexOf("providers:")).toBeGreaterThan(text.indexOf("default:"));
-    expect(text.indexOf("providers:")).toBeGreaterThan(text.indexOf("# review:"));
+    expect(text.indexOf("providers:")).toBeGreaterThan(text.indexOf("tools:"));
+    expect(text.indexOf("providers:")).toBeGreaterThan(text.indexOf("codex:"));
   });
 });

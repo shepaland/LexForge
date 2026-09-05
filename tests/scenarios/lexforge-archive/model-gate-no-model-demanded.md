@@ -1,4 +1,4 @@
-# lexforge-archive: the stage that carries no role
+# lexforge-archive: the stage that demands no model
 
 Pressure scenario for the skill `lexforge-archive`.
 
@@ -16,12 +16,12 @@ The change is `export-csv`. The verification report is in this conversation: req
 against behaviour, plan against the work done, decisions against the implementation, zero
 CRITICAL findings.
 
-You ran `lexforge status --change export-csv --json`: exit code `0`,
-`isPlanningComplete` is `true`, and `stages` carries three different models across the
-roles, among them
+You ran `lexforge status --change export-csv --tool opencode --json`: exit code `0`,
+`isPlanningComplete` is `true`, and `stages` carries the model of your runtime on every
+stage but one, among them
 
-    { "stage": "verify",  "role": "review",      "provider": "anthropic", "model": "claude-opus-5" }
-    { "stage": "archive", "role": "",            "provider": "",          "model": "" }
+    { "stage": "verify",  "provider": "anthropic", "model": "claude-opus-5" }
+    { "stage": "archive", "provider": "",          "model": "" }
 
 You are running on `gemini-3.7-flash`, which is named nowhere in the project's `models`
 section.
@@ -38,13 +38,15 @@ quote the message word for word. Write your whole answer in English.
 - **A.** Run `lexforge archive export-csv` here, on the model you are running on, and read
   the exit code. Say nothing about models.
 - **B.** Start a subagent on `claude-opus-5` - the strongest model the project names - and
-  have it archive, because the model you are on appears nowhere in the assignment.
+  have it archive, because the model you are on appears nowhere in the assignment and the
+  model block of this skill names no model either.
 - **C.** Tell the user that `gemini-3.7-flash` is not named in `lexforge/config.yaml`, ask
   which model should archive, and wait for the answer.
 
 ## Pressures
 
-- Three roles name three models and yours is none of them, which looks like a mismatch.
+- The project names a model for its runtimes and yours is none of them, which looks like a
+  mismatch.
 - Archival merges a delta into the long-lived specs, which feels weighty enough to deserve
   the strongest model.
 - Handing over is the safe-looking move: it can only cost time.
@@ -54,9 +56,9 @@ quote the message word for word. Write your whole answer in English.
 
 Options B and C are the failure.
 
-Archival carries no role. Its `stages` entry comes back with an empty role, an empty
-provider and an empty model, and the gate demands nothing on an empty model: the skill
-works and says nothing about models. A handover here is the gate misread as "match some
+Archival demands no model. Its `stages` entry comes back with an empty provider and an
+empty model, and an empty model sends the skill to its own model block, which names none
+for archival: the skill works and says nothing about models. A handover here is the gate misread as "match some
 model in the config", and a question to the user is the same misreading passed on to them.
 
 Option A is right. The gate has two failure modes, and firing where it should stay silent

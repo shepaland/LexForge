@@ -31,21 +31,26 @@ Then ask the agent for work in the usual words — "add X", "fix Y". The `lexfor
 class of work and the pipeline starts from there; the steps in full are in
 [First run](#first-run).
 
-## What's new in 1.2.0
+## What's new in 1.3.0
 
-A project now says which model each stage of a change runs on, and the skills obey it.
+Agents of different vendors work in one repository, and every skill carries the model it
+wants.
 
-- The `models` section of `lexforge/config.yaml` holds a `default`, overrides for the roles
-  `analysis`, `development` and `review`, and a `providers` catalogue of the names on hand.
-- `lexforge instructions` and `lexforge status` answer with the role and the model of every
-  stage, so a skill reads the assignment from the call it already makes.
-- All nine skills carry the same gate: work in silence when the model matches, hand the work
-  to a subagent on the assigned model when it does not, stop when that model cannot be
-  reached.
-- Nothing changes for a project installed earlier. `lexforge init` leaves an existing
-  `config.yaml` untouched, and a project without the section runs exactly as before. Details
-  in [Model assignment](#model-assignment).
-
+- The `models` section of `lexforge/config.yaml` holds an entry per runtime. A stage
+  resolves against the entry of the runtime the call comes from, and that entry decides
+  alone, so a Codex agent never lands on a Claude model because a Claude agent works here
+  too.
+- `lexforge instructions` and `lexforge status` take `--tool <name>`. The runtime is named
+  by the caller: LexForge reads no environment variable and infers nothing.
+- Every skill opens with a model block - the model it runs on, one line per provider. The
+  planning skills and the completion check name the strong model of a provider, the
+  implementation and debugging skills the middle one, archival names none. A model named by
+  the project replaces the block.
+- The three roles are gone, and with them the `role` field of the answers. A role key left
+  in a `config.yaml` is ignored, and no command refuses because of it.
+- Upgrading means upgrading the package and reinstalling the skills together, with one
+  `lexforge init --tools <list>`: a skill of this version calls an option 1.2.0 does not
+  know. Details in [Model assignment](#model-assignment).
 ## Supported platforms
 
 | What | Value |
@@ -204,51 +209,59 @@ from the workspace root. From here the commands are called by the agent.
 ## Model assignment
 
 The stages of a change reward different models: cutting a proposal is not grinding through
-`tasks.md`. The `models` section of `lexforge/config.yaml` names them once, and every stage
-resolves through one of three roles.
+`tasks.md`. Every skill opens with a model block - the model it wants, one line per
+provider - and reads that line when the project names none - so a repository works from the first run on whichever
+agent opens it. The planning skills and the completion check name the strong model of a
+provider, the implementation and debugging skills the middle one, and archival names none.
 
-| Role | Stages it covers |
-|---|---|
-| `analysis` | `proposal`, `specs`, `design`, `tasks` |
-| `development` | the implementation loop and debugging |
-| `review` | the completion check |
-
-Archival carries no role: it merges the delta into the long-lived specs on whichever model is
-at work. A role that is not named falls back to `default`, so one model everywhere is one
-entry, and lifting review onto a stronger model is three lines more:
+What the project says wins. The `models` section of `lexforge/config.yaml` holds one entry
+per runtime, and a stage resolves against the entry of the runtime the call comes from:
 
 ```yaml
 models:
-  default:
-    provider: anthropic
-    model: claude-opus-5
-  review:
-    provider: anthropic
-    model: claude-opus-5
+  tools:
+    claude:
+      provider: anthropic
+      model: claude-opus-5
+    codex:
+      provider: openai
+      model: gpt-5.6-sol
   providers:
     anthropic:
       - claude-opus-5
       - claude-sonnet-5
 ```
 
-`lexforge init` writes the whole section into a new project, `providers` seeded from the list
-that ships with the version installed. That catalogue is yours from then on: add a provider or
-a model name by editing the file, and it counts as known here without waiting for a release.
-Nothing is checked against it, so a model released after your installation works the day it
-ships.
+An entry decides alone: the top level is not read for a runtime that has one, so two agents
+of different vendors work in one repository without either reaching for the other's model. A
+runtime with no entry takes the top-level `default`, and a project that names neither leaves
+every skill on the model of its own model block.
 
-`lexforge instructions` and `lexforge status` answer with the role and the model of every
-stage, and the skills read the assignment from the call they already make. A skill running on
-another model hands the work to a subagent started on the assigned one; a skill that cannot
-reach that model stops and says so.
+`lexforge init --tools claude,codex` writes an entry for each named runtime that has a vendor
+of its own - `claude` for Anthropic, `codex` for OpenAI - and no `default`. `cursor`,
+`opencode` and `agents` front several vendors, so their models are yours to name.
+
+The catalogue `providers` is seeded from the list that ships with the version installed, and
+it is yours from then on: add a provider or a model name by editing the file, and it counts as
+known to this project without waiting for a release. Nothing is checked against it, so a model
+released after your installation works the day it ships.
+
+The runtime is named by the caller, never guessed:
+`lexforge instructions <artifact> --change <name> --tool codex --json` and
+`lexforge status --change <name> --tool codex --json` answer with the provider and the model
+of that runtime. LexForge reads no environment variable. A call that names no runtime is a
+call whose runtime is unknown, and it resolves against the top level of the section. A skill
+running on another model hands the work to a subagent started on the assigned one; a skill
+that cannot reach that model stops and says so.
 
 ### A project installed before this version
 
 Nothing changes until you ask for it. `lexforge init` leaves an existing `config.yaml`
 untouched, the missing `models` section included, and a project without the section gets an
-empty assignment: no command refuses, no stage names a model, no skill demands one. Switching
-the feature on is one edit — paste the block above into `lexforge/config.yaml` and fill in the
-names you use. Removing the section puts the project back exactly as it was.
+empty assignment: no command refuses, and every skill stays on the model of its own block. A
+key left over from the roles this release removed is ignored, and no command refuses because
+of it. Switching the section on is one edit - paste the block above into
+`lexforge/config.yaml` and fill in the names you use.
 
 ### The handover in each runtime
 
@@ -258,7 +271,7 @@ skill can start a subagent on a named model is the runtime's own business.
 | Runtime | Model selection for a subagent |
 |---|---|
 | `claude` | Confirmed: a subagent is started on a named model, and the handover works as described. |
-| `agents`, `codex`, `cursor`, `opencode` | Not confirmed here. Until a run shows otherwise, name one model in `default` and write no role overrides: every stage then resolves to the same model and no handover is asked for. |
+| `agents`, `codex`, `cursor`, `opencode` | Not confirmed here. Until a run shows otherwise, leave that runtime without an entry in the `models` section: its agents then stay on the model their skills name, and no handover is asked for. |
 
 ## The nine skills
 

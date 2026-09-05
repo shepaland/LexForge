@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { UsageError } from "../../../src/cli/errors.js";
-import { MODEL_ROLES, readProjectConfig } from "../../../src/core/workspace/project-config.js";
+import { resolveStages } from "../../../src/core/models/assignment.js";
+import { readProjectConfig } from "../../../src/core/workspace/project-config.js";
 import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
 
 const created: string[] = [];
@@ -121,9 +122,6 @@ const MODELS_SECTION = `models:
   default:
     provider: anthropic
     model: claude-opus-5
-  review:
-    provider: openai
-    model: gpt-5.6-sol
   providers:
     anthropic:
       - claude-opus-5
@@ -133,12 +131,10 @@ const MODELS_SECTION = `models:
 `;
 
 describe("readProjectConfig: раздел models", () => {
-  it("default, переопределение роли и каталог читаются вместе", () => {
+  it("default и каталог читаются вместе", () => {
     const config = readProjectConfig(workspace(MODELS_SECTION));
 
     expect(config.models.default).toEqual({ provider: "anthropic", model: "claude-opus-5" });
-    expect(config.models.roles.review).toEqual({ provider: "openai", model: "gpt-5.6-sol" });
-    expect(config.models.roles.analysis).toBeUndefined();
     expect(config.models.providers).toEqual({
       anthropic: ["claude-opus-5", "claude-sonnet-5"],
       "acme-internal": ["acme-coder-2"],
@@ -149,24 +145,7 @@ describe("readProjectConfig: раздел models", () => {
     const config = readProjectConfig(workspace("schema: bounded\n"));
 
     expect(config.models.default).toBeNull();
-    expect(config.models.roles).toEqual({});
     expect(config.models.providers).toEqual({});
-  });
-});
-
-describe("readProjectConfig: сломанный раздел models", () => {
-  it("роль строкой вместо пары останавливает чтение и называет роль и форму", () => {
-    let caught: unknown;
-    try {
-      readProjectConfig(workspace("models:\n  development: claude-opus-5\n"));
-    } catch (error) {
-      caught = error;
-    }
-
-    expect(caught).toBeInstanceOf(UsageError);
-    expect((caught as UsageError).code).toBe("project-config-invalid");
-    expect((caught as UsageError).message).toContain("models.development");
-    expect((caught as UsageError).message).toMatch(/a provider and a model/);
   });
 });
 
@@ -175,22 +154,88 @@ describe("readProjectConfig: пустой заголовок models", () => {
     const config = readProjectConfig(workspace("schema: spec-driven\nmodels:\n"));
 
     expect(config.models.default).toBeNull();
-    expect(config.models.roles).toEqual({});
     expect(config.models.providers).toEqual({});
   });
 });
 
-describe("readProjectConfig: список ролей и схема не расходятся", () => {
-  it("каждая роль из MODEL_ROLES читается из конфига как переопределение", () => {
-    for (const role of MODEL_ROLES) {
-      const config = readProjectConfig(
-        workspace(`models:\n  ${role}:\n    provider: acme-internal\n    model: acme-coder-2\n`),
-      );
+describe("readProjectConfig: ключ роли из прежней версии", () => {
+  it("ключ роли не читается, default и каталог остаются на месте", () => {
+    const config = readProjectConfig(
+      workspace(
+        "models:\n" +
+          "  default:\n    provider: anthropic\n    model: claude-opus-5\n" +
+          "  analysis:\n    provider: openai\n    model: gpt-5.6-sol\n" +
+          "  providers:\n    anthropic:\n      - claude-opus-5\n",
+      ),
+    );
 
-      expect(config.models.roles[role], `роль ${role} схемой не читается`).toEqual({
-        provider: "acme-internal",
-        model: "acme-coder-2",
-      });
+    expect(config.models.default).toEqual({ provider: "anthropic", model: "claude-opus-5" });
+    expect(config.models.providers).toEqual({ anthropic: ["claude-opus-5"] });
+
+    for (const stage of resolveStages(config.models)) {
+      if (stage.stage === "archive") {
+        continue;
+      }
+
+      expect(stage.model, `стадия ${stage.stage} ушла с модели default`).toBe("claude-opus-5");
     }
+  });
+});
+
+describe("readProjectConfig: сломанный default", () => {
+  it("default строкой вместо пары останавливает чтение и называет поле и форму", () => {
+    let caught: unknown;
+    try {
+      readProjectConfig(workspace("models:\n  default: claude-opus-5\n"));
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(UsageError);
+    expect((caught as UsageError).code).toBe("project-config-invalid");
+    expect((caught as UsageError).message).toContain("models.default");
+    expect((caught as UsageError).message).toMatch(/a provider and a model/);
+  });
+});
+
+describe("readProjectConfig: блоки рантаймов", () => {
+  it("каждый рантайм читается со своим провайдером и своей моделью", () => {
+    const config = readProjectConfig(
+      workspace(
+        "models:\n" +
+          "  tools:\n" +
+          "    claude:\n      provider: anthropic\n      model: claude-opus-5\n" +
+          "    codex:\n      provider: openai\n      model: gpt-5.6-sol\n",
+      ),
+    );
+
+    expect(config.models.tools.claude).toEqual({
+      provider: "anthropic",
+      model: "claude-opus-5",
+    });
+    expect(config.models.tools.codex).toEqual({ provider: "openai", model: "gpt-5.6-sol" });
+    expect(config.models.default).toBeNull();
+  });
+
+  it("без блоков рантаймов таблица пустая", () => {
+    const config = readProjectConfig(workspace("schema: bounded\n"));
+
+    expect(config.models.tools).toEqual({});
+  });
+});
+
+describe("readProjectConfig: сломанный блок рантайма", () => {
+  it("блок строкой вместо пары останавливает чтение и называет рантайм и форму", () => {
+    let caught: unknown;
+    try {
+      readProjectConfig(workspace("models:\n  tools:\n    codex: gpt-5.6-sol\n"));
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(UsageError);
+    expect((caught as UsageError).code).toBe("project-config-invalid");
+    expect((caught as UsageError).message).toContain("models.tools.codex");
+    expect((caught as UsageError).message).toMatch(/a provider and a model/);
   });
 });

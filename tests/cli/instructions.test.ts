@@ -111,7 +111,7 @@ models:
     model: claude-opus-5
 `;
 
-  it("человеческий вывод печатает роль, провайдера и модель одной строкой", async () => {
+  it("человеческий вывод печатает провайдера и модель одной строкой", async () => {
     const root = workspace({ "lexforge/config.yaml": MODELS });
 
     const { exitCode, capture } = await call(
@@ -120,7 +120,7 @@ models:
     );
 
     expect(exitCode).toBe(0);
-    expect(capture.out).toMatch(/^Model: role analysis, provider anthropic, model claude-opus-5$/m);
+    expect(capture.out).toMatch(/^Model: provider anthropic, model claude-opus-5$/m);
   });
 
   it("проект без раздела models строки о модели не печатает", async () => {
@@ -132,6 +132,72 @@ models:
     );
 
     expect(exitCode).toBe(0);
-    expect(capture.out).not.toContain("Model: role");
+    expect(capture.out).not.toContain("Model: provider");
+  });
+});
+
+describe("lexforge instructions: рантайм вызова", () => {
+  const TWO_RUNTIMES = `schema: spec-driven
+models:
+  default:
+    provider: anthropic
+    model: claude-opus-5
+  tools:
+    codex:
+      provider: openai
+      model: gpt-5.6-sol
+`;
+
+  it("человеческий вывод печатает модель названного рантайма", async () => {
+    const root = workspace({ "lexforge/config.yaml": TWO_RUNTIMES });
+
+    const { exitCode, capture } = await call(
+      ["instructions", "proposal", "--change", "add-auth", "--tool", "codex"],
+      root,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(capture.out).toMatch(/^Model: provider openai, model gpt-5\.6-sol$/m);
+  });
+
+  it("рантайм вне реестра вызов не останавливает", async () => {
+    const root = workspace({ "lexforge/config.yaml": TWO_RUNTIMES });
+
+    const { exitCode, capture } = await call(
+      ["instructions", "proposal", "--change", "add-auth", "--tool", "hermes", "--json"],
+      root,
+    );
+    const data = JSON.parse(capture.out) as { model: string };
+
+    expect(exitCode).toBe(0);
+    expect(data.model).toBe("claude-opus-5");
+  });
+
+  it("--tool отдаёт модель своего блока, а не верхнего уровня", async () => {
+    const root = workspace({ "lexforge/config.yaml": TWO_RUNTIMES });
+
+    const { exitCode, capture } = await call(
+      ["instructions", "proposal", "--change", "add-auth", "--tool", "codex", "--json"],
+      root,
+    );
+    const data = JSON.parse(capture.out) as { provider: string; model: string };
+
+    expect(exitCode).toBe(0);
+    expect(data.provider).toBe("openai");
+    expect(data.model).toBe("gpt-5.6-sol");
+  });
+
+  it("без --tool читается верхний уровень секции", async () => {
+    const root = workspace({ "lexforge/config.yaml": TWO_RUNTIMES });
+
+    const { exitCode, capture } = await call(
+      ["instructions", "proposal", "--change", "add-auth", "--json"],
+      root,
+    );
+    const data = JSON.parse(capture.out) as { provider: string; model: string };
+
+    expect(exitCode).toBe(0);
+    expect(data.provider).toBe("anthropic");
+    expect(data.model).toBe("claude-opus-5");
   });
 });

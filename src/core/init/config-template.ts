@@ -8,7 +8,7 @@ import { DEFAULT_SCHEMA } from "../workspace/project-config.js";
  * file shows what can be set without setting it. Without an explicit language the `language` field is left out on
  * purpose: a missing field means the project has not chosen a language yet.
  */
-export function projectConfigText(language = ""): string {
+export function projectConfigText(language = "", tools: string[] = []): string {
   const head = language
     ? `schema: ${DEFAULT_SCHEMA}\n\n` +
       `# The language the artifacts of this project are written in.\nlanguage: ${language}\n`
@@ -37,5 +37,5 @@ ${head}
 #   tests: npm test
 #   lint: npm run lint
 
-${modelsSectionText()}`;
+${modelsSectionText(tools)}`;
 }

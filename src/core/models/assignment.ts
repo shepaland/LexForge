@@ -1,4 +1,4 @@
-import type { ModelAssignment, ModelChoice, ModelRole } from "../workspace/project-config.js";
+import type { ModelAssignment } from "../workspace/project-config.js";
 
 /**
  * Every stage of the pipeline, in the order a change passes through them. The
@@ -19,66 +19,66 @@ export const PIPELINE_STAGES = [
 export type PipelineStage = (typeof PIPELINE_STAGES)[number];
 
 /**
- * Stage to role. The mapping is product behaviour fixed by the spec, identical
- * for every schema, and it covers the four stages no schema describes - which
- * is why it lives here and not in a schema file.
+ * The one stage that demands no model: archival merges the delta into the
+ * long-lived specs and runs on whichever model is at work. Exported because the
+ * silence of archival and the silence of a project that named no model read the
+ * same in an answer, and whoever prints them apart needs the name.
  */
-const STAGE_ROLES: Record<PipelineStage, ModelRole | null> = {
-  proposal: "analysis",
-  specs: "analysis",
-  design: "analysis",
-  tasks: "analysis",
-  apply: "development",
-  debug: "development",
-  verify: "review",
-  archive: null,
-};
+export const STAGE_WITHOUT_MODEL: PipelineStage = "archive";
 
 /** One stage of the pipeline with the model it resolves to. */
 export interface StageAssignment {
   stage: string;
-  /** The role of the stage; empty for a stage that carries none. */
-  role: string;
-  /** Empty in a project with no assignment, and for a stage without a role. */
+  /** Empty in a project with no assignment, and for the stage that demands none. */
   provider: string;
   model: string;
 }
 
 /**
- * The role of one stage. A stage the table does not hold - the artifact of a
- * schema outside the two shipped ones, or a name off the object prototype -
- * carries no role, so the signature takes a plain string and the callers need
- * no cast to ask.
+ * Whether the pipeline demands a model for this stage. A name outside the list -
+ * the artifact of a schema outside the two shipped ones, say - is no stage of
+ * the pipeline and demands nothing.
  */
-export function stageRole(stage: string): ModelRole | null {
-  return Object.hasOwn(STAGE_ROLES, stage)
-    ? STAGE_ROLES[stage as PipelineStage]
-    : null;
+function demandsModel(stage: string): boolean {
+  return (
+    stage !== STAGE_WITHOUT_MODEL && (PIPELINE_STAGES as readonly string[]).includes(stage)
+  );
 }
 
 /**
- * The model one stage runs on: the override of its role when the config names
- * one, the `default` otherwise. The catalogue is never consulted, so a name it
- * does not hold is carried through exactly as the config wrote it.
+ * The model one stage runs on for the runtime the call comes from: the entry of
+ * that runtime when the section holds one, the `default` otherwise. An entry
+ * decides alone - the top level is not read for a runtime that has one - so a
+ * runtime never inherits the model of another vendor. A call that names no
+ * runtime, and a name the section does not hold, both read the top level.
+ *
+ * The catalogue is never consulted, so a name it does not hold is carried
+ * through exactly as the config wrote it.
  */
-export function resolveStage(models: ModelAssignment, stage: string): StageAssignment {
-  const role = stageRole(stage);
-
-  if (role === null) {
-    return { stage, role: "", provider: "", model: "" };
+export function resolveStage(
+  models: ModelAssignment,
+  stage: string,
+  tool = "",
+): StageAssignment {
+  if (!demandsModel(stage)) {
+    return { stage, provider: "", model: "" };
   }
 
-  const choice: ModelChoice | null = models.roles[role] ?? models.default;
+  // `Object.hasOwn`, not a plain lookup: a runtime named `constructor` or
+  // `toString` would otherwise find something on the object prototype and lose
+  // the fallback the requirement gives it.
+  const entry =
+    tool !== "" && Object.hasOwn(models.tools, tool) ? models.tools[tool] : undefined;
+  const choice = entry ?? models.default;
 
   return {
     stage,
-    role,
     provider: choice?.provider ?? "",
     model: choice?.model ?? "",
   };
 }
 
 /** Every stage of the pipeline with its assignment, in the order of the table. */
-export function resolveStages(models: ModelAssignment): StageAssignment[] {
-  return PIPELINE_STAGES.map((stage) => resolveStage(models, stage));
+export function resolveStages(models: ModelAssignment, tool = ""): StageAssignment[] {
+  return PIPELINE_STAGES.map((stage) => resolveStage(models, stage, tool));
 }

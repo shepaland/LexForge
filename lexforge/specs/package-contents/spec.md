@@ -136,9 +136,12 @@ scenarios, and the stage order.
 
 ### Requirement: The README names the model assignment and how to switch it on
 
-The README SHALL carry a section on the model assignment: the three roles, the stages each
-role covers, the `default` every unnamed role falls back to, and the `providers` catalogue
-that names which model names are on hand.
+The README SHALL carry a section on the model assignment: the `tools` entries of the `models`
+section, one per runtime, the `default` a runtime without an entry falls back to, and the
+`providers` catalogue that names which model names are on hand.
+
+The section SHALL say that every skill opens with a model of its own, one line per provider,
+and that a project naming a model for the calling runtime replaces it.
 
 The section SHALL name what a project installed before this version does to switch the
 assignment on - `lexforge init` leaves an existing `config.yaml` alone, so the `models`
@@ -163,7 +166,8 @@ The gate names the handover without naming a runtime, so the README SHALL name, 
 runtime of the tool registry, how a subagent is started on a chosen model there.
 
 A runtime that cannot start a subagent on a chosen model SHALL be named as one where the
-assignment stays a single `default` and no role override is written.
+`models` section is left without an entry for that runtime, so its agents stay on the model
+their skills name.
 
 #### Scenario: A reader on one runtime
 
@@ -173,4 +177,5 @@ assignment stays a single `default` and no role override is written.
 #### Scenario: A runtime without model selection
 
 - **WHEN** a runtime cannot start a subagent on a chosen model
-- **THEN** the README names it and says to leave the assignment at a single `default`
+- **THEN** the README names it and says to leave that runtime without an entry in the
+  `models` section

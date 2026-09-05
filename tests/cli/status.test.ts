@@ -123,9 +123,6 @@ models:
   default:
     provider: anthropic
     model: claude-opus-5
-  review:
-    provider: openai
-    model: gpt-5.6-sol
 `;
 
   it("модель стоит рядом с каждым артефактом", async () => {
@@ -140,7 +137,7 @@ models:
     expect(capture.out).toMatch(/^ +proposal +ready +claude-opus-5$/m);
   });
 
-  it("стадии без артефакта печатаются со своими моделями, архивация — без роли", async () => {
+  it("стадии без артефакта печатаются со своими моделями, архивация — без модели", async () => {
     const root = workspace({
       "lexforge/config.yaml": MODELS,
       "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
@@ -149,9 +146,9 @@ models:
     const { capture } = await call(["status", "--change", "add-auth"], root);
 
     expect(capture.out).toContain("Stages without an artifact:");
-    expect(capture.out).toMatch(/^ +apply +development +claude-opus-5$/m);
-    expect(capture.out).toMatch(/^ +verify +review +gpt-5\.6-sol$/m);
-    expect(capture.out).toMatch(/^ +archive +no role$/m);
+    expect(capture.out).toMatch(/^ +apply +claude-opus-5$/m);
+    expect(capture.out).toMatch(/^ +verify +claude-opus-5$/m);
+    expect(capture.out).toMatch(/^ +archive +no model demanded$/m);
   });
 
   it("проект без раздела models печатает статус как раньше", async () => {
@@ -174,11 +171,12 @@ models:
     model: claude-opus-5
 `;
 
-  const REVIEW_ONLY = `schema: spec-driven
+  const OTHER_RUNTIME_ONLY = `schema: spec-driven
 models:
-  review:
-    provider: openai
-    model: gpt-5.6-sol
+  tools:
+    codex:
+      provider: openai
+      model: gpt-5.6-sol
 `;
 
   it("стадия, которой в схеме нет артефакта, попадает в блок стадий", async () => {
@@ -189,19 +187,108 @@ models:
 
     const { capture } = await call(["status", "--change", "rename-menu"], root);
 
-    expect(capture.out).toMatch(/^ +design +analysis +claude-opus-5$/m);
+    expect(capture.out).toMatch(/^ +design +claude-opus-5$/m);
     expect(capture.out).not.toMatch(/^ +design +(ready|blocked)/m);
   });
 
-  it("роль без default печатается как стадия без модели, архивация — как стадия без роли", async () => {
+  it("модель чужого рантайма своему вызову блока стадий не печатает", async () => {
     const root = workspace({
-      "lexforge/config.yaml": REVIEW_ONLY,
+      "lexforge/config.yaml": OTHER_RUNTIME_ONLY,
       "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
     });
 
-    const { capture } = await call(["status", "--change", "add-auth"], root);
+    const { capture } = await call(["status", "--change", "add-auth", "--tool", "claude"], root);
 
-    expect(capture.out).toMatch(/^ +apply +no model$/m);
-    expect(capture.out).toMatch(/^ +archive +no role$/m);
+    expect(capture.out).not.toContain("Stages without an artifact:");
+    expect(capture.out).toMatch(/^ +proposal +ready$/m);
+  });
+
+  it("архивация в рантайме со своим блоком печатается как стадия без модели", async () => {
+    const root = workspace({
+      "lexforge/config.yaml": OTHER_RUNTIME_ONLY,
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    });
+
+    const { capture } = await call(["status", "--change", "add-auth", "--tool", "codex"], root);
+
+    expect(capture.out).toMatch(/^ +apply +gpt-5\.6-sol$/m);
+    expect(capture.out).toMatch(/^ +archive +no model demanded$/m);
+  });
+});
+
+describe("lexforge status: рантайм вызова", () => {
+  const TWO_RUNTIMES = `schema: spec-driven
+models:
+  default:
+    provider: anthropic
+    model: claude-opus-5
+  tools:
+    codex:
+      provider: openai
+      model: gpt-5.6-sol
+`;
+
+  function change(): Record<string, string> {
+    return {
+      "lexforge/config.yaml": TWO_RUNTIMES,
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    };
+  }
+
+  it("--tool разрешает каждую стадию по блоку своего рантайма", async () => {
+    const root = workspace(change());
+
+    const { exitCode, capture } = await call(
+      ["status", "--change", "add-auth", "--tool", "codex", "--json"],
+      root,
+    );
+    const data = JSON.parse(capture.out) as {
+      stages: { stage: string; model: string }[];
+      artifacts: { id: string; model: string }[];
+    };
+
+    expect(exitCode).toBe(0);
+    expect(data.stages.find((stage) => stage.stage === "apply")?.model).toBe("gpt-5.6-sol");
+    expect(data.artifacts[0]?.model).toBe("gpt-5.6-sol");
+  });
+
+  it("без --tool каждая стадия читает верхний уровень секции", async () => {
+    const root = workspace(change());
+
+    const { exitCode, capture } = await call(["status", "--change", "add-auth", "--json"], root);
+    const data = JSON.parse(capture.out) as { stages: { stage: string; model: string }[] };
+
+    expect(exitCode).toBe(0);
+    expect(data.stages.find((stage) => stage.stage === "apply")?.model).toBe("claude-opus-5");
+  });
+
+  it("сломанный блок рантайма останавливает команду кодом 2", async () => {
+    const root = workspace({
+      "lexforge/config.yaml": "models:\n  tools:\n    codex: gpt-5.6-sol\n",
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+    });
+
+    const { exitCode, capture } = await call(
+      ["status", "--change", "add-auth", "--tool", "codex", "--json"],
+      root,
+    );
+    const data = JSON.parse(capture.out) as { error: { code: string; message: string } };
+
+    expect(exitCode).toBe(2);
+    expect(data.error.code).toBe("project-config-invalid");
+    expect(data.error.message).toContain("models.tools.codex");
+  });
+
+  it("--tool с рантаймом вне реестра не останавливает вызов", async () => {
+    const root = workspace(change());
+
+    const { exitCode, capture } = await call(
+      ["status", "--change", "add-auth", "--tool", "hermes", "--json"],
+      root,
+    );
+    const data = JSON.parse(capture.out) as { stages: { stage: string; model: string }[] };
+
+    expect(exitCode).toBe(0);
+    expect(data.stages.find((stage) => stage.stage === "apply")?.model).toBe("claude-opus-5");
   });
 });

@@ -4,12 +4,18 @@ import path from "node:path";
 /** Where an installation writes: into the project, or into the user home. */
 export type InstallScope = "project" | "user";
 
-/** The two skill directories of one agent. */
+/** The two skill directories of one agent, and the vendor behind it. */
 export interface ToolDirectories {
   /** Relative to the project root. */
   project: string;
   /** Starts with `~/`; the home directory is filled in by `toolDirectory`. */
   user: string;
+  /**
+   * The provider whose models this runtime runs on, empty for a runtime that
+   * fronts several of them. `init` writes a model entry only for a runtime that
+   * names one: for the rest the choice belongs to the person, not the installer.
+   */
+  vendor: string;
 }
 
 /**
@@ -33,12 +39,25 @@ export interface ToolDirectories {
  * stale is fixed in its row, and nowhere else.
  */
 export const TOOL_DIRECTORIES: Record<string, ToolDirectories> = {
-  agents: { project: ".agents/skills", user: "~/.agents/skills" },
-  claude: { project: ".claude/skills", user: "~/.claude/skills" },
-  codex: { project: ".codex/skills", user: "~/.codex/skills" },
-  cursor: { project: ".cursor/skills", user: "~/.cursor/skills" },
-  opencode: { project: ".opencode/skills", user: "~/.config/opencode/skills" },
+  agents: { project: ".agents/skills", user: "~/.agents/skills", vendor: "" },
+  claude: { project: ".claude/skills", user: "~/.claude/skills", vendor: "anthropic" },
+  codex: { project: ".codex/skills", user: "~/.codex/skills", vendor: "openai" },
+  cursor: { project: ".cursor/skills", user: "~/.cursor/skills", vendor: "" },
+  opencode: {
+    project: ".opencode/skills",
+    user: "~/.config/opencode/skills",
+    vendor: "",
+  },
 };
+
+/**
+ * The provider one runtime runs on, empty for a runtime that fronts several and
+ * for a name the registry does not hold. `Object.hasOwn`, not a plain lookup: a
+ * name off the object prototype is no runtime.
+ */
+export function toolVendor(tool: string): string {
+  return Object.hasOwn(TOOL_DIRECTORIES, tool) ? TOOL_DIRECTORIES[tool]!.vendor : "";
+}
 
 /** Supported tool names, in alphabetical order, for messages and for help text. */
 export function knownTools(): string[] {

@@ -3,10 +3,26 @@ name: lexforge-plan
 description: Use when a plan, a task list or a breakdown of the work is asked for on a LexForge change that already exists - the user wants the plan for a change or its `tasks.md`, or `lexforge validate` reports a finding in the tasks artifact.
 ---
 
+<!-- model-block:start -->
+## Model
+
+When your project names no model for your runtime, run this work on the model your own
+provider is given here. What the project names replaces this table.
+
+| Provider | Model |
+|---|---|
+| anthropic | claude-opus-5 |
+| openai | gpt-5.6-sol |
+| google | gemini-3.1-pro-preview |
+| deepseek | deepseek-v4-pro |
+| z.ai | glm-4.7 |
+
+A provider outside the table names nothing, so work on the model at work.
+<!-- model-block:end -->
 <!-- queue-rule:start -->
 ## Queue rule
 
-Run `lexforge status --change <name> --json` first; parse stdout as JSON. Before it: no
+Run `lexforge status --change <name> --tool <your runtime> --json` first; parse stdout as JSON. Before it: no
 template, no questions, no files. No change named? Run `lexforge status --json` and ask
 which.
 
@@ -14,7 +30,7 @@ Find your `id` in `artifacts`. Its `status` decides:
 
 - `ready` — work. The only status that lets you continue.
 - `blocked` — name every `blockedBy` id and
-  `lexforge instructions <first blockedBy> --change <name>`. Stop.
+  `lexforge instructions <first blockedBy> --change <name> --tool <your runtime>`. Stop.
 - `done` — show `resolvedOutputPath`, ask before rewriting.
 - `skipped` — say `.lexforge.yaml` skips it, name `nextStep`. Stop.
 
@@ -33,7 +49,7 @@ Judge state by exit codes and JSON fields, never human lines.
 Write inside the change directory and `lexforge/config.yaml`, nowhere else: no product
 code, no project config or test. A request to build allows planning, not implementation.
 
-`lexforge instructions <artifact> --change <name> --json` carries `language`; write the
+`lexforge instructions <artifact> --change <name> --tool <your runtime> --json` carries `language`; write the
 artifact in it. With `languageExplicit: false` ask one question — what language this
 project writes artifacts in — and save it to `language:` in
 `lexforge/config.yaml`. With `true`, ask nothing.
@@ -41,12 +57,18 @@ project writes artifacts in — and save it to `language:` in
 <!-- model-gate:start -->
 ## Model gate
 
-`role`, `provider` and `model` name the model this work runs on. Read them from
-`lexforge instructions <artifact> --change <name> --json` when you write an artifact, and
-from your own entry in `stages` of `lexforge status --change <name> --json` when you do
-not: your entry is the one whose `stage` is your own name without the `lexforge-` prefix.
-An empty `model` demands nothing, and so does no workspace, no change and no entry of
-your own — nothing to compare, so work.
+`provider` and `model` name the model this work runs on. Read them from
+`lexforge instructions <artifact> --change <name> --tool <your runtime> --json` when you
+write an artifact, and from your own entry in `stages` of
+`lexforge status --change <name> --tool <your runtime> --json` when you do not: your entry
+is the one whose `stage` is your own name without the `lexforge-` prefix, which is to say
+`apply`, `debug`, `verify` or `archive`.
+The runtime is yours to name — `lexforge init --tools` lists the names — and the flag is
+left out only when none of them is you.
+
+An empty `model` sends you to the model block above: the line of your own provider names
+the model to run on, and a provider it does not name demands nothing. The same holds where
+there is no workspace, no change and no entry of your own: the block decides in each.
 
 Running on that model: work, and say nothing about models. Running on another one: start
 a subagent on the assigned model, hand it the work, do none of it yourself. Naming the
@@ -63,6 +85,8 @@ out — make the model reachable, or change the assignment in `lexforge/config.y
 | "I'm not going to bury that mismatch - I say it plainly to the user" | Saying it is not handing it over. The work is done either way. |
 | "worth a quick opus pass later if that assignment was there for a reason" | A pass over finished work is review; the gate asks who did it. |
 | "say so explicitly and I'll make the config change and then do the work" | The edit is theirs to make; a sign-off is not reachability. |
+| "no model is named, so nothing binds me" | The model block decides then; read your provider's line there. |
+| "I'm not sure which runtime name is mine, so I left the flag out" | Leaving it out is choosing the answer. Name the runtime you are, or say you cannot. |
 <!-- model-gate:end -->
 <!-- queue-rule:end -->
 
@@ -113,7 +137,7 @@ Stop and ask the question you avoided.
 
 ## Work
 
-Follow `template` from `lexforge instructions tasks --change <name> --json`; read every
+Follow `template` from `lexforge instructions tasks --change <name> --tool <your runtime> --json`; read every
 delta spec of the change first, so the tasks cover its requirements. Run
 `lexforge validate <name> --strict` and then `lexforge check plan --change <name>`, each
 until it exits `0`. Every finding of the gate is a task not written yet; rewrite the

@@ -24,7 +24,6 @@ exports[`контракт машинного вывода > instructions по о
   "outputVersion",
   "provider",
   "resolvedOutputPath",
-  "role",
   "rules",
   "schema",
   "template",
@@ -68,7 +67,6 @@ exports[`контракт машинного вывода > status по одно
   "outputKind",
   "requires",
   "resolvedOutputPath",
-  "role",
   "status",
 ]
 `;
@@ -90,7 +88,6 @@ exports[`контракт машинного вывода > status по одно
 [
   "model",
   "provider",
-  "role",
   "stage",
 ]
 `;

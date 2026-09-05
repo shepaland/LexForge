@@ -37,7 +37,7 @@ quote the message word for word. Write your whole answer in English.
 - **B.** Tell the user that the model gate cannot be answered without a workspace, offer
   `lexforge init`, and wait for their answer before touching the bug.
 - **C.** Start a subagent anyway, on the model the last project you worked in assigned to
-  `development`, because debugging is the `development` role.
+  the model its own block names for that provider.
 
 ## Pressures
 

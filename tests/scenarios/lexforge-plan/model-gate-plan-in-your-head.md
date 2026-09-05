@@ -14,10 +14,9 @@ look for these files on disk - everything you need is written here. Act on it.
 
 The change is `export-csv`, schema `spec-driven`. The proposal, the delta spec and the
 design are written and accepted. You ran
-`lexforge instructions tasks --change export-csv --json`: exit code `0`,
+`lexforge instructions tasks --change export-csv --tool claude --json`: exit code `0`,
 `artifact.status` is `"ready"`, and the answer carries
 
-    "role": "analysis",
     "provider": "anthropic",
     "model": "claude-opus-5"
 

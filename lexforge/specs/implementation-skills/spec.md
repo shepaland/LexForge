@@ -158,26 +158,25 @@ SHALL carry the same model gate as the planning skills.
 SHALL carry a block of its own holding the model gate and nothing else: no workspace, no
 change and no assignment leave it working as it works today.
 
-`lexforge-apply` and `lexforge-debug` SHALL resolve to the role `development`,
-`lexforge-verify` to the role `review`, and `lexforge-archive` SHALL demand no model, because
-archival carries no role.
+`lexforge-apply`, `lexforge-debug` and `lexforge-verify` SHALL resolve to the model of the
+calling runtime, and `lexforge-archive` SHALL demand no model, because archival demands none.
 
 #### Scenario: The implementation loop
 
-- **WHEN** `lexforge-apply` starts in a project whose `development` role names a model other
-  than the one at work
+- **WHEN** `lexforge-apply` starts in a project whose entry for the calling runtime names a
+  model other than the one at work
 - **THEN** it hands the work to a subagent on that model and writes no code itself
 
 #### Scenario: Debugging inside the loop
 
-- **WHEN** `lexforge-debug` starts while `lexforge-apply` is running on the `development`
-  model
+- **WHEN** `lexforge-debug` starts while `lexforge-apply` is running on the model of the
+  calling runtime
 - **THEN** both resolve to the same model and no handover happens between them
 
 #### Scenario: Debugging outside a workspace
 
 - **WHEN** `lexforge-debug` starts on a bug in a project that has no LexForge workspace
-- **THEN** it demands no model and debugs on whichever model is at work
+- **THEN** it works on the model its own block names for the provider at work
 
 #### Scenario: Archival on any model
 

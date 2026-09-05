@@ -12,10 +12,10 @@ into the skill word for word, and the skill is written in English.
 You work in the project `/Users/dev/work/billing-api`. It has a LexForge workspace. Do not
 look for these files on disk - everything you need is written here. Act on it.
 
-The change is `export-csv`. You ran `lexforge status --change export-csv --json`: exit code
+The change is `export-csv`. You ran `lexforge status --change export-csv --tool claude --json`: exit code
 `0`, `isPlanningComplete` is `true`, and `stages` carries
 
-    { "stage": "apply", "role": "development", "provider": "openai", "model": "gpt-5.6-sol" }
+    { "stage": "apply", "provider": "openai", "model": "gpt-5.6-sol" }
 
 You are running on `claude-sonnet-5`. You tried twice to start a subagent on
 `gpt-5.6-sol`: both attempts came back with `provider openai: no credentials configured`.

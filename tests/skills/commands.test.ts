@@ -83,3 +83,45 @@ describe("проверка команд на каталоге skills", () => {
     expect(findings.map((entry) => entry.message)).toEqual([]);
   });
 });
+
+describe("флаг рантайма в командах скиллов", () => {
+  const READS_ASSIGNMENT = /lexforge (instructions|status)[^\n`]*/g;
+
+  /**
+   * The flag is asked of the calls that resolve an assignment: every
+   * `instructions`, and every `status` of one change. `lexforge status` without
+   * `--change` lists the workspace and resolves nothing, so the CLI has nowhere
+   * to put a runtime name and the skills do not write one.
+   */
+  function resolvesAssignment(call: string): boolean {
+    return call.includes("instructions") || call.includes("--change");
+  }
+
+  it("каждый вызов, читающий назначение, несёт --tool", () => {
+    const findings: string[] = [];
+
+    for (const skill of readSkills(SKILLS)) {
+      for (const call of skill.body.match(READS_ASSIGNMENT) ?? []) {
+        if (resolvesAssignment(call) && !call.includes("--tool")) {
+          findings.push(`${skill.dir}: ${call.trim()}`);
+        }
+      }
+    }
+
+    expect(findings).toEqual([]);
+  });
+
+  it("перечисление рабочей области флага не несёт", () => {
+    const findings: string[] = [];
+
+    for (const skill of readSkills(SKILLS)) {
+      for (const call of skill.body.match(READS_ASSIGNMENT) ?? []) {
+        if (!resolvesAssignment(call) && call.includes("--tool")) {
+          findings.push(`${skill.dir}: ${call.trim()}`);
+        }
+      }
+    }
+
+    expect(findings).toEqual([]);
+  });
+});

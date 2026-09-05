@@ -5,7 +5,12 @@ import {
 } from "../artifact-graph/graph.js";
 import { answerPath } from "../answer-path.js";
 import { probeFilled } from "../artifact-graph/probe-filled.js";
-import { resolveStage, resolveStages, type StageAssignment } from "../models/assignment.js";
+import {
+  resolveStage,
+  resolveStages,
+  STAGE_WITHOUT_MODEL,
+  type StageAssignment,
+} from "../models/assignment.js";
 import { nextStepForChange } from "../next-step.js";
 import { loadSchema } from "../schemas/load-schema.js";
 import type { CommandResult } from "../types.js";
@@ -18,13 +23,13 @@ export interface ChangeStatusOptions {
   /** Any directory inside the project; the workspace root is looked up from it. */
   cwd: string;
   change: string;
+  /** The runtime the call comes from; empty when the caller names none. */
+  tool?: string;
 }
 
 /** An artifact of the change with the model its stage resolves to. */
 export interface StatusArtifact extends ArtifactState {
-  /** The role of this artifact; empty for an artifact outside the stage table. */
-  role: string;
-  /** The model of that role. Empty in a project with no assignment. */
+  /** The model of the calling runtime. Empty in a project with no assignment. */
   model: string;
 }
 
@@ -76,6 +81,8 @@ export function changeStatus(options: ChangeStatusOptions): CommandResult<Change
   const { schema, state } = readChangeState(root, options.change);
   const models = readProjectConfig(root).models;
 
+  const tool = options.tool ?? "";
+
   const nextStep = nextStepForChange(options.change, state);
 
   const data: ChangeStatusData = {
@@ -85,16 +92,15 @@ export function changeStatus(options: ChangeStatusOptions): CommandResult<Change
     schema,
     isPlanningComplete: state.isPlanningComplete,
     artifacts: state.artifacts.map((artifact) => {
-      const assignment = resolveStage(models, artifact.id);
+      const assignment = resolveStage(models, artifact.id, tool);
 
       return {
         ...artifact,
         resolvedOutputPath: answerPath(artifact.resolvedOutputPath),
-        role: assignment.role,
         model: assignment.model,
       };
     }),
-    stages: resolveStages(models),
+    stages: resolveStages(models, tool),
     nextStep,
   };
 
@@ -146,21 +152,16 @@ function stageLines(stages: StageAssignment[], written: Set<string>): string[] {
   }
 
   const width = Math.max(...rest.map((stage) => stage.stage.length));
-  const roleWidth = Math.max(...rest.map((stage) => stage.role.length));
 
   return [
     "Stages without an artifact:",
     ...rest.map((stage) => {
-      // Two different silences: archival carries no role at all, while a stage
-      // whose role is named by neither an override nor a default has a role and
-      // no model. A reader fixing their config needs to tell them apart.
-      if (stage.role === "") {
-        return `  ${stage.stage.padEnd(width)}  no role`;
-      }
-
-      return stage.model === ""
-        ? `  ${stage.stage.padEnd(width)}  no model`
-        : `  ${stage.stage.padEnd(width)}  ${stage.role.padEnd(roleWidth)}  ${stage.model}`;
+      // The block is printed only where the project names a model, and with
+      // the roles gone that model belongs to every stage but archival. So the
+      // one silence left is archival's, and it is told by the stage name.
+      return stage.stage === STAGE_WITHOUT_MODEL
+        ? `  ${stage.stage.padEnd(width)}  no model demanded`
+        : `  ${stage.stage.padEnd(width)}  ${stage.model}`;
     }),
   ];
 }

@@ -105,9 +105,10 @@ describe("единый перехват результата команды", ()
 });
 
 describe("код возврата на сломанном разделе models", () => {
-  it("instructions в проекте с ролью-строкой даёт 2 и называет роль", async () => {
+  it("instructions в проекте со сломанным блоком рантайма даёт 2 и называет рантайм", async () => {
     const root = makeWorkspace({
-      "lexforge/config.yaml": "schema: spec-driven\nmodels:\n  development: claude-opus-5\n",
+      "lexforge/config.yaml":
+        "schema: spec-driven\nmodels:\n  tools:\n    codex: gpt-5.6-sol\n",
       "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
       "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
     });
@@ -121,8 +122,32 @@ describe("код возврата на сломанном разделе models"
       });
 
       expect(exitCode).toBe(2);
-      expect(capture.err).toContain("models.development");
+      expect(capture.err).toContain("models.tools.codex");
       expect(capture.err).toMatch(/a provider and a model/);
+    } finally {
+      removeWorkspace(root);
+    }
+  });
+
+  it("instructions в проекте с ключом роли из прежней версии даёт 0", async () => {
+    const root = makeWorkspace({
+      "lexforge/config.yaml":
+        "schema: spec-driven\nmodels:\n  development:\n    provider: anthropic\n" +
+        "    model: claude-sonnet-5\n",
+      "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
+      "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
+    });
+    const capture = createCapture();
+
+    try {
+      const exitCode = await run(["instructions", "specs", "--change", "add-auth"], {
+        cwd: root,
+        stdout: capture.stdout,
+        stderr: capture.stderr,
+      });
+
+      expect(exitCode).toBe(0);
+      expect(capture.err).toBe("");
     } finally {
       removeWorkspace(root);
     }

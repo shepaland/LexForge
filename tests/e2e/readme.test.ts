@@ -115,12 +115,27 @@ describe.each(Object.keys(ASSIGNMENT_HEADING))("README о назначении �
     expect(assignmentSection(file), `в ${file} нет раздела назначения моделей`).not.toBe("");
   });
 
-  it("называет три роли, default и каталог providers", () => {
+  it("называет блоки рантаймов, default и каталог providers", () => {
     const section = assignmentSection(file);
 
-    for (const part of ["analysis", "development", "review", "default", "providers"]) {
+    for (const part of ["tools:", "default", "providers"]) {
       expect(section, `раздел ${file} не называет «${part}»`).toContain(part);
     }
+  });
+
+  it("роли в разделе больше не упоминаются", () => {
+    const section = assignmentSection(file);
+
+    for (const role of ["analysis", "development", "review"]) {
+      expect(section, `раздел ${file} всё ещё называет роль «${role}»`).not.toContain(role);
+    }
+  });
+
+  it("говорит, что модель стадии живёт в блоке скилла и перебивается конфигом", () => {
+    const section = assignmentSection(file);
+
+    expect(section).toMatch(/--tool/);
+    expect(section.toLowerCase()).toMatch(/model block|блок[а-яё]* модел/);
   });
 
   it("говорит, что проект прежней версии работает без изменений и правится вручную", () => {
@@ -136,5 +151,11 @@ describe.each(Object.keys(ASSIGNMENT_HEADING))("README о назначении �
     for (const tool of knownTools()) {
       expect(section, `раздел ${file} не называет рантайм «${tool}»`).toContain(tool);
     }
+  });
+
+  it("рантайму без выбора модели велит остаться без блока в секции", () => {
+    const section = assignmentSection(file);
+
+    expect(section.toLowerCase()).toMatch(/without an entry|без .*блока|без записи/);
   });
 });

@@ -68,7 +68,6 @@ describe("состав ответа changeStatus", () => {
       "blockedBy",
       "resolvedOutputPath",
       "outputKind",
-      "role",
       "model",
     ]);
     expect(proposal.status).toBe("ready");
@@ -140,12 +139,13 @@ models:
   default:
     provider: anthropic
     model: claude-opus-5
-  review:
-    provider: openai
-    model: gpt-5.6-sol
+  tools:
+    codex:
+      provider: openai
+      model: gpt-5.6-sol
 `;
 
-  it("каждая стадия пайплайна названа с ролью, провайдером и моделью", () => {
+  it("каждая стадия пайплайна названа с провайдером и моделью", () => {
     const root = workspace({ "lexforge/config.yaml": MODELS });
 
     const { data } = changeStatus({ cwd: root, change: "add-auth" });
@@ -160,10 +160,10 @@ models:
       "verify",
       "archive",
     ]);
-    expect(Object.keys(data.stages[0]!)).toEqual(["stage", "role", "provider", "model"]);
+    expect(Object.keys(data.stages[0]!)).toEqual(["stage", "provider", "model"]);
   });
 
-  it("стадии без артефакта несут свою роль и свою модель", () => {
+  it("стадии без артефакта несут модель верхнего уровня", () => {
     const root = workspace({ "lexforge/config.yaml": MODELS });
 
     const { data } = changeStatus({ cwd: root, change: "add-auth" });
@@ -171,35 +171,46 @@ models:
 
     expect(byStage.apply).toEqual({
       stage: "apply",
-      role: "development",
       provider: "anthropic",
       model: "claude-opus-5",
     });
-    expect(byStage.debug!.role).toBe("development");
+    expect(byStage.debug!.model).toBe("claude-opus-5");
     expect(byStage.verify).toEqual({
       stage: "verify",
-      role: "review",
-      provider: "openai",
-      model: "gpt-5.6-sol",
+      provider: "anthropic",
+      model: "claude-opus-5",
     });
   });
 
-  it("архивация приходит с пустыми ролью, провайдером и моделью", () => {
+  it("названный рантайм уводит каждую стадию на свой блок", () => {
+    const root = workspace({ "lexforge/config.yaml": MODELS });
+
+    const { data } = changeStatus({ cwd: root, change: "add-auth", tool: "codex" });
+    const byStage = Object.fromEntries(data.stages.map((entry) => [entry.stage, entry]));
+
+    expect(byStage.apply).toEqual({
+      stage: "apply",
+      provider: "openai",
+      model: "gpt-5.6-sol",
+    });
+    expect(data.artifacts[0]!.model).toBe("gpt-5.6-sol");
+  });
+
+  it("архивация приходит с пустыми провайдером и моделью", () => {
     const root = workspace({ "lexforge/config.yaml": MODELS });
 
     const { data } = changeStatus({ cwd: root, change: "add-auth" });
     const archive = data.stages.find((entry) => entry.stage === "archive")!;
 
-    expect(archive).toEqual({ stage: "archive", role: "", provider: "", model: "" });
+    expect(archive).toEqual({ stage: "archive", provider: "", model: "" });
   });
 
-  it("артефакты несут роль и модель рядом со своим статусом", () => {
+  it("артефакты несут модель рядом со своим статусом", () => {
     const root = workspace({ "lexforge/config.yaml": MODELS });
 
     const { data } = changeStatus({ cwd: root, change: "add-auth" });
 
     for (const artifact of data.artifacts) {
-      expect(artifact.role).toBe("analysis");
       expect(artifact.model).toBe("claude-opus-5");
     }
   });
@@ -214,7 +225,6 @@ models:
       expect(entry.provider).toBe("");
       expect(entry.model).toBe("");
     }
-    expect(result.data.stages.find((entry) => entry.stage === "specs")!.role).toBe("analysis");
     expect(result.data.artifacts[0]!.model).toBe("");
   });
 });

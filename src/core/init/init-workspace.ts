@@ -90,7 +90,7 @@ export function initWorkspace(options: InitOptions): CommandResult<InitData> {
   if (existsSync(paths.config)) {
     unchanged.push(paths.config);
   } else {
-    writeFileSync(paths.config, projectConfigText(options.language), "utf8");
+    writeFileSync(paths.config, projectConfigText(options.language, options.tools ?? []), "utf8");
     created.push(paths.config);
   }
 

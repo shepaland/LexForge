@@ -3,7 +3,11 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { knownTools, toolDirectory } from "../../../src/core/init/tool-registry.js";
+import {
+  knownTools,
+  toolDirectory,
+  toolVendor,
+} from "../../../src/core/init/tool-registry.js";
 
 describe("toolDirectory", () => {
   it("на проектную область даёт каталог внутри проекта", () => {
@@ -43,5 +47,23 @@ describe("toolDirectory, домашний каталог параметром", 
 describe("knownTools", () => {
   it("перечисляет пять рантаймов в алфавитном порядке", () => {
     expect(knownTools()).toEqual(["agents", "claude", "codex", "cursor", "opencode"]);
+  });
+});
+
+describe("toolVendor", () => {
+  it("рантайм одного вендора называет своего провайдера", () => {
+    expect(toolVendor("claude")).toBe("anthropic");
+    expect(toolVendor("codex")).toBe("openai");
+  });
+
+  it("рантайм поверх нескольких вендоров своего провайдера не имеет", () => {
+    expect(toolVendor("cursor")).toBe("");
+    expect(toolVendor("opencode")).toBe("");
+    expect(toolVendor("agents")).toBe("");
+  });
+
+  it("имя вне реестра провайдера не даёт", () => {
+    expect(toolVendor("hermes")).toBe("");
+    expect(toolVendor("constructor")).toBe("");
   });
 });

@@ -9,6 +9,37 @@ contract — a renamed or removed field of a `--json` answer, or a moved exit co
 major number. A new command or flag raises the minor number. A wording change to a skill,
 a template or a message printed to a person raises the patch number.
 
+## 1.3.0 — 2026-09-05
+
+Model sets per runtime, and the roles removed. Agents of different vendors work in one
+repository, each resolving its own model out of one `lexforge/config.yaml`, and every skill
+carries the model it wants when the project names none. The three roles are gone: the choice
+they held moved into the skills, where it needs no setting up per project.
+
+### Contract
+
+- `instructions` and `status --change` take `--tool <name>`, the runtime the call comes from.
+  A call that names none resolves against the top level of the `models` section, as before.
+- The `role` field is removed from the `instructions` answer, from every entry of `stages`
+  and from every artifact of `status --change`. `provider` and `model` stay where they were.
+- The `models` section takes `tools`, one entry per runtime, each naming a provider and a
+  model. An entry decides alone: the top-level `default` is not read for a runtime that has
+  one. The section no longer takes `analysis`, `development` or `review`; a key left over
+  from them is ignored, and no command refuses because of it.
+
+### Other
+
+- `lexforge init --tools claude,codex` writes a `tools` entry for each named runtime that has
+  a vendor of its own and no top-level `default`. `cursor`, `opencode` and `agents` front
+  several vendors and get no entry.
+- Every skill opens with a model block: the model it runs on, one line per provider of the
+  shipped catalogue. The planning skills and the completion check name the strong model of a
+  provider, the implementation and debugging skills the middle one, and archival names none.
+  A model named by the project replaces what the block names.
+- Upgrading means upgrading the package and reinstalling the skills together, with one
+  `lexforge init --tools <list>`: a skill of this version calls an option the previous CLI
+  does not know.
+
 ## 1.2.0 — 2026-08-31
 
 Model assignment. A project names which model each stage of a change runs on, and the

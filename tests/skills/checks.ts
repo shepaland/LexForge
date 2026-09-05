@@ -1,3 +1,4 @@
+import { SHIPPED_PROVIDERS } from "../../src/core/models/catalogue.js";
 import { answerPath } from "../../src/core/answer-path.js";
 import type { SkillFile } from "../helpers/read-skills.js";
 
@@ -7,12 +8,12 @@ export const FRONTMATTER_FIELDS = ["name", "description"];
 /** Descriptions of every installed skill share the system prompt; 1024 is the ceiling. */
 export const MAX_DESCRIPTION_CHARS = 1024;
 
-/** The body is loaded whole, so it competes with the conversation for attention. */
 /**
- * Words a skill may spend on its own material; the shared blocks are not counted - the
- * queue rule, and the model gate that sits inside it. Both are repeated word for word
- * across the skills that carry them, so counting either would leave a skill a fraction
- * of its budget and shrink it again on every edit of the shared text.
+ * Words a skill may spend on its own material - the body is loaded whole, so it competes
+ * with the conversation for attention. The shared blocks are not counted: the queue rule
+ * with the model gate inside it, and the model block a skill opens with. All of them are
+ * repeated word for word across the skills that carry them, so counting one would leave a
+ * skill a fraction of its budget and shrink it again on every edit of the shared text.
  * 500 left no room for a rationalization the runs kept finding, and the only way to add
  * a row was to cut a rule whose scenario then went unchecked. 650 buys that room.
  */
@@ -126,19 +127,29 @@ export function checkBodyLength(skill: SkillFile): SkillFinding[] {
 }
 
 /**
- * The body without the shared block. The five planning skills repeat one queue rule, the
- * three implementation skills another, and all nine repeat the model gate inside it - so
- * what is measured here is the material a skill wrote for itself.
+ * The body without the shared blocks: the queue rule with the model gate inside
+ * it, and the model block a skill opens with. The five planning skills repeat
+ * one queue rule and the three implementation skills another, while the model
+ * block repeats its shape across all nine - so what is measured here is the
+ * material a skill wrote for itself.
  */
 function bodyWithoutQueueRule(body: string): string {
-  const start = body.indexOf(QUEUE_RULE_START);
-  const end = body.indexOf(QUEUE_RULE_END);
+  return [
+    [QUEUE_RULE_START, QUEUE_RULE_END],
+    [MODEL_BLOCK_START, MODEL_BLOCK_END],
+  ].reduce((text, [open, close]) => cutBlock(text, open!, close!), body);
+}
+
+/** The text without one marked block, or unchanged when the markers are absent. */
+function cutBlock(text: string, open: string, close: string): string {
+  const start = text.indexOf(open);
+  const end = text.indexOf(close);
 
   if (start === -1 || end === -1 || end < start) {
-    return body;
+    return text;
   }
 
-  return body.slice(0, start) + body.slice(end + QUEUE_RULE_END.length);
+  return text.slice(0, start) + text.slice(end + close.length);
 }
 
 /** The five planning skills: one artifact each, and a queue rule that reads that status. */
@@ -178,11 +189,10 @@ export const QUEUE_RULE_IMPLEMENTATION_SKILLS = [
 export const GATE_ONLY_SKILLS = ["lexforge-debug"];
 
 /**
- * The queue-rule markers of `lexforge-debug` fence a block that holds no queue rule, only
- * the gate. The name is kept because the markers are also what the word count skips, and
- * a test asserts the block holds nothing but the gate, so the exemption cannot grow.
+ * The queue-rule markers. In `lexforge-debug` they fence a block that holds no queue rule,
+ * only the gate: the name is kept because the markers are also what the word count skips,
+ * and a test asserts that block holds nothing but the gate, so the exemption cannot grow.
  */
-
 export const QUEUE_RULE_START = "<!-- queue-rule:start -->";
 export const QUEUE_RULE_END = "<!-- queue-rule:end -->";
 
@@ -197,6 +207,45 @@ export const ALL_SKILLS = [...PLANNING_SKILLS, ...IMPLEMENTATION_SKILLS];
  */
 export const MODEL_GATE_START = "<!-- model-gate:start -->";
 export const MODEL_GATE_END = "<!-- model-gate:end -->";
+
+/**
+ * The model block a skill opens with: the model it runs on, one line per
+ * provider of the shipped catalogue. It is read only where the project names
+ * no model of its own, and it stands ahead of the queue rule, so an agent has
+ * its model before it has anything else.
+ */
+export const MODEL_BLOCK_START = "<!-- model-block:start -->";
+export const MODEL_BLOCK_END = "<!-- model-block:end -->";
+
+/** The model block of one skill, or null when the skill carries none. */
+export function readModelBlock(skill: SkillFile): string | null {
+  const start = skill.body.indexOf(MODEL_BLOCK_START);
+  const end = skill.body.indexOf(MODEL_BLOCK_END);
+
+  if (start === -1 || end === -1 || end < start) {
+    return null;
+  }
+
+  return skill.body.slice(start + MODEL_BLOCK_START.length, end);
+}
+
+/** Provider to model, as one skill's model block names them. */
+export function modelBlockEntries(skill: SkillFile): Record<string, string> {
+  const block = readModelBlock(skill);
+  if (block === null) {
+    return {};
+  }
+
+  const entries: Record<string, string> = {};
+  for (const line of block.split("\n")) {
+    const row = /^\|\s*([^|\s]+)\s*\|\s*([^|]+?)\s*\|$/.exec(line.trim());
+    if (row && row[1] !== "Provider" && !row[1]!.startsWith("-")) {
+      entries[row[1]!] = row[2]!;
+    }
+  }
+
+  return entries;
+}
 
 /** The gate of one skill, or null when the skill carries none. */
 export function readModelGate(skill: SkillFile): string | null {
@@ -225,6 +274,38 @@ export function readQueueRule(skill: SkillFile): string | null {
   return skill.body.slice(start + QUEUE_RULE_START.length, end);
 }
 
+/**
+ * Every model a block names has to be a model the shipped catalogue holds for
+ * that provider. The blocks are read by agents that cannot check a name, so a
+ * provider release that renames a model shows up on a run here instead.
+ */
+export function checkModelBlockCatalogue(skill: SkillFile): SkillFinding[] {
+  return Object.entries(modelBlockEntries(skill)).flatMap(([provider, model]) => {
+    const models = SHIPPED_PROVIDERS[provider];
+
+    if (!models) {
+      return [
+        finding(
+          "model-block-catalogue",
+          skill,
+          `model block names the provider ${provider}, which the shipped catalogue does not hold`,
+        ),
+      ];
+    }
+
+    return models.includes(model)
+      ? []
+      : [
+          finding(
+            "model-block-catalogue",
+            skill,
+            `model block names ${model} for ${provider}, ` +
+              `and the shipped catalogue holds ${models.join(", ")}`,
+          ),
+        ];
+  });
+}
+
 export function checkSkillStructure(skill: SkillFile): SkillFinding[] {
   return [
     ...checkFrontmatterFields(skill),
@@ -232,5 +313,6 @@ export function checkSkillStructure(skill: SkillFile): SkillFinding[] {
     ...checkDescriptionOpening(skill),
     ...checkDescriptionLength(skill),
     ...checkBodyLength(skill),
+    ...checkModelBlockCatalogue(skill),
   ];
 }

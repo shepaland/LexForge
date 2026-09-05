@@ -131,8 +131,9 @@ non-empty string counts as a value; the CLI doesn't parse it and passes it throu
 ### Requirement: Init writes the model section
 
 `lexforge init` in a project without `lexforge/config.yaml` SHALL write a `models` section
-holding a `default` with a provider and a model, the three role overrides commented out, and
-the `providers` catalogue of the installed version.
+holding a `tools` entry for each runtime named in `--tools` that has a vendor of its own, and
+the `providers` catalogue of the installed version. No top-level `default` and no role
+overrides SHALL be written.
 
 A repeated `lexforge init` in a project whose `config.yaml` already exists SHALL leave that
 file untouched, the missing `models` section included. Adding the section to an existing
@@ -140,9 +141,9 @@ project is an edit its owner makes by hand.
 
 #### Scenario: A new project
 
-- **WHEN** `lexforge init` runs in a project that has no `lexforge/` directory
-- **THEN** the created `config.yaml` holds a `models` section with a filled `default`, the
-  three roles present as commented-out overrides, and a `providers` catalogue
+- **WHEN** `lexforge init --tools claude` runs in a project that has no `lexforge/` directory
+- **THEN** the created `config.yaml` holds a `models` section with a `tools` entry for
+  `claude`, no top-level `default`, and a `providers` catalogue
 
 #### Scenario: A project installed before this version
 

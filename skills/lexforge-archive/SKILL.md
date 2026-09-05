@@ -3,10 +3,16 @@ name: lexforge-archive
 description: Use when the verification report of a LexForge change is clean and the change is asked to be closed out - the user says to archive it, to merge its delta into the specs, or to finish the branch it was built on.
 ---
 
+<!-- model-block:start -->
+## Model
+
+Archival demands no model: it merges the delta into the long-lived specs and
+runs on whichever model is at work. No provider is named a model here.
+<!-- model-block:end -->
 <!-- queue-rule:start -->
 ## Queue rule
 
-Run `lexforge status --change <name> --json` first and parse stdout as JSON. Before that
+Run `lexforge status --change <name> --tool <your runtime> --json` first and parse stdout as JSON. Before that
 run: no project code, no test, no question about the task itself. No change named? Run
 `lexforge status --json` and ask which one.
 
@@ -15,7 +21,7 @@ Read `isPlanningComplete`:
 - `true` — planning is finished for every artifact. Work.
 - `false` — stop. Take the first entry of `artifacts` whose `status` is neither `done`
   nor `skipped`. Name that artifact and name
-  `lexforge instructions <that artifact> --change <name>`. Open no code file, write
+  `lexforge instructions <that artifact> --change <name> --tool <your runtime>`. Open no code file, write
   nothing, answer no question about the task.
 
 A closed gate stops the work; no branch warns and starts the code anyway. A deadline, a
@@ -35,12 +41,18 @@ change directory looks like.
 <!-- model-gate:start -->
 ## Model gate
 
-`role`, `provider` and `model` name the model this work runs on. Read them from
-`lexforge instructions <artifact> --change <name> --json` when you write an artifact, and
-from your own entry in `stages` of `lexforge status --change <name> --json` when you do
-not: your entry is the one whose `stage` is your own name without the `lexforge-` prefix.
-An empty `model` demands nothing, and so does no workspace, no change and no entry of
-your own — nothing to compare, so work.
+`provider` and `model` name the model this work runs on. Read them from
+`lexforge instructions <artifact> --change <name> --tool <your runtime> --json` when you
+write an artifact, and from your own entry in `stages` of
+`lexforge status --change <name> --tool <your runtime> --json` when you do not: your entry
+is the one whose `stage` is your own name without the `lexforge-` prefix, which is to say
+`apply`, `debug`, `verify` or `archive`.
+The runtime is yours to name — `lexforge init --tools` lists the names — and the flag is
+left out only when none of them is you.
+
+An empty `model` sends you to the model block above: the line of your own provider names
+the model to run on, and a provider it does not name demands nothing. The same holds where
+there is no workspace, no change and no entry of your own: the block decides in each.
 
 Running on that model: work, and say nothing about models. Running on another one: start
 a subagent on the assigned model, hand it the work, do none of it yourself. Naming the
@@ -57,6 +69,8 @@ out — make the model reachable, or change the assignment in `lexforge/config.y
 | "I'm not going to bury that mismatch - I say it plainly to the user" | Saying it is not handing it over. The work is done either way. |
 | "worth a quick opus pass later if that assignment was there for a reason" | A pass over finished work is review; the gate asks who did it. |
 | "say so explicitly and I'll make the config change and then do the work" | The edit is theirs to make; a sign-off is not reachability. |
+| "no model is named, so nothing binds me" | The model block decides then; read your provider's line there. |
+| "I'm not sure which runtime name is mine, so I left the flag out" | Leaving it out is choosing the answer. Name the runtime you are, or say you cannot. |
 <!-- model-gate:end -->
 <!-- queue-rule:end -->
 

@@ -144,39 +144,6 @@ At `true`, the question SHALL NOT be asked. Artifacts are written in the languag
   `language` set to `ru`
 - **THEN** no question is asked, the artifact is written in Russian
 
-### Requirement: The model gate fires when the model differs
-
-A skill SHALL read the role, the provider and the model before it writes anything, and SHALL
-compare that model against the model it is running on.
-
-The assignment SHALL be read from the answer the queue rule already asks for: a skill that
-writes an artifact reads the instructions response of that artifact, and a skill that carries
-a stage writing no artifact reads the entry of its own stage in the status response.
-
-The two matching, the skill SHALL work without a word about models. An empty assignment SHALL
-demand nothing. Only a difference SHALL open the gate.
-
-#### Scenario: The assigned model is at work
-
-- **WHEN** the instructions response names a model, and the skill is running on that model
-- **THEN** the skill goes on to write the artifact and asks for no handover
-
-#### Scenario: A skill that writes no artifact
-
-- **WHEN** a skill that carries a stage writing no artifact starts on a change
-- **THEN** it reads the model of its own stage from the status response and needs no other
-  call
-
-#### Scenario: Two roles on the same model
-
-- **WHEN** two stages in a row resolve to the same model through different roles
-- **THEN** no handover happens between them
-
-#### Scenario: An empty assignment
-
-- **WHEN** the answer carries an empty provider and an empty model
-- **THEN** the skill demands no model and writes the artifact
-
 ### Requirement: A handover starts a subagent on the assigned model
 
 Running on a model other than the assigned one, the skill SHALL hand the artifact to a
@@ -220,3 +187,42 @@ and SHALL NOT write it after saying the model is unavailable.
   because of a deadline
 - **THEN** the skill still writes no file and names the two ways out: make the model
   reachable, or change the assignment in `lexforge/config.yaml`
+
+### Requirement: The model gate compares the assigned model with the one at work
+
+A skill SHALL read the provider and the model before it writes anything, and SHALL compare
+that model against the model it is running on.
+
+The assignment SHALL be read from the answer the queue rule already asks for: a skill that
+writes an artifact reads the instructions response of that artifact, and a skill that carries
+a stage writing no artifact reads the entry of its own stage in the status response.
+
+An empty assignment SHALL send the skill to its own model block, and the line of its provider
+there SHALL take the place of the assignment. A provider the block does not name SHALL demand
+nothing.
+
+The two matching, the skill SHALL work without a word about models. Only a difference SHALL
+open the gate.
+
+#### Scenario: The assigned model is at work
+
+- **WHEN** the instructions response names a model, and the skill is running on that model
+- **THEN** the skill goes on to write the artifact and asks for no handover
+
+#### Scenario: A skill that writes no artifact
+
+- **WHEN** a skill that carries a stage writing no artifact starts on a change
+- **THEN** it reads the model of its own stage from the status response and needs no other
+  call
+
+#### Scenario: An empty assignment
+
+- **WHEN** the answer carries an empty provider and an empty model, and the model block of
+  the skill names a model for the provider at work
+- **THEN** the skill compares against that model
+
+#### Scenario: An empty assignment and a provider outside the block
+
+- **WHEN** the answer carries an empty provider and an empty model, and the model block of
+  the skill names no line for the provider at work
+- **THEN** the skill demands no model and writes the artifact

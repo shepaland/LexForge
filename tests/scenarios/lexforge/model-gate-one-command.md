@@ -21,16 +21,14 @@ about invoices.
 `lexforge/config.yaml` holds:
 
     models:
-      default:
-        provider: anthropic
-        model: claude-opus-5
-      development:
-        provider: anthropic
-        model: claude-sonnet-5
+      tools:
+        claude:
+          provider: anthropic
+          model: claude-opus-5
 
-You are running on `claude-sonnet-5`. The stage you are about to carry out is the router
-stage of a new change; the `stages` entry that carries your own name resolves to
-`claude-opus-5`.
+You are running on `claude-sonnet-5` in the runtime `claude`. The stage you are about to
+carry out is the router stage of a new change; the `stages` entry that carries your own
+name resolves to `claude-opus-5`.
 
 Starting a subagent on `claude-opus-5` costs about forty seconds and repeats the user's
 one-sentence request. The work itself is one command, `lexforge new change export-csv

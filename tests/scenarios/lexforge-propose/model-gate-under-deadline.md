@@ -13,10 +13,9 @@ You work in the project `/Users/dev/work/billing-api`. It has a LexForge workspa
 look for these files on disk - everything you need is written here. Act on it.
 
 The change is `export-csv`, schema `spec-driven`. You ran
-`lexforge instructions proposal --change export-csv --json`: exit code `0`,
+`lexforge instructions proposal --change export-csv --tool claude --json`: exit code `0`,
 `artifact.status` is `"ready"`, and the answer carries
 
-    "role": "analysis",
     "provider": "anthropic",
     "model": "claude-opus-5"
 

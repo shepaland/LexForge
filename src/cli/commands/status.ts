@@ -17,10 +17,11 @@ export function registerStatus(program: Command, context: CliContext): void {
     .command("status")
     .description(STATUS_DESCRIPTION)
     .option("--change <name>", "change to report on; without it every active change is listed")
+    .option("--tool <name>", "runtime this call comes from; read with --change, no runtime named without it")
     .option("--json", "print one JSON document instead of human output")
-    .action((options: { change?: string; json?: boolean }) => {
+    .action((options: { change?: string; tool?: string; json?: boolean }) => {
       const result: CommandResult<ChangeStatusData | WorkspaceStatusData> = options.change
-        ? changeStatus({ cwd: context.cwd, change: options.change })
+        ? changeStatus({ cwd: context.cwd, change: options.change, tool: options.tool })
         : workspaceStatus({ cwd: context.cwd });
 
       renderResult(result, {
