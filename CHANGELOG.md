@@ -31,9 +31,10 @@ findings a review turns up without blocking on every one of them.
   open `critical` or `important` entries the ledger holds against the change. An open entry at
   either level blocks both commands the way a stale stamp already does; an open `minor` entry
   never blocks.
-- `check plan` gains three finding rules — `section-missing-depends-on`,
-  `section-depends-on-unreadable` and `section-depends-on-repeated` — one for each way a
-  section's `Depends on:` line can be missing or unusable.
+- `check plan` gains seven finding rules about a plan's sections:
+  `section-missing-depends-on`, `section-depends-on-unreadable`,
+  `section-depends-on-repeated`, `section-number-repeated`, `section-unknown-dependency`,
+  `section-dependency-cycle` and `section-concurrent-file`.
 
 ### Other
 
@@ -41,6 +42,11 @@ findings a review turns up without blocking on every one of them.
   the sections it needs closed first. `lexforge-apply` dispatches every section of a wave — the
   sections whose dependencies are already closed — to its own executor and runs them at the
   same time; a section with no concurrent neighbour still runs task by task in the same session.
+- Two pauses are gone. A skill that meets `workspace-not-found` runs
+  `lexforge init --tools <list>` at the project root itself instead of asking first, and a
+  planning skill that finishes an artifact runs the next step the command named instead of
+  naming it and stopping. The stop at the boundary of planning stays, and so does every stop
+  an artifact's own rule owns.
 - **Upgrade note**: a `tasks.md` written before this release carries no `Depends on:` line.
   `check plan` reports one new finding per section until it is added; `npm install
   lexforge@1.4.0` followed by `lexforge init --tools <list>` brings the skills current, but the

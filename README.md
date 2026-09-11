@@ -54,25 +54,34 @@ wants.
 
 ## What's new in 1.4.0
 
-`lexforge-apply` dispatches independent sections of a plan at once instead of one task at a
-time, and a defect ledger tracks findings a review turns up without blocking on every one of
-them.
+`lexforge-apply` runs independent sections of a plan at the same time, and a defect ledger
+holds what a review finds without stopping the work on every one of them.
 
-- Each section heading of `tasks.md` carries a `Depends on:` line: `none`, or the numbers of
-  the sections it needs closed first. The sections whose dependencies are already closed form
-  one wave; `lexforge-apply` dispatches each of a wave's sections to its own executor and runs
-  them at the same time. `check plan` now refuses a plan carrying a section with no `Depends
-  on:` line.
-- `lexforge defect record`, `lexforge defect close` and `lexforge defect list` keep a
-  project-wide ledger at `lexforge/defects.json`: a reviewer records what it finds at one of
-  three levels — `critical`, `important` or `minor` — without stopping to fix it on the spot.
-- An open `critical` or `important` entry against a change now blocks `verify` and `archive`,
-  the same way a stale stamp already does; an open `minor` entry never blocks. `verify` and
-  `archive` answer with a fourth count on `summary`, `openDefects`, alongside open tasks,
-  requirements without a trace and stale labels.
-- **Upgrade note**: a `tasks.md` written before this release carries no `Depends on:` line, so
-  `check plan` reports one new finding per section until it is added — `none` for a section
-  with no dependency, the section numbers otherwise.
+- Each section heading of `tasks.md` carries a `Depends on:` line — `none`, or the numbers of
+  the sections it needs closed first. The sections whose dependencies are closed form one
+  wave, and `lexforge-apply` hands each of them to its own executor. A section that is ready
+  alone runs task by task in the same session.
+- `check plan` gains seven rules about a plan's sections: a missing line, a value it cannot
+  read, a repeated line, a repeated section number, an unknown dependency, a cycle, and one
+  file named by two sections that become ready at the same moment.
+- `lexforge defect record`, `lexforge defect close` and `lexforge defect list` keep the ledger
+  at `lexforge/defects.json`. A review records what it finds at one of three levels,
+  `critical`, `important` or `minor`, without stopping to fix it on the spot.
+- The ledger sits beside `lexforge/config.yaml`, is committed with the repository, and stays
+  there when a change moves into the archive. An entry outlives the change it was found in.
+- An open `critical` or `important` entry against the change blocks `verify` and `archive` the
+  way a stale stamp already does. An open `minor` blocks nothing: it is named in the report,
+  recorded in the ledger, and the change archives with it open. Both commands answer with a
+  fourth count on `summary`, `openDefects`.
+- Two pauses are gone. A skill that meets `workspace-not-found` runs
+  `lexforge init --tools <your runtime>` at the project root itself and carries on. A planning
+  skill that finishes an artifact runs the next step the command named, and stops at the
+  boundary of planning, where `isPlanningComplete` turns `true`.
+
+A `tasks.md` written before this release carries no `Depends on:` line, so `check plan`
+reports one finding per section until it is added. `npm install lexforge@1.4.0` and
+`lexforge init --tools <list>` bring the package and the skills current; the lines themselves
+are added to the plan by hand.
 
 ## Supported platforms
 
