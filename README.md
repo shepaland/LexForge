@@ -51,6 +51,29 @@ wants.
 - Upgrading means upgrading the package and reinstalling the skills together, with one
   `lexforge init --tools <list>`: a skill of this version calls an option 1.2.0 does not
   know. Details in [Model assignment](#model-assignment).
+
+## What's new in 1.4.0
+
+`lexforge-apply` dispatches independent sections of a plan at once instead of one task at a
+time, and a defect ledger tracks findings a review turns up without blocking on every one of
+them.
+
+- Each section heading of `tasks.md` carries a `Depends on:` line: `none`, or the numbers of
+  the sections it needs closed first. The sections whose dependencies are already closed form
+  one wave; `lexforge-apply` dispatches each of a wave's sections to its own executor and runs
+  them at the same time. `check plan` now refuses a plan carrying a section with no `Depends
+  on:` line.
+- `lexforge defect record`, `lexforge defect close` and `lexforge defect list` keep a
+  project-wide ledger at `lexforge/defects.json`: a reviewer records what it finds at one of
+  three levels — `critical`, `important` or `minor` — without stopping to fix it on the spot.
+- An open `critical` or `important` entry against a change now blocks `verify` and `archive`,
+  the same way a stale stamp already does; an open `minor` entry never blocks. `verify` and
+  `archive` answer with a fourth count on `summary`, `openDefects`, alongside open tasks,
+  requirements without a trace and stale labels.
+- **Upgrade note**: a `tasks.md` written before this release carries no `Depends on:` line, so
+  `check plan` reports one new finding per section until it is added — `none` for a section
+  with no dependency, the section numbers otherwise.
+
 ## Supported platforms
 
 | What | Value |
@@ -127,11 +150,20 @@ Every change lives in `lexforge/changes/<name>/`: `proposal.md`, the delta specs
 `tasks.md`, in the order the schema fixes.
 
 The gates work out the state of the work themselves. `check plan` looks for work the plan has not
-written down: placeholders, references to a neighbouring task, a delta requirement no task covers.
-`evidence record` runs the verification command the project declared and stamps it with the exit
-code, the commit and a fingerprint of the tree. `check evidence` compares the stamps against the
-code on disk, so an edit after a run leaves a stamp stale. `verify` collects these checks, but only
-reads stamps: a fresh one has to be taken before it is called.
+written down: placeholders, references to a neighbouring task, a delta requirement no task covers,
+a section whose `Depends on:` line is missing, repeated or names nothing readable. `evidence
+record` runs the verification command the project declared and stamps it with the exit code, the
+commit and a fingerprint of the tree. `check evidence` compares the stamps against the code on
+disk, so an edit after a run leaves a stamp stale. `verify` collects these checks, but only reads
+stamps: a fresh one has to be taken before it is called.
+
+`verify` and `archive` also read the project's defect ledger, `lexforge/defects.json`: an open
+`critical` or `important` entry recorded against the change blocks both, the same way a stale
+stamp does, and an open `minor` entry never blocks. `lexforge defect record --change <name>
+--level <level> --file <path> --line <n> --summary <text>` adds an entry, `lexforge defect close
+<id>` marks one fixed, and `lexforge defect list` reads the ledger back, narrowed by `--change`
+and `--open`. The ledger holds every entry ever recorded, open or closed, and an entry outlives
+the change it was found in.
 
 `archive` merges the delta into `lexforge/specs/<capability>/spec.md` and moves the change
 directory to `lexforge/changes/archive/<date>-<name>/`. The repository keeps the specs of the
@@ -291,7 +323,7 @@ to skip an artifact do not open a closed gate.
 | Skill | Fires when | Result |
 | --- | --- | --- |
 | `lexforge-apply` | The artifacts are done, implementation is asked for | Tasks closed one at a time: failing test, implementation, subagent review, stamp |
-| `lexforge-verify` | Implementation is finished, before archiving | A report on three dimensions; one `CRITICAL` finding stops archiving |
+| `lexforge-verify` | Implementation is finished, before archiving | A report on four dimensions; one `CRITICAL` finding stops archiving |
 | `lexforge-archive` | The report has no `CRITICAL` findings | The delta in `lexforge/specs/`, the change in the archive, a question about the branch |
 | `lexforge-debug` | A test fails, a build breaks, code behaves unexpectedly | The cause named, a failing test for the bug, one edit at that point |
 
@@ -318,6 +350,9 @@ sections of `lexforge/config.yaml`, from where they reach `lexforge instructions
 | `evidence record --change <name> --label <label>` | Runs the command of one label and records a stamp |
 | `verify --change <name>` | Checks a change before the work is called finished |
 | `archive <change>` | Merges the delta into the specs and moves the change to the archive |
+| `defect record --change <name>` | Records a defect against a change; `--level`, `--file`, `--line`, `--summary` |
+| `defect close <id>` | Marks a recorded defect as fixed |
+| `defect list` | Lists recorded defects; `--change` and `--open` narrow the list |
 
 Every command accepts `--json`: a single JSON document goes to standard output and nothing else,
 the lines for humans go to standard error. The wording of the human output changes between
@@ -340,6 +375,7 @@ Code `1` reports a problem in the project, code `2` a wrong call, and there are 
 | `lexforge/specs/` | Repository: the specs describe the shipped behaviour |
 | `lexforge/changes/<name>/` with `evidence.json` | Repository: a stamp is tied to a commit, and review shows what it was taken on |
 | `lexforge/changes/archive/` | Repository: closed changes with their artifacts and stamps |
+| `lexforge/defects.json` | Repository: an entry outlives the change it was found in, and review needs to see what still stands |
 | The runtime skill directories and `lexforge-install.json` | Locally: `lexforge init` brings them back on another machine |
 
 `evidence.json` changes on every run, so two people working on the same change in parallel will get

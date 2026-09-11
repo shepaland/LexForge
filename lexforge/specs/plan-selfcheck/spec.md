@@ -157,3 +157,61 @@ Findings SHALL print grouped by file, in ascending line-number order.
 
 - **WHEN** the self-check is called on a change with no `tasks.md` written
 - **THEN** the command exits with code `2` and names the command for getting plan instructions
+
+### Requirement: A section records what it depends on
+
+Every numbered section of `tasks.md` SHALL carry a `Depends on:` line naming the sections that
+have to be closed before it starts, or the word `none`.
+
+`lexforge check plan --change <name>` SHALL report a finding on a section carrying no such line,
+and the finding SHALL name the section's number. A plan with such a finding SHALL end the
+command with exit code `1`.
+
+Two sections SHALL count as concurrent when neither names the other in its `Depends on:` line,
+directly or through the sections that line leads to. Two concurrent sections whose tasks name
+the same file SHALL be a finding: both become ready at the same moment, both are dispatched, and
+each agent loses the other's work. Naming one and the same dependency is no protection - two
+sections that both wait for section 2 are released together the instant it closes.
+
+A `Depends on:` line naming a section that is not in the plan SHALL be a finding, and so SHALL a
+cycle: two sections that wait for each other are never ready.
+
+#### Scenario: A section says nothing
+
+- **WHEN** section 3 carries no `Depends on:` line
+- **THEN** the command ends with exit code `1` and names section 3
+
+#### Scenario: Two independent sections on one file
+
+- **WHEN** sections 5 and 6 both say `Depends on: none` and tasks in both name
+  `src/core/run.ts`
+- **THEN** the command ends with exit code `1` and names both sections and the file
+
+#### Scenario: One dependency shared by two sections
+
+- **WHEN** sections 3 and 4 both say `Depends on: section 2` and tasks in both name
+  `src/cli/commands/defect.ts`
+- **THEN** the command ends with exit code `1` and names both sections and the file, because
+  closing section 2 releases them together
+
+#### Scenario: A shared file on a chain
+
+- **WHEN** section 4 says `Depends on: section 3`, section 3 says `Depends on: section 2`, and
+  tasks in sections 2 and 4 name one file
+- **THEN** the dimension adds no finding: section 4 cannot start until section 2 is closed
+
+#### Scenario: A dependency that does not exist
+
+- **WHEN** section 4 says `Depends on: section 9` and the plan has six sections
+- **THEN** the command ends with exit code `1` and names section 4 and the missing section
+
+#### Scenario: A cycle
+
+- **WHEN** section 3 says `Depends on: section 5` and section 5 says `Depends on: section 3`
+- **THEN** the command ends with exit code `1` and names both sections
+
+#### Scenario: A plan that answers
+
+- **WHEN** every section carries the line, no cycle exists, and no two concurrent sections share
+  a file
+- **THEN** the dimension adds no finding

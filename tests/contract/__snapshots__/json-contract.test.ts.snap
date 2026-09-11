@@ -135,6 +135,73 @@ exports[`контракт машинного вывода > отказ при м
 ]
 `;
 
+exports[`контракт машинного вывода defect > defect close > defect close: ключи data 1`] = `
+[
+  "defect",
+  "nextStep",
+  "outputVersion",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода defect > defect close > defect close: ключи defect 1`] = `
+[
+  "change",
+  "closedAt",
+  "file",
+  "id",
+  "level",
+  "line",
+  "recordedAt",
+  "state",
+  "summary",
+]
+`;
+
+exports[`контракт машинного вывода defect > defect list > defect list: ключи data 1`] = `
+[
+  "defects",
+  "nextStep",
+  "outputVersion",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода defect > defect list > defect list: ключи defects 1`] = `
+[
+  "change",
+  "file",
+  "id",
+  "level",
+  "line",
+  "recordedAt",
+  "state",
+  "summary",
+]
+`;
+
+exports[`контракт машинного вывода defect > defect record > defect record: ключи data 1`] = `
+[
+  "defect",
+  "nextStep",
+  "outputVersion",
+  "workspaceRoot",
+]
+`;
+
+exports[`контракт машинного вывода defect > defect record > defect record: ключи defect 1`] = `
+[
+  "change",
+  "file",
+  "id",
+  "level",
+  "line",
+  "recordedAt",
+  "state",
+  "summary",
+]
+`;
+
 exports[`контракт машинного вывода ворот > check evidence > check evidence: ключи data 1`] = `
 [
   "change",
@@ -200,6 +267,7 @@ exports[`контракт машинного вывода ворот > check pla
   "coverage",
   "identifiers",
   "placeholders",
+  "sections",
 ]
 `;
 
@@ -270,6 +338,7 @@ exports[`контракт машинного вывода ворот > verify > 
 
 exports[`контракт машинного вывода ворот > verify > verify: ключи summary 1`] = `
 [
+  "openDefects",
   "openTasks",
   "requirementsWithoutTrace",
   "staleLabels",

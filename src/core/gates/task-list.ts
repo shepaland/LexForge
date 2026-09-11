@@ -16,8 +16,17 @@ const REQUIREMENT_LINK = /->\s*([a-z0-9][a-z0-9/-]*)#(.+?)\s*$/;
 /** Anything written in backticks. Both file names and commands turn up here. */
 const INLINE_CODE = /`([^`]+)`/g;
 
-/** A file extension of two to four letters, such as `.ts`, `.md`, `.yaml`. */
-const EXTENSION = /\.[a-zA-Z]{2,4}$/;
+/**
+ * The extensions a plan can plausibly name, across the languages and
+ * ecosystems a project on this gate might be written in - not just this
+ * repository's own. Matching any two-to-four-letter tail after a dot took
+ * `finding.rule` and `task.line` - field names in backticks, spelled like
+ * paths by accident - for files; naming the extensions instead closes that
+ * without reopening it for the next short field name. Case-insensitive:
+ * `README.MD` is a file too.
+ */
+const EXTENSION =
+  /\.(ts|tsx|js|mjs|cjs|jsx|vue|svelte|md|mdx|json|ya?ml|snap|sh|txt|py|go|rs|rb|java|css|scss|less|sass|styl|html|sql|c|h|cpp|cs|php|swift|kt|toml|ini|xml|csv|tsv|tf|dart|lua|pl|ps1|bat|exs|ex|erl|jl|hs|clj|tex|proto|scala|rst|cfg|conf|env|lock|ipynb)$/i;
 
 /** A reference from a task to a requirement of a delta spec. */
 export interface RequirementLink {

@@ -247,6 +247,84 @@ describe("контракт машинного вывода ворот", () => {
   });
 });
 
+describe("контракт машинного вывода defect", () => {
+  it("defect record", async () => {
+    const answer = await data(
+      [
+        "defect",
+        "record",
+        "--change",
+        "add-auth",
+        "--level",
+        "minor",
+        "--file",
+        "src/app.ts",
+        "--line",
+        "3",
+        "--summary",
+        "naming is inconsistent with the rest of the module",
+      ],
+      workspace(),
+    );
+
+    expect(keys(answer)).toMatchSnapshot("defect record: ключи data");
+    expect(keys(answer.defect)).toMatchSnapshot("defect record: ключи defect");
+  });
+
+  it("defect close", async () => {
+    const root = workspace();
+    const recorded = await data(
+      [
+        "defect",
+        "record",
+        "--change",
+        "add-auth",
+        "--level",
+        "minor",
+        "--file",
+        "src/app.ts",
+        "--line",
+        "3",
+        "--summary",
+        "naming is inconsistent with the rest of the module",
+      ],
+      root,
+    );
+    const id = (recorded.defect as { id: string }).id;
+
+    const answer = await data(["defect", "close", id], root);
+
+    expect(keys(answer)).toMatchSnapshot("defect close: ключи data");
+    expect(keys(answer.defect)).toMatchSnapshot("defect close: ключи defect");
+  });
+
+  it("defect list", async () => {
+    const root = workspace();
+    await call(
+      [
+        "defect",
+        "record",
+        "--change",
+        "add-auth",
+        "--level",
+        "minor",
+        "--file",
+        "src/app.ts",
+        "--line",
+        "3",
+        "--summary",
+        "naming is inconsistent with the rest of the module",
+      ],
+      root,
+    );
+
+    const answer = await data(["defect", "list"], root);
+
+    expect(keys(answer)).toMatchSnapshot("defect list: ключи data");
+    expect(firstKeys(answer.defects)).toMatchSnapshot("defect list: ключи defects");
+  });
+});
+
 /** A plan without an open task: what archiving needs before it merges anything. */
 const CLEAN_PLAN = [
   "## 1. Вход",

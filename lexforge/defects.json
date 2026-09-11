@@ -1,0 +1,35 @@
+{
+  "outputVersion": 1,
+  "defects": [
+    {
+      "id": "65119b77",
+      "change": "pipeline-throughput",
+      "level": "minor",
+      "file": "src/cli/commands/defect.ts",
+      "line": 25,
+      "summary": "--json with a missing required flag writes nothing to stdout: commander's error goes to stderr, so a skill parsing stdout gets a parse failure instead of a contract answer. Shared with evidence record.",
+      "state": "open",
+      "recordedAt": "2026-09-11T06:09:14.470Z"
+    },
+    {
+      "id": "0b877917",
+      "change": "pipeline-throughput",
+      "level": "minor",
+      "file": "skills/lexforge-verify/SKILL.md",
+      "line": 147,
+      "summary": "the skill says an unfixed finding goes to lexforge defect record but not that it goes there before the verdict; the requirement says before",
+      "state": "open",
+      "recordedAt": "2026-09-11T06:46:35.070Z"
+    },
+    {
+      "id": "f0977c4a",
+      "change": "pipeline-throughput",
+      "level": "minor",
+      "file": "lexforge/changes/pipeline-throughput/specs/implementation-loop/spec.md",
+      "line": 126,
+      "summary": "work the first task to green does not fit a first task that writes a failing test and produces no green; two live agents stopped at different lawful points",
+      "state": "open",
+      "recordedAt": "2026-09-11T06:46:35.252Z"
+    }
+  ]
+}

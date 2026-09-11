@@ -52,6 +52,8 @@ The system SHALL write every sign-in to the audit log.
 const THREE_FAULTS = [
   "## 1. Вход",
   "",
+  "Depends on: none",
+  "",
   "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/auth/store.ts`",
   "      -> auth#Password is stored hashed",
   "- [ ] 1.2 Написать срок жизни сессии и оставить TODO на продление",
@@ -64,6 +66,8 @@ const THREE_FAULTS = [
 /** A plan that covers every requirement and breaks no rule. */
 const CLEAN = [
   "## 1. Вход",
+  "",
+  "Depends on: none",
   "",
   "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/auth/store.ts`",
   "      -> auth#Password is stored hashed",
@@ -105,7 +109,7 @@ describe("checkPlan: находки трёх наборов правил", () =>
     const findings = result.data.findings;
 
     expect(findings).toHaveLength(3);
-    expect(findings.map((finding) => finding.line)).toEqual([1, 5, 7]);
+    expect(findings.map((finding) => finding.line)).toEqual([1, 7, 9]);
     expect(findings.map((finding) => finding.rule)).toEqual([
       "requirement-not-planned",
       "task-placeholder",
@@ -134,8 +138,10 @@ describe("checkPlan: счётчики по измерениям", () => {
 
     const { summary, findings } = checkPlan({ cwd: root, change: "add-auth" }).data;
 
-    expect(summary).toEqual({ placeholders: 1, coverage: 1, identifiers: 1 });
-    expect(summary.placeholders + summary.coverage + summary.identifiers).toBe(findings.length);
+    expect(summary).toEqual({ placeholders: 1, coverage: 1, identifiers: 1, sections: 0 });
+    expect(summary.placeholders + summary.coverage + summary.identifiers + summary.sections).toBe(
+      findings.length,
+    );
   });
 });
 

@@ -6,6 +6,8 @@
 
 ## 1. Search over note text
 
+Depends on: none
+
 - [x] 1.1 Write the failing test in `test/notes.test.js`: three notes, the query "buy", two of
       them in the answer in the order they were given.
       -> search#Substring search over note text
@@ -15,6 +17,8 @@
 - [x] 1.4 Run `npm test` and watch every test pass.
 
 ## 2. The edges the spec names
+
+Depends on: section 1
 
 - [x] 2.1 Add the failing tests for the case-differing query, the query matching nothing and the
       empty query, in `test/notes.test.js`.

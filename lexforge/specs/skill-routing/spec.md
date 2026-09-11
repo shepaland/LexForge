@@ -97,19 +97,29 @@ is forbidden.
 ### Requirement: Work is handed off through the next-step field
 
 Every planning skill that finishes its artifact SHALL read the `nextStep` field of the
-machine response from the last command it ran, and tell the user that command as the next
-step.
+machine response from the last command it ran, and SHALL run that step itself, saying which
+one it is.
 
-The skill SHALL NOT make up the next step itself when the command already named it.
+The skill SHALL NOT make up the next step itself when the command already named it, and SHALL
+NOT stop to ask permission for a step the command named.
+
+Handing off SHALL stop at the boundary of planning: with `isPlanningComplete` set to `true`
+the skill names the move to implementation and stops.
 
 #### Scenario: Artifact written
 
 - **WHEN** the skill finishes `proposal.md` and gets `nextStep` set to `lexforge instructions
-  specs --change <name>` from `lexforge status --change <name> --json`
-- **THEN** the skill names that command and hands the work to the artifact skill `specs`
+  specs --change add-auth` from `lexforge status --change add-auth --json`
+- **THEN** the skill names that command, runs it, and carries on into the artifact `specs`
 
 #### Scenario: Planning finished
 
 - **WHEN** `lexforge status --change <name> --json` returns `isPlanningComplete: true`
 - **THEN** the skill shows the artifacts it wrote, names the move to implementation, and
   stops without starting implementation
+
+#### Scenario: A question inside an artifact
+
+- **WHEN** the artifact being written needs an answer only the user has
+- **THEN** the skill asks it and waits, because the stop belongs to the artifact's own rule and
+  not to the handover

@@ -39,7 +39,10 @@ const SKILL_NAMES = [
 ];
 
 /** Material a skill body links to instead of carrying it: it ships with the skill. */
-const SKILL_FILES = ["lexforge-apply/reviewer-prompt.md"];
+const SKILL_FILES = [
+  "lexforge-apply/reviewer-prompt.md",
+  "lexforge-apply/parallel-execution.md",
+];
 
 /** Traces of development: the archive is read by a machine that never builds this package. */
 const FORBIDDEN = ["tests", "openspec", "docs", ".claude", "node_modules", "src"];

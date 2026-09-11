@@ -29,11 +29,13 @@ demo, a ten-line diff, the hours already spent, and a user who says the plan is 
 needed all leave it closed. Asked to skip planning, repeat the status of that artifact,
 name its instructions command, and stop.
 
-Exit `2` means the command refused; read `error.code`. `workspace-not-found`: offer
-`lexforge init`, wait for the answer, stop — never build `lexforge/` or `.lexforge.yaml`
-by hand. `change-not-found`: run `lexforge status --json` and list the active changes.
-Any other code: show `error.message`, then stop. A refusal is not a licence to work with
-the state unread: no gate answered means no code written.
+Exit `2` means the command refused; read `error.code`. `workspace-not-found` and
+`workspace-incomplete` share the same fix: run `lexforge init --tools <your runtime>` at
+the project root — name `agents` when no name `init` lists is yours — then run the
+command that refused again. Never build `lexforge/` or `.lexforge.yaml` by hand.
+`change-not-found`: run `lexforge status --json` and list the active changes. Any other
+code: show `error.message`, then stop. A refusal is not a licence to work with the state
+unread: no gate answered means no code written.
 
 Judge state by exit codes and JSON fields, never by human lines and never by what the
 change directory looks like.
@@ -81,9 +83,9 @@ out — make the model reachable, or change the assignment in `lexforge/config.y
 Violating the letter of this rule is violating its spirit.
 
 The report is the one `lexforge-verify` writes: requirements against behaviour, plan
-against the work done, `design.md` decisions against the implementation, zero CRITICAL
-findings. No report in this conversation? Name `lexforge-verify` as the next step and
-stop. One CRITICAL open? Give the work back to that finding.
+against work done, `design.md` decisions against implementation, zero findings above
+MINOR. No report here? Name `lexforge-verify` next and stop. CRITICAL or IMPORTANT open?
+Give the work back to it. MINOR leaves the merge to run.
 
 A report is not a green suite, a fresh stamp, ticked boxes, per-task reviews, a compacted
 session, or the user saying it came out clean. Those are what `lexforge archive` recounts;
@@ -138,7 +140,7 @@ direct request, confirmed separately.
 |---|---|
 | "fourteen task-scoped reviews beat one tired end-of-change skim" | Fourteen diffs against fourteen tasks answer no question about the change. |
 | "it costs you nothing on the Friday clock: it happens after the archive" | After the archive there is no change left to fix it in. |
-| "so if it exits `0` the gate held" | Three machine checks held. A contradicted decision passes all three. |
+| "so if it exits `0` the gate held" | Four machine checks held. A contradicted decision passes all four. |
 | "If you reaffirm, that's your call and I'll make the edit without re-arguing it" | The offer is the edit, one message later. |
 | "This should exit `0`" | The command decides that, not the argument that it would. |
 | "the archive command is queued to run against it" | A run you have not made has no result. |

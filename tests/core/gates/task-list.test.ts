@@ -108,6 +108,120 @@ describe("parseTaskList: имена файлов", () => {
 
     expect(tasks[0]!.files).toEqual(["src/core/gates/task-list.ts", "README.md"]);
   });
+
+  it("поле в обратных кавычках без слэша путём не считается", () => {
+    const tasks = parseTaskList(
+      [
+        "- [ ] 1.1 Записать находку через `finding.rule` и прочитать `task.line`,",
+        "      сверить с `data.summary.openDefects`, не трогая `src/core/gates/plan-check.ts`",
+      ].join("\n"),
+    );
+
+    expect(tasks[0]!.files).toEqual(["src/core/gates/plan-check.ts"]);
+  });
+
+  it("расширение из допустимого списка без слэша всё ещё считается путём", () => {
+    const tasks = parseTaskList(
+      "- [ ] 1.1 Написать правило в `coverage-rules.ts` и обновить `tasks.md`\n",
+    );
+
+    expect(tasks[0]!.files).toEqual(["coverage-rules.ts", "tasks.md"]);
+  });
+
+  it("расширения других языков и экосистем тоже считаются путём без слэша", () => {
+    const tasks = parseTaskList(
+      [
+        "- [ ] 1.1 Правь `setup.py`, `main.go`, `lib.rs`, `app.rb`, `Main.java`,",
+        "      `styles.css`, `index.html`, `schema.sql`, `util.c`, `util.h`, `util.cpp`,",
+        "      `Program.cs`, `index.php`, `App.swift`, `Main.kt`, `theme.scss`,",
+        "      `config.toml`, `settings.ini`, `data.xml`, `rows.csv`",
+      ].join("\n"),
+    );
+
+    expect(tasks[0]!.files).toEqual([
+      "setup.py",
+      "main.go",
+      "lib.rs",
+      "app.rb",
+      "Main.java",
+      "styles.css",
+      "index.html",
+      "schema.sql",
+      "util.c",
+      "util.h",
+      "util.cpp",
+      "Program.cs",
+      "index.php",
+      "App.swift",
+      "Main.kt",
+      "theme.scss",
+      "config.toml",
+      "settings.ini",
+      "data.xml",
+      "rows.csv",
+    ]);
+  });
+
+  it("расширения, выпавшие при сужении списка, снова считаются путём", () => {
+    const tasks = parseTaskList(
+      [
+        "- [ ] 1.1 Правь `App.jsx`, `App.vue`, `main.tf`, `app.dart`, `init.lua`,",
+        "      `script.pl`, `deploy.ps1`, `guide.mdx`, `lib.exs`, `Main.hs`, `core.clj`,",
+        "      `paper.tex`, `service.proto`, `App.scala`",
+      ].join("\n"),
+    );
+
+    expect(tasks[0]!.files).toEqual([
+      "App.jsx",
+      "App.vue",
+      "main.tf",
+      "app.dart",
+      "init.lua",
+      "script.pl",
+      "deploy.ps1",
+      "guide.mdx",
+      "lib.exs",
+      "Main.hs",
+      "core.clj",
+      "paper.tex",
+      "service.proto",
+      "App.scala",
+    ]);
+  });
+
+  it("расширение без слэша считается путём независимо от регистра", () => {
+    const tasks = parseTaskList("- [ ] 1.1 Читай `README.MD` и обнови `Main.JAVA`\n");
+
+    expect(tasks[0]!.files).toEqual(["README.MD", "Main.JAVA"]);
+  });
+
+  it("расширения, которых не было во втором списке, тоже считаются путём", () => {
+    const tasks = parseTaskList(
+      [
+        "- [ ] 1.1 Правь `styles.less`, `theme.sass`, `page.styl`, `notes.rst`,",
+        "      `rows.tsv`, `run.bat`, `app.cfg`, `service.conf`, `.env`, `deps.lock`,",
+        "      `main.ex`, `worker.erl`, `script.jl`, `analysis.ipynb`, `App.svelte`",
+      ].join("\n"),
+    );
+
+    expect(tasks[0]!.files).toEqual([
+      "styles.less",
+      "theme.sass",
+      "page.styl",
+      "notes.rst",
+      "rows.tsv",
+      "run.bat",
+      "app.cfg",
+      "service.conf",
+      ".env",
+      "deps.lock",
+      "main.ex",
+      "worker.erl",
+      "script.jl",
+      "analysis.ipynb",
+      "App.svelte",
+    ]);
+  });
 });
 
 describe("parseTaskList: текст без служебных частей", () => {
@@ -130,5 +244,22 @@ describe("parseTaskList: текст без служебных частей", () 
     );
 
     expect(tasks[0]!.cleanText).toBe("Прогнать тест `npm test`");
+  });
+});
+
+describe("parseTaskList: таблица распознавания пути по расширению", () => {
+  it.each([
+    ["App.jsx", true],
+    ["main.tf", true],
+    ["mix.exs", true],
+    ["README.MD", true],
+    ["setup.py", true],
+    ["npm test", false],
+    ["finding.rule", false],
+    ["data.summary.openDefects", false],
+  ])("«%s» распознаётся как путь: %s", (span, expected) => {
+    const tasks = parseTaskList(`- [ ] 1.1 Правь \`${span}\`\n`);
+
+    expect(tasks[0]!.files.includes(span)).toBe(expected);
   });
 });

@@ -14,20 +14,39 @@ The skill `lexforge-apply` SHALL take tasks in order of number and SHALL NOT sta
 one until the current one is closed: test written, failure seen, implementation written,
 run green, review passed, checkbox marked.
 
+Sections that `tasks.md` records as independent of one another SHALL be exempt from the order,
+and only from the order: every task of such a section SHALL still be closed through the whole
+loop, one at a time, before its checkbox is marked. A section whose dependencies are not closed
+SHALL wait its turn in plan order.
+
 Merging tasks into one pass SHALL NOT be allowed. A task's small size, a shared file, and
-matching wording between neighboring tasks are not grounds for merging them.
+matching wording between neighboring tasks are not grounds for merging them, and neither is
+running two of them at once.
 
 #### Scenario: Three small tasks in a row
 
 - **WHEN** tasks 2.1, 2.2, and 2.3 touch one file and together add twenty lines
-- **THEN** the skill goes through them one at a time and closes three checkboxes with three
-  separate marks
+- **THEN** the plan does not record them as independent, the skill goes through them one at a
+  time and closes three checkboxes with three separate marks
 
 #### Scenario: A task needs the result of a later one
 
 - **WHEN** task 3.2 cannot be done without what task 3.5 produces
 - **THEN** the skill stops and names the defect in the plan, instead of silently reordering
   the tasks
+
+#### Scenario: Two independent sections
+
+- **WHEN** the plan records sections 4 and 5 as independent of each other and the runtime can
+  start executor agents
+- **THEN** each runs in its own executor agent, its tasks one at a time through the whole loop,
+  and each checkbox is marked when that task's own run is green and its own review is closed
+
+#### Scenario: A section with no concurrent neighbour
+
+- **WHEN** no other section is ready at the same moment as section 3
+- **THEN** section 3 runs in the session that read the plan, task by task, and no executor agent
+  is dispatched for it
 
 ### Requirement: A failing test is observed before the implementation
 
@@ -128,8 +147,8 @@ neighboring tasks.
 
 Findings at levels CRITICAL and IMPORTANT SHALL close before the checkbox is marked.
 
-A finding at level MINOR SHALL either be fixed now or become a new task in `tasks.md` with
-its own number and its own file. Findings SHALL NOT stay only in the agent's memory.
+A finding at level MINOR SHALL either be fixed now or be recorded in the defect ledger with
+`lexforge defect record`. Findings SHALL NOT stay only in the agent's memory.
 
 Disagreement with the reviewer SHALL be expressed with an argument backed by evidence —
 code, a test, or a line from a requirement. Silent agreement and silent dismissal are
@@ -138,7 +157,7 @@ equally unacceptable.
 #### Scenario: A MINOR finding set aside for later
 
 - **WHEN** the reviewer finds a duplicated piece of code and calls it MINOR
-- **THEN** the finding is either fixed or turned into a separate task in the plan
+- **THEN** the finding is either fixed or recorded in the ledger with its file and its line
 
 #### Scenario: The reviewer is wrong
 
@@ -146,15 +165,24 @@ equally unacceptable.
 - **THEN** the skill quotes the requirement, shows the test, and explains why the finding is
   dismissed
 
-### Requirement: The checkbox closes right away; the stamp is cleared at the task boundary
+### Requirement: The checkbox closes right away; the stamp is taken at the wave boundary
 
 The mark `- [x]` SHALL go into `tasks.md` right after the run is green and review findings
 are closed. Marking a batch of checkboxes at the end of the work SHALL NOT be allowed:
 closed tasks and open ones stop being distinguishable.
 
-At the task boundary, `lexforge evidence record --change <name> --label tests` SHALL run.
-An exit code of `1` means a red run: the task stays open, and the work continues with
-reading the failure.
+`lexforge evidence record --change <name> --label tests` SHALL run once every dispatched
+section of the wave has come back and its checkbox is marked. An executor agent working a
+section SHALL NOT run it: a stamp taken while another agent is still writing describes a state
+of the code that never existed.
+
+An exit code of `1` SHALL leave the wave unclosed: no further section is dispatched, and the
+next step is reading the failure. The checkboxes already marked SHALL stay marked, each resting
+on its own green run, and the change SHALL NOT pass `lexforge verify` until a stamp comes back
+green.
+
+Where no section runs in parallel with another, the wave is one section and the boundary is the
+task boundary it always was.
 
 #### Scenario: Five tasks, one checkbox
 
@@ -163,8 +191,14 @@ reading the failure.
 
 #### Scenario: A red stamp
 
-- **WHEN** `lexforge evidence record` returns `1`
-- **THEN** the checkbox stays empty, and the next step is reading the failure
+- **WHEN** `lexforge evidence record` returns `1` at the end of a wave
+- **THEN** no further section is dispatched, the next step is reading the failure, and the
+  marked checkboxes stay marked
+
+#### Scenario: Two sections in one wave
+
+- **WHEN** sections 4 and 5 run in parallel and both come back green
+- **THEN** both checkboxes are marked, and one stamp is taken after the second agent returns
 
 ### Requirement: A task that outgrows the spec stops the work
 
@@ -195,3 +229,57 @@ the code, not the task.
 
 - **WHEN** the work is already done, and a requirement is added to match it
 - **THEN** this is a violation: the stop was due before the work
+
+### Requirement: The runtime is checked for parallel executor agents
+
+Before the first task of a change, the skill `lexforge-apply` SHALL establish whether its
+runtime can start executor subagents, and SHALL say what it found.
+
+The check SHALL NOT be optional and SHALL NOT be skipped because the plan records no
+independent tasks: the answer is stated either way.
+
+A runtime that cannot start them SHALL leave the work sequential. The skill SHALL say so and
+SHALL NOT treat the absence as a reason to merge tasks or to skip the review after a task.
+
+The check SHALL also establish whether an executor agent of this runtime can start a reviewer of
+its own. Where it cannot, a dispatched executor SHALL carry out one task and return, and the
+dispatching skill SHALL review that task and mark its checkbox before dispatching the next task
+of the same section. No task SHALL be written on top of a task nobody has reviewed.
+
+A runtime that can start no agent at all SHALL reach no reviewer either. The skill SHALL say so
+before the first task, SHALL work the first task to green, and SHALL stop at its review with no
+checkbox marked. It SHALL put the two lawful ways out to the user: make a reviewer reachable, or
+strike that task from the plan with their word - struck meaning the task is dropped and its
+work with it, never that the work stands and the review is waived. Reading one's own diff SHALL NOT stand in for the
+review, the absence of a reviewer SHALL NOT be a reason to tick, and no further task SHALL be
+opened while the first stands unreviewed.
+
+#### Scenario: The runtime can start them
+
+- **WHEN** implementation begins and the runtime can start executor subagents
+- **THEN** the skill says so before the first task, and the plan's independent tasks run in
+  parallel
+
+#### Scenario: The runtime cannot start them
+
+- **WHEN** implementation begins and no executor subagent can be started
+- **THEN** the skill says so and works through every task one at a time, review and all
+
+#### Scenario: An executor that cannot review
+
+- **WHEN** the runtime starts executor agents but an executor of it cannot start a reviewer, and
+  section 4 holds three tasks
+- **THEN** the executor returns after task 4.1, the dispatching skill reviews it and marks its
+  checkbox, and only then is task 4.2 dispatched
+
+#### Scenario: No agent of any kind
+
+- **WHEN** the runtime's tool list holds nothing that starts an agent, so neither an executor nor
+  a reviewer can be reached
+- **THEN** the skill says so before the first task, works task 2.1 to green, stops at its review
+  with no checkbox marked, and opens no further task
+
+#### Scenario: A plan with no independent tasks
+
+- **WHEN** the plan records no task as independent of another
+- **THEN** the check still happens and its answer is still stated before the first task

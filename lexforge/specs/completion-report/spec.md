@@ -75,16 +75,16 @@ requirement traceability, and stamps, while whether the implementation matches t
 - **WHEN** the implementation diverges from a decision recorded in `design.md`
 - **THEN** this is a CRITICAL finding, even if the command returned `0`
 
-### Requirement: The threshold is zero CRITICAL findings
+### Requirement: The threshold is zero open findings above MINOR
 
 Report findings SHALL carry the levels CRITICAL, IMPORTANT, and MINOR.
 
-One CRITICAL finding SHALL stop the work: the change is not archived while it stays open.
-Promises to fix it after archival, "known limitation" labels, and lowering the level to get
-past the check SHALL NOT be allowed.
+A CRITICAL or an IMPORTANT finding SHALL stop the work: the change is not archived while one
+stays open. Promises to fix it after archival, "known limitation" labels, and lowering the level
+to get past the check SHALL NOT be allowed.
 
-IMPORTANT findings SHALL be fixed before archival or moved into a separate change with the
-user's explicit agreement. MINOR findings SHALL be named by name.
+A MINOR finding SHALL NOT stop archival. It SHALL be named by name in the report and recorded in
+the defect ledger, and the change SHALL archive with it open.
 
 #### Scenario: One CRITICAL finding
 
@@ -95,6 +95,11 @@ user's explicit agreement. MINOR findings SHALL be named by name.
 
 - **WHEN** a CRITICAL finding is rewritten as IMPORTANT without any code change
 - **THEN** this is a violation: the level is set by the consequence, not by convenience
+
+#### Scenario: Only MINOR findings
+
+- **WHEN** the report carries four MINOR findings and nothing above them
+- **THEN** the four are recorded in the ledger and archival goes ahead
 
 ### Requirement: Every claim rests on a fresh run of a command
 
@@ -120,16 +125,24 @@ fresh.
 The report SHALL go to the user as a message. No file with the check's verdict SHALL be
 created.
 
-The `lexforge archive` command SHALL recompute the three machine dimensions itself. A saved
-verdict would go stale exactly like a stamp, and would need its own freshness rule.
+The `lexforge archive` command SHALL recompute the machine dimensions itself. A saved verdict
+would go stale exactly like a stamp, and would need its own freshness rule.
+
+A finding the session does not fix SHALL be recorded in the defect ledger before the verdict is
+given. The ledger holds findings, not the verdict: an entry says what was found and where, and
+carries no claim about the state of the change.
 
 #### Scenario: Archival after the check
 
 - **WHEN** the report is written, and the archive command is called
-- **THEN** it recomputes the three machine dimensions and refuses to work if there are
-  findings
+- **THEN** it recomputes the machine dimensions and refuses to work if there are findings
 
 #### Scenario: The code changed after the report
 
 - **WHEN** a project file is edited between the report and archival
 - **THEN** archival sees a stale stamp and stops
+
+#### Scenario: A MINOR left unfixed
+
+- **WHEN** the report names a MINOR finding the session will not fix
+- **THEN** it is recorded in the ledger before the verdict, and no file holds the verdict itself

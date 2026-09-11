@@ -12,6 +12,7 @@ import { makeFinding, type Finding } from "../validation/finding.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { readDeltaSpecs, requirementKey, type DeltaSpecs } from "./coverage-rules.js";
+import { DEFECT_OPEN_RULE, defectFindings } from "./defect-dimension.js";
 import { evidenceFile, readLedger } from "./evidence-store.js";
 import { freshnessFinding, labelState, type CodeState } from "./freshness.js";
 import { PLAN_ARTIFACT } from "./plan-check.js";
@@ -40,6 +41,7 @@ export interface VerifyChangeSummary {
   openTasks: number;
   requirementsWithoutTrace: number;
   staleLabels: number;
+  openDefects: number;
 }
 
 export interface VerifyChangeData {
@@ -78,6 +80,7 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
     ...openTaskFindings(plan),
     ...traceFindings(plan, readDeltaSpecs(root, options.change), changed),
     ...evidenceFindings(root, options.change, labels),
+    ...defectFindings(root, options.change),
   ];
 
   const nextStep =
@@ -280,6 +283,7 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
     openTasks: count("task-not-done"),
     requirementsWithoutTrace: count("requirement-without-trace"),
     staleLabels: count("evidence-not-fresh"),
+    openDefects: count(DEFECT_OPEN_RULE),
   };
 }
 

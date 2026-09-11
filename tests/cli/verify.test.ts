@@ -51,6 +51,21 @@ const CLOSED_PLAN = [
   "",
 ].join("\n");
 
+/**
+ * The requirement's trace is carried by the one closed task; two further
+ * tasks are open and name no requirement, so they count toward `openTasks`
+ * without touching `requirementsWithoutTrace`.
+ */
+const TWO_OPEN_PLAN = [
+  "## 1. Вход",
+  "",
+  "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
+  "      -> auth#Password is stored hashed",
+  "- [ ] 1.2 Написать проверку пароля при входе в `src/app.ts`",
+  "- [ ] 1.3 Написать восстановление пароля в `src/app.ts`",
+  "",
+].join("\n");
+
 function changeFiles(tasks: string): Record<string, string> {
   return {
     "lexforge/config.yaml": CONFIG,
@@ -87,7 +102,12 @@ interface VerifyDocument {
   change: string;
   findings: { rule: string }[];
   notChecked: string[];
-  summary: { openTasks: number; requirementsWithoutTrace: number; staleLabels: number };
+  summary: {
+    openTasks: number;
+    requirementsWithoutTrace: number;
+    staleLabels: number;
+    openDefects: number;
+  };
   nextStep: string;
 }
 
@@ -126,6 +146,7 @@ describe("lexforge verify", () => {
       openTasks: 0,
       requirementsWithoutTrace: 0,
       staleLabels: 0,
+      openDefects: 0,
     });
   });
 
@@ -159,5 +180,75 @@ describe("lexforge verify", () => {
 
     expect(exitCode).toBe(2);
     expect(capture.err).toContain("git init");
+  });
+});
+
+describe("lexforge verify: четвёртое измерение — журнал дефектов", () => {
+  async function recordDefect(root: string, level: string, summary: string): Promise<void> {
+    await call(
+      [
+        "defect",
+        "record",
+        "--change",
+        CHANGE,
+        "--level",
+        level,
+        "--file",
+        "src/app.ts",
+        "--line",
+        "1",
+        "--summary",
+        summary,
+      ],
+      root,
+    );
+  }
+
+  it("первые три измерения чисты, но открытая critical запись даёт находку с её rule id, код 1", async () => {
+    const root = workspace(CLOSED_PLAN).root;
+    editApp(root);
+    await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
+    await recordDefect(root, "critical", "session token not invalidated on logout");
+
+    const { exitCode, capture } = await call(["verify", "--change", CHANGE, "--json"], root);
+    const data = JSON.parse(capture.out) as VerifyDocument;
+
+    expect(exitCode).toBe(1);
+    expect(data.findings).toHaveLength(1);
+    expect(data.findings[0]!.rule).toBe("defect-open");
+  });
+
+  it("summary несёт счётчик для каждого из четырёх измерений", async () => {
+    const root = workspace(TWO_OPEN_PLAN).root;
+    editApp(root);
+    // No `evidence record` call: the one described label ("tests") is
+    // missing a stamp, which is one finding of rule "evidence-not-fresh".
+    await recordDefect(root, "critical", "session token not invalidated on logout");
+
+    const { exitCode, capture } = await call(["verify", "--change", CHANGE, "--json"], root);
+    const data = JSON.parse(capture.out) as VerifyDocument;
+
+    expect(exitCode).toBe(1);
+    expect(data.summary).toEqual({
+      openTasks: 2,
+      requirementsWithoutTrace: 0,
+      staleLabels: 1,
+      openDefects: 1,
+    });
+  });
+
+  it("три открытые minor записи не мешают: код 0", async () => {
+    const root = workspace(CLOSED_PLAN).root;
+    editApp(root);
+    await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
+    await recordDefect(root, "minor", "first minor");
+    await recordDefect(root, "minor", "second minor");
+    await recordDefect(root, "minor", "third minor");
+
+    const { exitCode, capture } = await call(["verify", "--change", CHANGE, "--json"], root);
+    const data = JSON.parse(capture.out) as VerifyDocument;
+
+    expect(exitCode).toBe(0);
+    expect(data.findings).toEqual([]);
   });
 });

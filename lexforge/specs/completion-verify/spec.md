@@ -10,14 +10,15 @@ requirement left a trace in the code, and where the line sits that a machine doe
 
 ## Requirements
 
-### Requirement: Three dimensions in one response
+### Requirement: Four dimensions in one response
 
-`lexforge verify --change <name>` SHALL check three things in a single call and fold the
+`lexforge verify --change <name>` SHALL check four things in a single call and fold the
 findings into one list:
 
 - open checkboxes in `tasks.md`;
 - delta-spec requirements with no trace in the code;
-- stamp state for every label in the `verification` section.
+- stamp state for every label in the `verification` section;
+- open ledger entries of level `critical` or `important` naming this change.
 
 The dimensions SHALL NOT be toggled off by flags and SHALL NOT be called separately: the check
 before completion runs as a whole, or the agent picks the one dimension that passes.
@@ -32,8 +33,15 @@ Every finding SHALL carry a rule id that shows which dimension it came from.
 
 #### Scenario: All three dimensions are clean
 
-- **WHEN** the tasks are closed, every requirement has a trace, and every label is fresh
+- **WHEN** the tasks are closed, every requirement has a trace, and every label is fresh, and
+  the ledger holds no open entry above MINOR for this change
 - **THEN** the command exits with code `0`
+
+#### Scenario: An open entry above MINOR
+
+- **WHEN** the first three dimensions are clean and the ledger holds one open `critical` entry
+  for this change
+- **THEN** the response carries one finding with the ledger's rule id, exit code `1`
 
 ### Requirement: An open task is a finding
 
@@ -161,16 +169,17 @@ Without it, a zero exit code reads as a full check, and the text part of the che
 ### Requirement: verify's machine output is usable by a skill
 
 `verify --json` SHALL print a single document to standard output and nothing else. The document
-SHALL carry findings in the shared gate shape and a count for each of the three dimensions.
+SHALL carry findings in the shared gate shape and a count for each of the four dimensions.
 
 A skill SHALL decide from the exit code and the document's fields, without parsing
 human-readable strings.
 
 #### Scenario: Counts by dimension
 
-- **WHEN** `verify --json` finds two open tasks and one stale label
-- **THEN** the document carries counts of `2` for tasks, `0` for requirements, and `1` for
-  stamps
+- **WHEN** `verify --json` finds two open tasks, one stale label and one open ledger entry above
+  MINOR
+- **THEN** the document carries counts of `2` for tasks, `0` for requirements, `1` for stamps and
+  `1` for open defects
 
 #### Scenario: Standard output parses whole
 

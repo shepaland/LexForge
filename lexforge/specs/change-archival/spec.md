@@ -10,12 +10,16 @@ successful merge.
 
 ### Requirement: Archival recomputes the machine check itself
 
-The command `lexforge archive <change>` SHALL count the same three dimensions as
-`lexforge verify`: open tasks in `tasks.md`, delta requirements with no trace in the code,
-and the state of stamps across every label in the `verification` section.
+The command `lexforge archive <change>` SHALL count the same four dimensions as
+`lexforge verify`: open tasks in `tasks.md`, delta requirements with no trace in the code, the
+state of stamps across every label in the `verification` section, and open ledger entries of
+level `critical` or `important` naming this change.
 
-A finding on any dimension SHALL end the command with exit code `1`. No spec file is
-written in that case, and the change directory is not moved.
+A finding on any dimension SHALL end the command with exit code `1`. No spec file is written in
+that case, and the change directory is not moved.
+
+An open ledger entry at level `minor` SHALL NOT be a finding: the delta merges into
+`lexforge/specs/` and the change directory moves with that entry still open.
 
 A flag that turns off a dimension, and a "warn and archive anyway" mode, SHALL NOT exist. A
 saved verdict from a past `verify` run SHALL NOT be accepted in place of recomputing it.
@@ -31,6 +35,13 @@ saved verdict from a past `verify` run SHALL NOT be accepted in place of recompu
 - **WHEN** a project file was edited after the last run of the checks
 - **THEN** the command ends with exit code `1` and names the label and the reason it is
   stale
+
+#### Scenario: An open minor entry
+
+- **WHEN** every other dimension is clean and the ledger holds two open `minor` entries for
+  this change
+- **THEN** the delta merges, the change directory moves, and the two entries stay open in
+  `lexforge/defects.json`
 
 ### Requirement: Planning must be complete
 

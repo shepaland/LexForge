@@ -27,4 +27,13 @@ describe("шаблоны встроенных схем", () => {
       expect(readFileSync(file, "utf8").trim().length, file).toBeGreaterThan(0);
     }
   });
+
+  it.each(["spec-driven", "bounded"])(
+    "у схемы %s шаблон tasks.md несёт строку «Depends on:»",
+    (name) => {
+      const file = path.join(builtinSchemasDir(), name, "templates", "tasks.md");
+
+      expect(readFileSync(file, "utf8")).toContain("Depends on:");
+    },
+  );
 });

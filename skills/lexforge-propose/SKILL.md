@@ -34,15 +34,27 @@ Find your `id` in `artifacts`. Its `status` decides:
 - `done` — show `resolvedOutputPath`, ask before rewriting.
 - `skipped` — say `.lexforge.yaml` skips it, name `nextStep`. Stop.
 
+Once the artifact is written, run the command named in `nextStep` from the last machine
+response yourself, saying which one it is, and carry on into the next artifact. A question
+the artifact's own rule makes you ask is still asked, and its answer still waited for: this
+rule governs the handover between artifacts, nothing inside one.
+
+Whether to stop is read from `isPlanningComplete`, a field only
+`lexforge status --change <name> --tool <your runtime> --json` carries: run that command
+if the artifact's own last response did not, and stop only when it reads `true` — then
+show what was written and name the move to implementation.
+
 A closed gate stops the work; no branch warns and writes the file anyway.
 Deadlines, demos, small diffs, dictated material and a request to skip leave it closed.
 Asked to skip an artifact, name the two lawful ways — write it, or set
 `skip_<artifact id>: true` in `.lexforge.yaml` — then stop.
 
-Exit `2` means refused; read `error.code`. `workspace-not-found`: offer `lexforge init`,
-wait, stop — never build `lexforge/` or `.lexforge.yaml` by hand. `change-not-found`:
-list active changes. `artifact-unknown`: name the schema's artifacts. Otherwise show
-`error.message`, then stop.
+Exit `2` means refused; read `error.code`. `workspace-not-found` and
+`workspace-incomplete` share the same fix: run `lexforge init --tools <your runtime>` at
+the project root — name `agents` when no name `init` lists is yours — and carry on. Never
+build `lexforge/` or `.lexforge.yaml` by hand. `change-not-found`: list active changes.
+`artifact-unknown`: name the schema's artifacts. Otherwise show `error.message`, then
+stop.
 
 Judge state by exit codes and JSON fields, never human lines.
 
@@ -138,5 +150,5 @@ heavier; nothing downgrades.
 
 Stop and send the question you skipped.
 
-Once the file is written, run `lexforge status --change <name> --tool <your runtime> --json`, name its
-`nextStep` and stop there.
+Once the file is written, run `lexforge status --change <name> --tool <your runtime> --json`, then run its
+`nextStep`, saying which one it is.

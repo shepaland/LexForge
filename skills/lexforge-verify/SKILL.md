@@ -39,11 +39,13 @@ demo, a ten-line diff, the hours already spent, and a user who says the plan is 
 needed all leave it closed. Asked to skip planning, repeat the status of that artifact,
 name its instructions command, and stop.
 
-Exit `2` means the command refused; read `error.code`. `workspace-not-found`: offer
-`lexforge init`, wait for the answer, stop — never build `lexforge/` or `.lexforge.yaml`
-by hand. `change-not-found`: run `lexforge status --json` and list the active changes.
-Any other code: show `error.message`, then stop. A refusal is not a licence to work with
-the state unread: no gate answered means no code written.
+Exit `2` means the command refused; read `error.code`. `workspace-not-found` and
+`workspace-incomplete` share the same fix: run `lexforge init --tools <your runtime>` at
+the project root — name `agents` when no name `init` lists is yours — then run the
+command that refused again. Never build `lexforge/` or `.lexforge.yaml` by hand.
+`change-not-found`: run `lexforge status --json` and list the active changes. Any other
+code: show `error.message`, then stop. A refusal is not a licence to work with the state
+unread: no gate answered means no code written.
 
 Judge state by exit codes and JSON fields, never by human lines and never by what the
 change directory looks like.
@@ -94,11 +96,11 @@ Violating the letter of this rule is violating its spirit.
 
 Run `lexforge verify --change <name> --json` and read the exit code.
 
-- `0` — the three measures found nothing. Not a check passed: a third of one, and the
-  other two thirds are read, not run.
+- `0` — the four measures found nothing, not the whole check: the rest needs reading,
+  not running.
 - `1` — work. `summary` names the measure to go back to: `openTasks`,
-  `requirementsWithoutTrace`, `staleLabels`. Fix what `findings` names, run again,
-  until `0`.
+  `requirementsWithoutTrace`, `staleLabels`, `openDefects`. Fix what `findings` names,
+  run again, until `0`.
 - `2` — no check happened. Read `error.code`, repair the call or the config, write no
   report.
 
@@ -126,8 +128,8 @@ CRITICAL at exit `0` too.
 
 Three levels: CRITICAL, IMPORTANT, MINOR. The level follows from what the code does.
 
-One CRITICAL and the change is not archived. IMPORTANT is fixed first, or moves into a
-separate change with the user's explicit word. MINOR is named, every one.
+A CRITICAL or an IMPORTANT stops archival. MINOR does not stop it - name every one,
+record it with `lexforge defect record`, and archive with it open.
 
 A finding re-lettered while the code stands unchanged was re-lettered by the clock. Past
 a CRITICAL there are two ways: the fix, or a decision rewritten in `design.md` with the
@@ -143,13 +145,14 @@ exit code recalled from earlier or read off a compaction summary is not a run.
 ## Where the report goes
 
 To the user, as a message. No file holds it: archiving recounts the machine half itself,
-and a stored verdict rots on the next edit.
+and a stored verdict rots on the next edit. An unfixed finding goes to
+`lexforge defect record`.
 
 ## Rationalizations
 
 | Excuse | Reality |
 |---|---|
-| "the automated evidence is real and it's enough to ship on" | One measure of three, and none of them read `design.md`. |
+| "the automated evidence is real and it's enough to ship on" | One measure of four, and none of them read `design.md`. |
 | "I'm trusting a summary of a summary for that part" | Then nothing runs under the verdict. Run it again. |
 | "put 'reread decision 4' at the top of tomorrow's list" | Reading postponed past the archive is reading nobody does. |
 | "objective grounds for a severity change, not just schedule pressure" | No code changed between the finding and the argument. |
@@ -163,4 +166,4 @@ and a stored verdict rots on the next edit.
 - A verdict in a message with no run in it.
 - A level lowered while the code stayed the same.
 
-Go back to the section you skipped.
+Go back to the skipped section.

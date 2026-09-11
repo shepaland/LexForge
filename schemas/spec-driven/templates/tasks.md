@@ -10,7 +10,12 @@
      "-> <capability>#<requirement name>", the name copied from the heading
      "### Requirement:" word for word. -->
 
+<!-- Every section names what it depends on: the sections that must close
+     before it starts, or the word "none". -->
+
 ## 1. <section name>
+
+Depends on: none
 
 - [ ] 1.1 <task: the file it touches and the check that proves it works>
       -> <capability>#<requirement name>
@@ -20,5 +25,7 @@
 - [ ] 1.5 <run the test and watch it pass>
 
 ## 2. <next section name>
+
+Depends on: section 1
 
 - [ ] 2.1 <task>

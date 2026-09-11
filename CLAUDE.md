@@ -62,6 +62,9 @@ lexforge evidence record --change <name> --label tests  # записать до�
 lexforge check evidence --change <name>                 # проверить, что доказательства собраны
 lexforge verify --change <name>                         # полная проверка change перед архивацией
 lexforge archive <change>                               # архивировать change и влить дельты в основные спеки
+lexforge defect record --change <name> --level <level>  # записать дефект в реестр lexforge/defects.json
+lexforge defect close <id>                               # отметить дефект исправленным
+lexforge defect list                                     # показать реестр, --change и --open сужают список
 ```
 
 Change без изменений требований (рефакторинг, тулинг, документация) обязан нести
@@ -90,7 +93,8 @@ Change без изменений требований (рефакторинг, �
 Репозиторий несёт готовый продукт. Рабочие следы разработки остаются на машине.
 
 **Коммитится:** `skills/`, `src/`, `bin/`, `schemas/`, `examples/`, `tests/`, `docs/`,
-`package.json`, `README.md`, `LICENSE`, `CLAUDE.md`, `lexforge/specs/` и `lexforge/config.yaml`.
+`package.json`, `README.md`, `LICENSE`, `CLAUDE.md`, `lexforge/specs/`, `lexforge/config.yaml`
+и `lexforge/defects.json`.
 
 **Не коммитится:**
 

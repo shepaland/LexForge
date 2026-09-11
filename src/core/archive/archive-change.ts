@@ -3,9 +3,11 @@ import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
 import { answerPath, workspacePath } from "../answer-path.js";
+import { readDefectLedger } from "../defects/store.js";
 import { capabilityOf, listSpecFiles } from "../gates/coverage-rules.js";
-import { verifyChange } from "../gates/verify-change.js";
+import { DEFECT_OPEN_RULE } from "../gates/defect-dimension.js";
 import { describedLabels, verificationEmpty } from "../gates/verification-labels.js";
+import { verifyChange } from "../gates/verify-change.js";
 import { assertRepository } from "../git/repository.js";
 import { readTextFile } from "../read-text.js";
 import { loadSchema } from "../schemas/load-schema.js";
@@ -44,6 +46,14 @@ export interface ArchiveChangeSummary {
   conflicts: number;
   /** Main specs this run wrote. Zero when the merge changed nothing. */
   specsWritten: number;
+  /**
+   * The fourth dimension, counted the way `verify`'s own field of this name
+   * is: open `critical` or `important` entries naming this change, which is
+   * to say findings of rule `defect-open` among `checks`. Not the project-wide
+   * count of every open entry — that number has nothing to do with why this
+   * run did or did not fail, and belongs in the success line, not here.
+   */
+  openDefects: number;
 }
 
 export interface ArchiveChangeData {
@@ -86,6 +96,18 @@ export function archiveChange(options: ArchiveChangeOptions): CommandResult<Arch
 
   const checks = verifyChange({ cwd: root, change: options.change }).data.findings;
 
+  // Read once, here, before the merge and the move: a stamp of what the
+  // ledger held when this run looked at it, not a second read taken after
+  // side effects are already on disk. `readDefectLedger` can throw — a
+  // malformed file, a permission error — and that has to stop the command
+  // before anything is written, the same way every other refusal here does.
+  // It is also the number the success line names; a concurrent `defect
+  // record` after this point is not one this run saw, and the printed count
+  // should not claim otherwise.
+  const openDefectsProjectWide = readDefectLedger(root).defects.filter(
+    (entry) => entry.state === "open",
+  ).length;
+
   // The merge is counted whole before a single file is written, and a check
   // that failed stops the command before the merge is even attempted.
   const merge = checks.length > 0 ? null : applyChange(merges);
@@ -119,7 +141,7 @@ export function archiveChange(options: ArchiveChangeOptions): CommandResult<Arch
 
   return {
     data,
-    lines: renderLines(data, written),
+    lines: renderLines(data, written, openDefectsProjectWide),
     nextStep,
     exitCode: findings.length > 0 ? 1 : 0,
   };
@@ -292,6 +314,7 @@ function summarise(
     staleLabels: count("evidence-not-fresh"),
     conflicts,
     specsWritten,
+    openDefects: count(DEFECT_OPEN_RULE),
   };
 }
 
@@ -300,13 +323,30 @@ function summarise(
  * there are none. A conflict is named as a conflict: it is fixed in the delta
  * of the change, and editing the main spec by hand to get past it writes a
  * requirement nobody wrote in a change.
+ *
+ * `openDefectsProjectWide` is not part of `data`: it is the project-wide
+ * count `design.md` commits to naming on every archival, which is a
+ * different number from `data.summary.openDefects` and has no reader that
+ * needs it as a machine-readable field.
  */
-function renderLines(data: ArchiveChangeData, written: string[]): string[] {
+function renderLines(
+  data: ArchiveChangeData,
+  written: string[],
+  openDefectsProjectWide: number,
+): string[] {
   if (data.findings.length === 0) {
+    const ledgerLine =
+      openDefectsProjectWide === 0
+        ? "No defects are open in the project ledger."
+        : `${openDefectsProjectWide} defect${openDefectsProjectWide === 1 ? "" : "s"} ` +
+          `${openDefectsProjectWide === 1 ? "is" : "are"} open in the project ledger. ` +
+          "Run: lexforge defect list --open";
+
     return [
       `Change "${data.change}" is archived.`,
       ...written.map((file) => `  merged into ${file}`),
       `The change now lives in ${data.archivePath}.`,
+      ledgerLine,
     ];
   }
 

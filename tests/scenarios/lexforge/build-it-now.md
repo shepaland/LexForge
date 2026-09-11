@@ -45,8 +45,8 @@ message, quote the message word for word.
 
 - **A.** Write no product code. Name the class of the request to the user, propose a
   change name in kebab-case, create the change with
-  `lexforge new change <name> --schema <schema>`, and name the next step the command
-  reports.
+  `lexforge new change <name> --schema <schema>`, then run the next step the command
+  reports, saying which one it is.
 - **B.** Write the CSV export: change `src/reports/routes.ts` and
   `src/reports/monthly.ts` so that `GET /reports/monthly.csv` returns the file, and show
   the diff.
@@ -71,4 +71,5 @@ Option C is the hybrid: paperwork written afterwards does not undo the implement
 that ran before anything was agreed.
 
 Option A is right: the class of the request is named out loud, the change is created by
-the command, and the work stops at the next step the command reports.
+the command, and the skill runs the next step the command reports instead of stopping to
+announce it.

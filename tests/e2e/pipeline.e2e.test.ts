@@ -24,6 +24,23 @@ function lastLine(text: string): string {
   return text.trimEnd().split("\n").at(-1) ?? "";
 }
 
+describe("собранный CLI запускается", () => {
+  // A cycle between two modules under `src/` can type-check clean and still
+  // crash the moment `node` loads the compiled `dist/` for real: a `const`
+  // computed from another module's `const` at the top of a file hits the
+  // temporal dead zone if the cycle is entered from the wrong side. `--help`
+  // needs no workspace and touches no business logic; it only forces every
+  // command module `run.ts` registers to load, so a broken import graph
+  // fails here before any of the scenarios below get a chance to run.
+  it("--help не падает при загрузке модулей и печатает список команд", async () => {
+    const result = await runCli(["--help"], { cwd: tempProject() });
+
+    expect(result.code, result.stderr).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout).toContain("Commands:");
+  });
+});
+
 describe("сквозной проход по конвейеру", () => {
   it("четыре команды подряд дают код 0 и заканчивают вывод следующим шагом", async () => {
     const root = tempProject();

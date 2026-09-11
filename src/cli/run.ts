@@ -6,6 +6,7 @@ import { packageVersion } from "../core/package-info.js";
 import type { CommandResult, OutputStream } from "../core/types.js";
 import { registerArchive } from "./commands/archive.js";
 import { registerCheck } from "./commands/check.js";
+import { registerDefect } from "./commands/defect.js";
 import { registerDoctor } from "./commands/doctor.js";
 import { registerEvidence } from "./commands/evidence.js";
 import { registerInit } from "./commands/init.js";
@@ -92,6 +93,7 @@ export function createProgram(context: CliContext): Command {
   registerValidate(program, context);
   registerCheck(program, context);
   registerEvidence(program, context);
+  registerDefect(program, context);
   registerVerify(program, context);
   registerArchive(program, context);
 

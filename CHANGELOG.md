@@ -17,6 +17,35 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 1.4.0 — 2026-09-11
+
+`lexforge-apply` dispatches independent sections of a plan at once, and a defect ledger tracks
+findings a review turns up without blocking on every one of them.
+
+### Contract
+
+- `lexforge defect record --change <name>`, `lexforge defect close <id>` and `lexforge defect
+  list` are new. Their `--json` answers carry `defect` (or `defects`) and `nextStep`, the shape
+  the other gates already use.
+- `verify` and `archive` answer with a fourth field on `summary`, `openDefects`: the count of
+  open `critical` or `important` entries the ledger holds against the change. An open entry at
+  either level blocks both commands the way a stale stamp already does; an open `minor` entry
+  never blocks.
+- `check plan` gains three finding rules — `section-missing-depends-on`,
+  `section-depends-on-unreadable` and `section-depends-on-repeated` — one for each way a
+  section's `Depends on:` line can be missing or unusable.
+
+### Other
+
+- Each section heading of `tasks.md` carries a `Depends on:` line: `none`, or the numbers of
+  the sections it needs closed first. `lexforge-apply` dispatches every section of a wave — the
+  sections whose dependencies are already closed — to its own executor and runs them at the
+  same time; a section with no concurrent neighbour still runs task by task in the same session.
+- **Upgrade note**: a `tasks.md` written before this release carries no `Depends on:` line.
+  `check plan` reports one new finding per section until it is added; `npm install
+  lexforge@1.4.0` followed by `lexforge init --tools <list>` brings the skills current, but the
+  `Depends on:` lines themselves have to be added to the plan by hand.
+
 ## 1.3.0 — 2026-09-05
 
 Model sets per runtime, and the roles removed. Agents of different vendors work in one

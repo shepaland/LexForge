@@ -22,3 +22,14 @@ export interface Finding {
 export function makeFinding(file: string, line: number, rule: string, message: string): Finding {
   return { file, line, level: "error", rule, message };
 }
+
+/**
+ * A value written free of any line break. Nothing validates `--file` or
+ * `--summary` for shape at the point they are typed, and a value carrying a
+ * line break would otherwise split one finding — or one printed list entry —
+ * across two lines, with the second reading as an entry of its own: no line
+ * number, no rule id, nothing to tie it back to the first half.
+ */
+export function oneLine(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}

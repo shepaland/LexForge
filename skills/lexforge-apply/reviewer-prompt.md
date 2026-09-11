@@ -1,8 +1,13 @@
 # Reviewer brief
 
-Fill this in and send it to a general-purpose subagent after every task, before the
-checkbox. Everything the reviewer knows about the work comes from this text: the
-subagent starts with no history of your session.
+Fill this in and send it to a general-purpose subagent after every task, before that
+task's own checkbox is marked. The sender is the session that read the plan, or an
+executor dispatched for a section where an executor of this runtime can start a
+reviewer of its own; otherwise the dispatching skill sends it once that executor's task
+comes back. Where the runtime can reach no agent at all, there is no sender: the task
+stops at its review, unmarked, rather than being sent anywhere. Everything the reviewer
+knows about the work comes from this text: the subagent starts with no history of your
+session.
 
 ## What goes in
 
@@ -12,15 +17,22 @@ subagent starts with no history of your session.
 | `[REQUIREMENTS]` | every requirement named by that reference, copied from the change's delta specs |
 | `[DECISIONS]` | the decisions of `design.md` that touch this task |
 | `[BASE_SHA]` | the commit the task started from |
-| `[HEAD_SHA]` | the current commit |
+| `[HEAD_SHA]` | the current commit, or the literal `WORKTREE` when the work is not committed |
+| `[FILES]` | the paths this task itself names, one per line |
 | `[COMMAND]` | the command that confirms the task, and the output of its last run |
 | `[PROJECT_RULES]` | `context` and `rules` from `lexforge/config.yaml` |
+
+Uncommitted work is the normal case under a wave: the executor commits nothing, so
+`[HEAD_SHA]` is usually `WORKTREE`, not a second commit. Either way `[FILES]` scopes
+the diff to this task's own paths - not because a wider look at a neighbour's work
+would be unwelcome, but because there is no commit range that could hold it.
 
 ## What stays out
 
 The history of your session. Your reasoning about why the code looks as it does.
-Anything the user said about the deadline or the size of the work. Answers from earlier
-reviews. Other tasks of the plan.
+Anything the user said about the deadline or the size of the work. Other tasks of the
+plan, and other sections of the wave - `[FILES]` keeps them out of the diff, not just
+out of the words around it. Answers from earlier reviews.
 
 A reviewer who reads your reasoning grades your reasoning. A reviewer who reads
 "they need this by five" starts weighing a deadline nobody gave them. A reviewer who
@@ -50,9 +62,15 @@ implement. You have no history of the session that produced it and you do not ne
 
 Base: [BASE_SHA]
 Head: [HEAD_SHA]
+Files: [FILES]
 
-    git diff --stat [BASE_SHA]..[HEAD_SHA]
-    git diff [BASE_SHA]..[HEAD_SHA]
+    Head is a commit:  git diff --stat [BASE_SHA]..[HEAD_SHA] -- [FILES]
+                        git diff [BASE_SHA]..[HEAD_SHA] -- [FILES]
+    Head is WORKTREE:  git diff --stat -- [FILES]
+                        git diff -- [FILES]
+
+Anything else that changed, committed or not, belongs to another task or another
+section of the same wave - out of scope here.
 
 ## How the task was confirmed
 
@@ -126,7 +144,13 @@ on code you did not read. Do not leave the verdict out.
 An answer with no `file:line` anywhere is empty: send the brief again and say the review
 came back with no specific finding.
 
-CRITICAL and IMPORTANT are closed before the checkbox. MINOR is fixed now or written
-into `tasks.md` as a numbered task naming its own file. If a finding is wrong, answer it
-with the requirement quoted, the test, or the line of code that disproves it - never
-with silence and never with a fix you do not believe in.
+CRITICAL and IMPORTANT are closed before the checkbox. MINOR is fixed now or recorded
+with:
+
+    lexforge defect record --change <name> --level minor --file <path> --line <number> --summary "<text>"
+
+`--file` and `--line` come from the finding's own `file:line`, and `--level` is always
+`minor` here - CRITICAL and IMPORTANT never reach the ledger unfixed, and a wrong level
+turns a nitpick into a blocking entry. If a finding is wrong, answer it with the
+requirement quoted, the test, or the line of code that disproves it - never with silence
+and never with a fix you do not believe in.

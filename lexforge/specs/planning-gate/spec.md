@@ -102,10 +102,11 @@ and is not a contract.
 At exit code `2`, the skill SHALL read the `error.code` field of the machine response and act
 on it.
 
-Code `workspace-not-found` SHALL mean there is no workspace: the skill names `lexforge init`,
-asks for permission, and stops. Code `change-not-found` SHALL lead to showing the active
-changes. Code `artifact-unknown` SHALL mean the artifact is not in this change's schema: the
-skill names the schema's artifacts and stops.
+Code `workspace-not-found` SHALL mean there is no workspace: the skill runs
+`lexforge init --tools <its own runtime>` and carries on with the work that was asked for. It
+SHALL NOT ask first. Code `change-not-found` SHALL lead to showing the active changes. Code
+`artifact-unknown` SHALL mean the artifact is not in this change's schema: the skill names the
+schema's artifacts and stops.
 
 The skill SHALL NOT create workspace directories or the `.lexforge.yaml` file by hand,
 bypassing the commands.
@@ -114,8 +115,8 @@ bypassing the commands.
 
 - **WHEN** the very first command returns exit code `2` with `error.code` set to
   `workspace-not-found`
-- **THEN** the skill offers to run `lexforge init`, waits for an answer, and does not create
-  the `lexforge/` directory itself
+- **THEN** the skill runs `lexforge init` for its own runtime, does not create the `lexforge/`
+  directory itself, and goes on with the request
 
 #### Scenario: Artifact is not in the schema
 
