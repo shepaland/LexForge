@@ -59,6 +59,7 @@ lexforge instructions <artifact> --change <name>        # обогащённые
 lexforge validate <change> --strict                     # проверить артефакты (обязательно перед архивацией)
 lexforge check plan --change <name>                     # проверить план перед реализацией
 lexforge evidence record --change <name> --label tests  # записать доказательство прогона
+lexforge evidence red --change <name> --task <id> --command <cmd>  # прогнать и записать красное по задаче
 lexforge check evidence --change <name>                 # проверить, что доказательства собраны
 lexforge verify --change <name>                         # полная проверка change перед архивацией
 lexforge archive <change>                               # архивировать change и влить дельты в основные спеки

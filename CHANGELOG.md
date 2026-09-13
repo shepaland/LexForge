@@ -17,6 +17,62 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 1.5.0 — 2026-09-13
+
+An executor dispatched for a section starts no agent of any kind, and a ticked task rests on a
+failing run the machine performed and recorded rather than on a line quoted in an answer.
+
+### Contract
+
+- `lexforge evidence red --change <name> --task <id> --command <cmd>` is new. It runs the
+  command itself and writes one record per task id into `red-runs.json` in the change
+  directory. No flag accepts a failing line, an exit code or an output tail: the command that
+  writes the record is the command that made the run. A run that comes back green exits `1` and
+  writes nothing; a command the shell could not start exits `2` with `red-run-command-failed`.
+  Its `--json` answer carries `record` alongside `change`, `task` and `nextStep`.
+- `verify` checks a fifth dimension and answers with a fifth field on `summary`,
+  `unrecordedTasks`: ticked tasks whose first named file lies outside `tests/` and outside the
+  change directory and that carry no red record. The finding rule is `task-no-red-record`, and
+  it is not waived for a change started before the records existed.
+- `check plan` gains four finding rules: `task-missing-group-label`,
+  `section-group-coverage-mismatch`, `section-group-shared-file` and `section-tasks-inline`.
+- `tasks.md` is an index. It carries the title, the goal, the spec and one link per section, and
+  each section's `Depends on:` line and tasks live in a file one path segment below it.
+  `section-tasks-inline` refuses a plan that keeps tasks inside `tasks.md`, and refuses the
+  hybrid that links a file and leaves tasks behind the link as well.
+- Every task line carries a group label in square brackets after its number, such as
+  `- [ ] 1.1 [A]`: letters, digits and hyphens, eight characters at most. A task whose whole
+  work is carrying existing code between files carries `(move)` after that label and owes no
+  red record.
+
+### Other
+
+- `lexforge-apply` bans the dispatch by effect, not by role. An executor starts no agent of any
+  kind, the session holding the plan starts every agent of the implementation stage, and an
+  agent that continues the executor's own work instead of looking at it is forbidden whatever
+  the runtime calls its type. The rule was written against a `fork` that inherited a session's
+  context and wrote eleven tasks on its own, and against the report that called that work a
+  parallel editor's.
+- A commit, a branch or edits in the tree an executor did not make are named unaccounted, with
+  their paths, the commit and the branch written out, and work stops on them. Attributing them
+  to a foreign session, a parallel editor, another user or a background tool is refused: that is
+  a claim about a person made with no evidence.
+- An agent the implementation stage dispatches works inside a budget of 300,000 tokens and
+  reads a large file by line ranges rather than whole. A section that does not fit is dispatched
+  in parts, down to one agent per task.
+- A group label lets the independent groups of one section go to different agents at once, and
+  `check plan` refuses a section whose two groups name the same file.
+- A `.ts` file under `src/` or `tests/` runs to 330 lines at most, held by
+  `tests/e2e/line-limit.test.ts`. Eighteen files over that line were split by subject; the
+  longest had been 1766 lines.
+- **Upgrade note**: a plan written before this release keeps its sections inside `tasks.md` and
+  carries no group labels, so `check plan` reports one finding per section and one per task
+  until the plan is converted. `npm install lexforge@1.5.0` followed by
+  `lexforge init --tools <list>` brings the skills current; the index, the section files and the
+  labels are added to the plan by hand. Tasks ticked before this release carry no red record,
+  and `verify` names every one of them: record the run for each, declare the task a `(move)`
+  where that is what it was, or clear the checkbox.
+
 ## 1.4.0 — 2026-09-11
 
 `lexforge-apply` dispatches independent sections of a plan at once, and a defect ledger tracks

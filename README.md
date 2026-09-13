@@ -160,7 +160,11 @@ Every change lives in `lexforge/changes/<name>/`: `proposal.md`, the delta specs
 
 The gates work out the state of the work themselves. `check plan` looks for work the plan has not
 written down: placeholders, references to a neighbouring task, a delta requirement no task covers,
-a section whose `Depends on:` line is missing, repeated or names nothing readable. `evidence
+a section whose `Depends on:` line is missing, repeated or names nothing readable, a task with no
+group label, two groups of one section naming the same file, and a plan that keeps its sections
+inside `tasks.md` instead of linking a file for each. `evidence red` runs the command of one task
+and records the failing run against that task id, and `verify` names every ticked task that writes
+production code without such a record. `evidence
 record` runs the verification command the project declared and stamps it with the exit code, the
 commit and a fingerprint of the tree. `check evidence` compares the stamps against the code on
 disk, so an edit after a run leaves a stamp stale. `verify` collects these checks, but only reads
@@ -357,6 +361,7 @@ sections of `lexforge/config.yaml`, from where they reach `lexforge instructions
 | `check plan --change <name>` | Looks for work the plan has not written down |
 | `check evidence --change <name>` | Compares the stamps against the code on disk; `--require` narrows the labels |
 | `evidence record --change <name> --label <label>` | Runs the command of one label and records a stamp |
+| `evidence red --change <name> --task <id> --command <cmd>` | Runs the command of one task and records the failing run |
 | `verify --change <name>` | Checks a change before the work is called finished |
 | `archive <change>` | Merges the delta into the specs and moves the change to the archive |
 | `defect record --change <name>` | Records a defect against a change; `--level`, `--file`, `--line`, `--summary` |
