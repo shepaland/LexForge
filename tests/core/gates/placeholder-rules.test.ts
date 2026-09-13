@@ -11,13 +11,39 @@ const FILE = "lexforge/changes/add-auth/tasks.md";
 
 /** Builds the parsed plan the rules read, out of the lines of a `tasks.md`. */
 function plan(...lines: string[]): PlanTasks {
-  return { file: FILE, tasks: parseTaskList(lines.join("\n")) };
+  return { file: FILE, tasks: parseTaskList(lines.join("\n"), FILE) };
 }
 
 /** Findings of one rule, in the order the rule reported them. */
 function only(findings: Finding[], rule: string): Finding[] {
   return findings.filter((finding) => finding.rule === rule);
 }
+
+describe("checkPlaceholders: план как индекс", () => {
+  it("находка каждой задачи называет файл этой задачи, а не файл индекса", () => {
+    const [firstTask] = parseTaskList(
+      "- [ ] 1.1 Write the login form and leave a TODO for the error branch",
+      "lexforge/changes/add-auth/tasks/01-first.md",
+    );
+    const [secondTask] = parseTaskList(
+      "- [ ] 2.1 Write the token refresh path, the exact expiry is TBD for now",
+      "lexforge/changes/add-auth/tasks/02-second.md",
+    );
+
+    const findings = checkPlaceholders({
+      file: FILE,
+      tasks: [firstTask!, secondTask!],
+    });
+
+    const placeholders = only(findings, "task-placeholder");
+
+    expect(placeholders).toHaveLength(2);
+    expect(placeholders.map((finding) => finding.file)).toEqual([
+      "lexforge/changes/add-auth/tasks/01-first.md",
+      "lexforge/changes/add-auth/tasks/02-second.md",
+    ]);
+  });
+});
 
 describe("checkPlaceholders: английские маркеры", () => {
   it("каждая из трёх задач даёт одну находку task-placeholder", () => {

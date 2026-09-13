@@ -30,6 +30,170 @@
       "summary": "work the first task to green does not fit a first task that writes a failing test and produces no green; two live agents stopped at different lawful points",
       "state": "open",
       "recordedAt": "2026-09-11T06:46:35.252Z"
+    },
+    {
+      "id": "fd0f7eb9",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "src/core/gates/red-run-store.ts",
+      "line": 1,
+      "summary": "red-run-store.ts duplicates evidence-store.ts's read/write/stabilize plumbing verbatim (schema parse, broken(), temp-file rename, stable sort); could be factored into one generic helper parameterized on schema and file name",
+      "state": "open",
+      "recordedAt": "2026-09-12T19:05:16.054Z"
+    },
+    {
+      "id": "3af74af7",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "src/core/gates/red-run-record.ts",
+      "line": 64,
+      "summary": "never-started refusal in red-run-record.ts duplicates evidence-record.ts's refusal almost verbatim; could share one helper",
+      "state": "open",
+      "recordedAt": "2026-09-12T19:08:02.458Z"
+    },
+    {
+      "id": "3cc5ba9c",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "src/cli/commands/evidence.ts",
+      "line": 74,
+      "summary": "assertTaskKnown reads and parses the change config/schema via readChangeState, then recordRedRun reads it again via readChangeConfig; harmless but duplicate I/O per invocation",
+      "state": "open",
+      "recordedAt": "2026-09-12T19:13:05.669Z"
+    },
+    {
+      "id": "af2f4843",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "src/cli/commands/evidence.ts",
+      "line": 126,
+      "summary": "knownTaskIds collapses 'schema has no tasks artifact' and 'plan not written yet' into one empty-list case, unlike readPlan/checkPlan which give schema-no-plan its own UsageError code; loses a little precision in an unlikely case",
+      "state": "open",
+      "recordedAt": "2026-09-12T19:13:05.829Z"
+    },
+    {
+      "id": "d1cd1d3d",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "skills/lexforge-apply/parallel-execution.md",
+      "line": 7,
+      "summary": "Relocated per-task merge/tidy-up paragraph sits right before the section-level merge ban in 'A wave is every section ready at once' and reads as a near-repeat on first pass; worth folding together if this file is touched again for the word-budget move task 3.15 already plans.",
+      "state": "open",
+      "recordedAt": "2026-09-13T06:34:01.428Z"
+    },
+    {
+      "id": "e46b63c1",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "skills/lexforge-apply/SKILL.md",
+      "line": 128,
+      "summary": "'Past the delta' wording was trimmed purely to make room for the 3.3 addition inside the 650-word body cap; meaning preserved and no test pins the old wording, but the trim is undisclosed elsewhere - noted here for the next reader of task 3.15's own word-budget move.",
+      "state": "open",
+      "recordedAt": "2026-09-13T06:34:08.965Z"
+    },
+    {
+      "id": "54ef831f",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "skills/lexforge-apply/reviewer-prompt.md",
+      "line": 150,
+      "summary": "Reading the answer: 'say the review ran the project itself' awkwardly attributes running to 'the review' rather than the reviewer's answer - unambiguous in context, not worth reopening the task for",
+      "state": "open",
+      "recordedAt": "2026-09-13T07:02:09.763Z"
+    },
+    {
+      "id": "37e0656b",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "skills/lexforge-verify/SKILL.md",
+      "line": 142,
+      "summary": "The word first was cut from take it again first to pay for the unrecordedTasks key: the sentence lost its ordering instruction for a stale stamp and the word should come back, paid for elsewhere in the body",
+      "state": "open",
+      "recordedAt": "2026-09-13T07:58:18.230Z"
+    },
+    {
+      "id": "affc0d72",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "src/core/gates/task-list.ts",
+      "line": 17,
+      "summary": "A label written before the task number, e.g. `- [ ] [A] 4.4 Write the implementation`, leaves `number` empty and lets the number leak into the task text. Authored input only, no code path reaches it; not fixed this cycle.",
+      "state": "open",
+      "recordedAt": "2026-09-13T08:46:45.973Z"
+    },
+    {
+      "id": "9d26788f",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "tests/skills/plan-group-label.test.ts",
+      "line": 1,
+      "summary": "The file holds no group-label assertions: every one is about task sizing and the pointer to task-sizing.md, so its name describes a subject it does not cover until task 7.10 folds the group-label block into it",
+      "state": "closed",
+      "recordedAt": "2026-09-13T12:30:54.832Z",
+      "closedAt": "2026-09-13T15:07:25.475Z"
+    },
+    {
+      "id": "3177d273",
+      "change": "no-delegated-implementation",
+      "level": "critical",
+      "file": "src/core/gates/task-list.ts",
+      "line": 1,
+      "summary": "namedFiles takes the program out of a command span as a named file, so every task that records a red run names bin/lexforge.js and no two groups of a section can ever be concurrent: the group label buys no parallelism at all. The extraction must skip the command's own program and keep only the paths it operates on",
+      "state": "closed",
+      "recordedAt": "2026-09-13T14:51:45.739Z",
+      "closedAt": "2026-09-13T17:24:49.403Z"
+    },
+    {
+      "id": "b8ad9438",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "tests/cli/archive-write.test.ts",
+      "line": 1,
+      "summary": "The CLI archive family duplicates CONFIG, DELTA, STANDING_SPEC, CLOSED_PLAN, changeFiles, workspace, call, editApp and recordRed across archive.test.ts, archive-defects.test.ts and archive-write.test.ts: the copies are identical today and nothing keeps them so, and a fixture edited in one file silently stops applying to the others. They belong in one shared module the three import",
+      "state": "closed",
+      "recordedAt": "2026-09-13T15:06:53.590Z",
+      "closedAt": "2026-09-13T15:22:08.690Z"
+    },
+    {
+      "id": "a5427d8c",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "src/core/gates/plan-source.ts",
+      "line": 58,
+      "summary": "readPlanSource honours a link of any relative depth and throws a raw ENOENT for a link to a file that does not exist, instead of a finding naming the missing linked file the way a missing tasks.md already is",
+      "state": "open",
+      "recordedAt": "2026-09-13T15:39:08.715Z"
+    },
+    {
+      "id": "ff65de98",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "tests/scenarios/lexforge-apply/fork-writes-the-section.md",
+      "line": 66,
+      "summary": "Setting quotes the pre-change rule as the rule handed, which is false for the run of task 4.6 against the new text; the handed document should be the only source of the rule",
+      "state": "closed",
+      "recordedAt": "2026-09-13T17:24:22.985Z",
+      "closedAt": "2026-09-13T17:36:11.133Z"
+    },
+    {
+      "id": "c16e62ed",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "src/core/gates/verify-change-evidence.ts",
+      "line": 91,
+      "summary": "The task.file || plan.file fallback in redRecordFindings is dead code in every production path, since readPlanSource always sets the file; if parsing ever left task.file empty it would silently re-create the index-path finding this cycle fixed instead of failing loudly",
+      "state": "open",
+      "recordedAt": "2026-09-13T18:13:35.774Z"
+    },
+    {
+      "id": "e94723cf",
+      "change": "no-delegated-implementation",
+      "level": "minor",
+      "file": "src/core/gates/task-list.ts",
+      "line": 171,
+      "summary": "A misplaced (move) written without a space before the next token, such as (move)1.1, is glued to the task text when it is folded back in, giving (move)text instead of (move) text; cosmetic, pre-dates the combined-marker fix and holds in both branches alike",
+      "state": "open",
+      "recordedAt": "2026-09-13T18:28:03.359Z"
     }
   ]
 }

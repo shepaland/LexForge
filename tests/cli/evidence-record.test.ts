@@ -6,6 +6,7 @@ import { createCapture } from "../helpers/capture.js";
 import {
   createGitWorkspace,
   createPlainWorkspace,
+  writeAt,
   type GitWorkspace,
 } from "../helpers/git-workspace.js";
 
@@ -158,5 +159,104 @@ describe("lexforge evidence record: репозитория нет", () => {
     expect(exitCode).toBe(2);
     expect(capture.err).toContain("git init");
     expect(capture.out).toBe("");
+  });
+});
+
+const AUTH_SPEC = `## Purpose
+
+Holds what the sign-in of the product does and what it refuses to do.
+
+## ADDED Requirements
+
+### Requirement: Password is stored hashed
+
+The system SHALL store a password as a hash.
+
+#### Scenario: A password is saved
+
+- **WHEN** a user sets a password
+- **THEN** the store holds a hash of it
+`;
+
+/** One ticked task naming production work, linked to the one requirement. */
+const CLOSED_PLAN = [
+  "## 1. Вход",
+  "",
+  "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
+  "      -> auth#Password is stored hashed",
+  "",
+].join("\n");
+
+/** A change whole enough for `verify`: proposal, spec, design, plan. */
+function verifiableWorkspace(config = CONFIG): GitWorkspace {
+  const made = createGitWorkspace({
+    "lexforge/config.yaml": config,
+    [`lexforge/changes/${CHANGE}/.lexforge.yaml`]: "schema: spec-driven\n",
+    [`lexforge/changes/${CHANGE}/proposal.md`]: "## Why\n\nPasswords are stored in the open.\n",
+    [`lexforge/changes/${CHANGE}/specs/auth/spec.md`]: AUTH_SPEC,
+    [`lexforge/changes/${CHANGE}/design.md`]: "## Context\n\nOne service, one database.\n",
+    [`lexforge/changes/${CHANGE}/tasks.md`]: CLOSED_PLAN,
+  });
+  created.push(made);
+  return made;
+}
+
+describe("lexforge evidence record: --task не поддерживается", () => {
+  it("флаг --task неизвестен для record и даёт код 2", async () => {
+    const root = workspace().root;
+
+    const { exitCode, capture } = await call(
+      ["evidence", "record", "--change", CHANGE, "--label", "tests", "--task", "1.1"],
+      root,
+    );
+
+    expect(exitCode).toBe(2);
+    expect(capture.err).toContain("--task");
+    expect(capture.out).toBe("");
+  });
+});
+
+describe("lexforge evidence record: штамп метки и красная запись задачи не подменяют друг друга", () => {
+  it("свежий зелёный штамп метки не закрывает задачу без её красной записи", async () => {
+    const root = verifiableWorkspace().root;
+    writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
+
+    const record = await call(
+      ["evidence", "record", "--change", CHANGE, "--label", "tests"],
+      root,
+    );
+    expect(record.exitCode).toBe(0);
+
+    const verify = await call(["verify", "--change", CHANGE, "--json"], root);
+    const data = JSON.parse(verify.capture.out) as { findings: { rule: string }[] };
+
+    expect(verify.exitCode).toBe(1);
+    expect(data.findings.map((finding) => finding.rule)).toContain("task-no-red-record");
+  });
+
+  it("красная запись задачи не заменяет отсутствующий штамп метки", async () => {
+    const root = verifiableWorkspace().root;
+    writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
+
+    const red = await call(
+      [
+        "evidence",
+        "red",
+        "--change",
+        CHANGE,
+        "--task",
+        "1.1",
+        "--command",
+        'node -e "process.exit(1)"',
+      ],
+      root,
+    );
+    expect(red.exitCode).toBe(0);
+
+    const verify = await call(["verify", "--change", CHANGE, "--json"], root);
+    const data = JSON.parse(verify.capture.out) as { findings: { rule: string }[] };
+
+    expect(verify.exitCode).toBe(1);
+    expect(data.findings.map((finding) => finding.rule)).toContain("evidence-not-fresh");
   });
 });

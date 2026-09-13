@@ -6,15 +6,13 @@ import type { CommandResult } from "../types.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import {
-  checkPath,
-  checkRepository,
-  checkRuntime,
-  checkSkills,
   checkVerification,
   checkWorkspace,
   type DoctorFinding,
   type HealthCheck,
 } from "./checks.js";
+import { checkSkills } from "./checks-skills.js";
+import { checkPath, checkRepository, checkRuntime } from "./checks-runtime.js";
 
 export interface RunDoctorOptions {
   /** Any directory inside the project; the workspace root is looked up from it. */

@@ -213,3 +213,129 @@ artifact itself, and the run SHALL show the agent handing the work over instead.
 - **WHEN** the pressure scenario runs on a subagent that is not the assigned model and is
   told the handover costs too much time
 - **THEN** the run ends with no artifact written by that subagent and with the handover made
+
+### Requirement: The plan skill labels every task with the agent group it belongs to
+
+Skill `lexforge-plan` SHALL write a group label in square brackets right after every task's
+id, in the form `- [ ] 3.1 [A] Write the failing prose test in ...`. A label SHALL be a short
+token of letters, digits and hyphens, at most eight characters long; a longer bracketed word,
+or one holding a space, is ordinary task text, not a label.
+
+Tasks that may run in one agent SHALL share a label. A section one agent takes whole SHALL
+carry one label across every one of its tasks. A task SHALL carry exactly one label: a second
+label on the same task is a defect of the plan, not a way to put that task in two groups.
+
+The skill SHALL place tasks into groups so that no two groups of one section name the same
+file in backticks, and so that each group is work that fits inside the token budget of one
+agent.
+
+#### Scenario: A section split across two agents
+
+- **WHEN** section 4 holds eight tasks and the skill decides two agents can carry it at once
+- **THEN** every task the first agent takes carries one label, every task the second agent
+  takes carries a different label, and no task naming a file the other group's tasks also
+  name lands in either group
+
+#### Scenario: A section one agent takes whole
+
+- **WHEN** the skill decides a section is small enough for a single agent
+- **THEN** every task of that section carries the same label
+
+#### Scenario: A task whose text opens with a bracketed word
+
+- **WHEN** task 4.5's text opens with `[reference]`, a bracketed word nine letters long, as
+  ordinary prose, not as the label the skill would write
+- **THEN** the skill leaves `[reference]` inside task 4.5's text, because a bracketed word
+  over eight characters is not a label, and writes that task's own short label after its id
+  the same as every other task
+
+#### Scenario: A group too large for one agent
+
+- **WHEN** the tasks the skill would put in one group do not fit inside the token budget of
+  one agent
+- **THEN** the skill splits that work into more groups, each with its own label, before
+  handing the plan to `lexforge check plan --change <name>`
+
+### Requirement: A task with no green midpoint is cut into steps, not given a bigger budget
+
+Skill `lexforge-plan` SHALL size a task so that one cycle finishes it and the suite is green
+when the cycle ends.
+
+A task whose work has no point partway through it where the suite is green SHALL NOT be
+written as one task: the skill SHALL cut it into steps, each of which leaves the suite green
+when it ends.
+
+Where the work replaces a structure already in use, those steps SHALL keep the old structure
+and the new one side by side until the last step: the new path is added first, callers move
+to it one at a time in the steps that follow, and the old path is removed only in the final
+step.
+
+A task naming work with no such midpoint SHALL be treated as a plan defect, not as a task
+that needs a larger budget: enlarging the dispatched agent's budget SHALL NOT be offered as
+the fix.
+
+#### Scenario: A task that replaces a structure in use
+
+- **WHEN** a task would replace four states and three handlers of a dialogue with one FSM
+  state, and no point of that rewrite leaves the suite green until every one of the old
+  states and handlers is gone
+- **THEN** the skill cuts it into steps that add the new handler beside the old ladder, move
+  one required question onto it at a time, check every required question routes through it,
+  and remove the old states and handlers only in the last step
+
+#### Scenario: Three agents over budget on the same task
+
+- **WHEN** three dispatched agents in a row exceed the token budget on the task that reads
+  "collapse the dialogue into one FSM state", and the task still has no point where the suite
+  is green partway through it
+- **THEN** the plan cuts that task into steps instead, and a larger budget is not offered as
+  the fix
+
+### Requirement: The plan is an index, and carries no task of its own
+
+Skill `lexforge-plan` SHALL write `tasks.md` as an index: one entry per section, each
+carrying that section's heading and a link to the file that holds the section's tasks.
+`tasks.md` SHALL carry no `Depends on:` line and no task line of its own.
+
+#### Scenario: A plan the skill writes
+
+- **WHEN** the skill finishes writing a plan of four sections
+- **THEN** `tasks.md` carries four headings, each with a link to that section's own file,
+  and no task line and no `Depends on:` line appear anywhere in `tasks.md` itself
+
+### Requirement: Each section lives in a file of its own, one path segment below the index
+
+Skill `lexforge-plan` SHALL write each section's `Depends on:` line and its tasks into a
+file of its own, one path segment below `tasks.md`, and SHALL link that file from the
+section's entry in the index.
+
+#### Scenario: A section's own file
+
+- **WHEN** the skill writes section 4
+- **THEN** a file one path segment below `tasks.md` carries section 4's `Depends on:` line
+  and every one of section 4's tasks, and the index links to that file from section 4's
+  entry
+
+### Requirement: A task that only carries code between files declares itself a move
+
+Skill `lexforge-plan` SHALL write `(move)` after the group label of a task whose whole work
+is carrying existing code from one file to another without changing behaviour, and SHALL
+write no such declaration on any other task.
+
+A move has no run to watch fail, so the three-task triple does not apply to it: the failing
+test a triple starts with would be a test of behaviour nobody is changing. The declaration is
+what the completion check reads, so a move left undeclared stops the change at `verify`, and a
+task declared a move that does change behaviour passes a check it should have failed.
+
+#### Scenario: A section that splits a file
+
+- **WHEN** the skill plans a section that carries four functions out of one file into a new
+  one, changing no behaviour
+- **THEN** each of those tasks carries `(move)` after its group label, and none of them is
+  written as a test, a run and an implementation
+
+#### Scenario: A task that changes behaviour
+
+- **WHEN** a task adds a branch, a field or a rule, however small
+- **THEN** the skill writes no `(move)` on it and writes it as a test, a run and an
+  implementation

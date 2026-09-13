@@ -90,7 +90,7 @@ export function checkCoverage(plan: PlanTasks, delta: DeltaSpecs): Finding[] {
 
       findings.push(
         makeFinding(
-          plan.file,
+          task.file,
           task.line,
           "requirement-link-unknown",
           `This task points at "${link.requirement}" of capability ` +

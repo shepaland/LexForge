@@ -90,7 +90,8 @@ a direct user request to skip the step, and hours already spent do not open the 
 
 ### Requirement: A skill's body stays within its own word limit
 
-The body of `SKILL.md` SHALL stay within 650 words, counting everything outside the markers
+The body of `SKILL.md` SHALL stay within the word limit set for that skill — 800 words for
+`lexforge-apply`, 650 words for every other skill — counting everything outside the markers
 of the shared block. The shared block SHALL NOT count toward this: it repeats verbatim, and
 editing it would otherwise cut the budget of four files at once.
 
@@ -99,7 +100,7 @@ linked one level deep. Links two levels deep SHALL NOT exist.
 
 #### Scenario: The body has outgrown the limit
 
-- **WHEN** a skill's own text reaches 700 words
+- **WHEN** `lexforge-verify`'s own text reaches 700 words
 - **THEN** the test fails, names the file and its length, and the heavy part moves to a
   file alongside it
 

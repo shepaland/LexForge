@@ -34,6 +34,7 @@ describe("список команд читается из программы CLI
       "plan",
       "record",
       "record",
+      "red",
       "status",
       "validate",
       "verify",

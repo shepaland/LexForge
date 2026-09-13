@@ -206,6 +206,29 @@ function changeFiles(): Record<string, string> {
   };
 }
 
+/**
+ * Every task of the plan is ticked and names a file outside `tests/` and
+ * outside the change directory, so the fifth measure of `verify` needs a red
+ * record for each of them. Written through the CLI itself, the same way a
+ * real change would produce one.
+ */
+async function recordRed(root: string, task: string): Promise<void> {
+  const recorded = await runCli(
+    [
+      "evidence",
+      "red",
+      "--change",
+      CHANGE,
+      "--task",
+      task,
+      "--command",
+      'node -e "process.exit(1)"',
+    ],
+    { cwd: root },
+  );
+  expect(recorded.code, recorded.stderr).toBe(0);
+}
+
 /** A workspace with the change committed, the work on disk and a fresh stamp. */
 async function project(extra: Record<string, string> = {}): Promise<string> {
   const made = createGitWorkspace({ ...changeFiles(), ...extra });
@@ -213,6 +236,10 @@ async function project(extra: Record<string, string> = {}): Promise<string> {
 
   for (const [file, content] of Object.entries(WORK)) {
     writeAt(made.root, file, content);
+  }
+
+  for (const task of ["1.1", "1.2", "1.3", "1.4"]) {
+    await recordRed(made.root, task);
   }
 
   const recorded = await runCli(

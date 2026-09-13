@@ -1,13 +1,11 @@
 # Reviewer brief
 
 Fill this in and send it to a general-purpose subagent after every task, before that
-task's own checkbox is marked. The sender is the session that read the plan, or an
-executor dispatched for a section where an executor of this runtime can start a
-reviewer of its own; otherwise the dispatching skill sends it once that executor's task
-comes back. Where the runtime can reach no agent at all, there is no sender: the task
-stops at its review, unmarked, rather than being sent anywhere. Everything the reviewer
-knows about the work comes from this text: the subagent starts with no history of your
-session.
+task's own checkbox is marked. The sender is the session that read the plan: an
+executor starts no agent of any kind, so it never sends this brief itself. Where the
+runtime can reach no agent at all, there is no sender: the task stops at its review,
+unmarked, rather than being sent anywhere. Everything the reviewer knows about the work
+comes from this text: the subagent starts with no history of your session.
 
 ## What goes in
 
@@ -90,6 +88,11 @@ Read only. Do not edit the working tree, do not stage anything, do not move `HEA
 any branch. Inspect with `git show`, `git diff` and `git log`. If you need another
 revision checked out, use `git worktree add` into a temporary directory.
 
+Run no test, no build, no script of the change: under a wave a neighbour is writing into
+the same tree, so a run you start yourself measures a state nobody owns, and its failure
+would come back as this task's failure. Read the diff handed to you and the output of the
+run the executor already performed.
+
 Do all of this yourself. Do not dispatch subagents: not to split the diff, not for a
 second opinion. A verdict from an agent you spawned counts for nothing here.
 
@@ -142,7 +145,9 @@ on code you did not read. Do not leave the verdict out.
 ## Reading the answer
 
 An answer with no `file:line` anywhere is empty: send the brief again and say the review
-came back with no specific finding.
+came back with no specific finding. A verdict resting on the reviewer's own run is sent
+back the same way: say the review ran the project itself and ask for one that reads the
+diff and the handed-over output instead.
 
 CRITICAL and IMPORTANT are closed before the checkbox. MINOR is fixed now or recorded
 with:

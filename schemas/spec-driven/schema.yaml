@@ -78,9 +78,25 @@ artifacts:
       Number the sections. Number every task inside a section, like 1.1 and 1.2.
       Order the sections by dependency. A task never needs the result of a later one.
 
+      tasks.md is an index: it carries no task and no `Depends on:` line of its
+      own. Each section's `Depends on:` line and tasks live in a file of their
+      own, one path segment below it.
+
+      Give every task a group label right after its number, one to eight letters,
+      digits or hyphens in brackets, like [A] or [store]. Tasks sharing a label may
+      run in one agent. Keep a TDD triple - the failing test, watching it fail, the
+      implementation - on the same label. All three name the same file, and two
+      groups of one section may not name the same file.
+
+      A task that only carries existing code between files, changing no behaviour,
+      carries `(move)` right after its group label. Write it as one task, not the
+      test-red-implementation triple: a move has no failing run to watch. A move
+      left undeclared stops the change at `verify`.
+
       Each task names the file it touches. Each task names the check that proves it
-      works. Keep the test and the code apart: first the failing test, then the run
-      that shows it failing, then the implementation.
+      works. Keep the test and the code apart in every task that changes behaviour,
+      not a declared move: first the failing test, then the run that shows it
+      failing, then the implementation.
 
       Leave no placeholder behind. Do not write TBD, TODO, or "same as task 3".
 

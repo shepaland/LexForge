@@ -6,8 +6,26 @@ import { parseTaskList, type PlanTasks } from "../../../src/core/gates/task-list
 const FILE = "lexforge/changes/add-auth/tasks.md";
 
 function plan(...lines: string[]): PlanTasks {
-  return { file: FILE, tasks: parseTaskList(lines.join("\n")) };
+  return { file: FILE, tasks: parseTaskList(lines.join("\n"), FILE) };
 }
+
+describe("checkIdentifiers: план как индекс", () => {
+  it("находка называет файл первой записи, а не файл индекса", () => {
+    const [firstTask] = parseTaskList(
+      "- [ ] 1.1 Написать поле `resolvedOutputPath` в графе артефактов",
+      "lexforge/changes/add-auth/tasks/01-first.md",
+    );
+    const [secondTask] = parseTaskList(
+      "- [ ] 2.1 Прочитать `resolved_output_path` в команде статуса",
+      "lexforge/changes/add-auth/tasks/02-second.md",
+    );
+
+    const findings = checkIdentifiers({ file: FILE, tasks: [firstTask!, secondTask!] });
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.file).toBe("lexforge/changes/add-auth/tasks/01-first.md");
+  });
+});
 
 describe("checkIdentifiers: разнобой в написании имени", () => {
   it("две записи одного ключа дают находку с обеими записями и строками", () => {

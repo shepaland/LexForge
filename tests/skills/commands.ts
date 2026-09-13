@@ -4,7 +4,7 @@ import { createCliContext, createProgram } from "../../src/cli/run.js";
 import { answerPath } from "../../src/core/answer-path.js";
 import { createCapture } from "../helpers/capture.js";
 import type { SkillFile } from "../helpers/read-skills.js";
-import type { SkillFinding } from "./checks.js";
+import type { SkillFinding } from "./findings.js";
 
 /** `lexforge` followed by a word: the shape a command takes in the body of a skill. */
 const COMMAND_CALL = /(?<![\w-])lexforge[ \t]+([a-z][a-z0-9-]*)/g;

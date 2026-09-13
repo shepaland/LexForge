@@ -12,18 +12,30 @@ requirement left a trace in the code, and where the line sits that a machine doe
 
 ### Requirement: Four dimensions in one response
 
-`lexforge verify --change <name>` SHALL check four things in a single call and fold the
+`lexforge verify --change <name>` SHALL check five things in a single call and fold the
 findings into one list:
 
 - open checkboxes in `tasks.md`;
+- ticked tasks with no red record of their own;
 - delta-spec requirements with no trace in the code;
 - stamp state for every label in the `verification` section;
 - open ledger entries of level `critical` or `important` naming this change.
 
-The dimensions SHALL NOT be toggled off by flags and SHALL NOT be called separately: the check
-before completion runs as a whole, or the agent picks the one dimension that passes.
+The dimensions SHALL NOT be toggled off by flags and SHALL NOT be called separately: the
+check before completion runs as a whole, or the agent picks the one dimension that passes.
 
 Every finding SHALL carry a rule id that shows which dimension it came from.
+
+#### Scenario: Every dimension in one answer
+
+- **WHEN** `verify` runs on a change with one open checkbox, one ticked task with no red
+  record, and a stale stamp
+- **THEN** one response carries all three findings, and the exit code is `1`
+
+#### Scenario: A flag that narrows the check
+
+- **WHEN** an agent looks for a way to run one dimension on its own
+- **THEN** no such flag exists, and the whole check runs
 
 #### Scenario: Findings of three kinds
 
@@ -33,13 +45,14 @@ Every finding SHALL carry a rule id that shows which dimension it came from.
 
 #### Scenario: All three dimensions are clean
 
-- **WHEN** the tasks are closed, every requirement has a trace, and every label is fresh, and
-  the ledger holds no open entry above MINOR for this change
+- **WHEN** the tasks are closed, every ticked task that names production work carries a red
+  record, every requirement has a trace, and every label is fresh, and the ledger holds no open
+  entry above MINOR for this change
 - **THEN** the command exits with code `0`
 
 #### Scenario: An open entry above MINOR
 
-- **WHEN** the first three dimensions are clean and the ledger holds one open `critical` entry
+- **WHEN** the first four dimensions are clean and the ledger holds one open `critical` entry
   for this change
 - **THEN** the response carries one finding with the ledger's rule id, exit code `1`
 
@@ -185,3 +198,63 @@ human-readable strings.
 
 - **WHEN** `verify --change add-auth --json` is run
 - **THEN** the whole standard output parses as JSON with no pre-cleaning
+
+### Requirement: A ticked task with no red record is a finding
+
+`lexforge verify --change <name>` SHALL raise a finding for every task `tasks.md` marks
+`- [x]` whose first named file lies outside `tests/` and outside the change's own directory,
+and that carries no red record, and SHALL name those task ids.
+
+The first file a task's line names is the file it writes; every file named after it is the
+subject that work is about, not the work. A ticked task whose first named file is a test file,
+or a file inside the change directory, or that names no file at all — one whose work is only a
+run, one that writes a test — is not checked by this dimension.
+
+A task whose line carries the declaration `(move)` after its group label SHALL NOT be checked
+by this dimension either. `(move)` is the plan author's statement that the task carries code
+from one file to another and changes no behaviour, which leaves no run to watch fail. The
+declaration is read as written; nothing weighs it against the task's own words, and a task
+without it is checked whatever its wording suggests.
+
+The finding SHALL NOT be waived because the change was started before the records existed,
+because the task is small, or because the tree is green now. A change owner closes it one of
+three ways: record the red run for that task, declare the task a `(move)`, or clear its
+checkbox.
+
+A record whose exit code is `0` SHALL count as no record.
+
+#### Scenario: A change ticked before the records existed
+
+- **WHEN** a change carries eighteen ticked tasks, each naming a source file outside `tests/`
+  and outside the change directory, and no red records at all
+- **THEN** `verify` names all eighteen task ids as findings and exits `1`
+
+#### Scenario: One task of a section unrecorded
+
+- **WHEN** tasks 1.1 through 1.5 carry red records and task 1.6 is ticked with none
+- **THEN** the finding names task 1.6 alone
+
+#### Scenario: A ticked task outside this dimension's reach
+
+- **WHEN** a ticked task's line names only a test file, only a file inside the change
+  directory, or no file at all
+- **THEN** the dimension raises no finding for it, with or without a red record
+
+#### Scenario: The source file a test pins is not the work
+
+- **WHEN** a ticked task writes the test file `tests/core/gates/x.test.ts` and names
+  `src/core/gates/x.ts` after it as the subject that test pins, and carries no record
+- **THEN** the dimension raises no finding for it
+
+#### Scenario: A task declared a move
+
+- **WHEN** a ticked task's line carries `(move)` after its group label and its first named
+  file is a source file outside `tests/`, with no red record
+- **THEN** the dimension raises no finding for it
+
+#### Scenario: The same task without the declaration
+
+- **WHEN** that task's line carries no `(move)`, however plainly its words describe carrying
+  code from one file to another
+- **THEN** the dimension raises the finding and names its task id
+

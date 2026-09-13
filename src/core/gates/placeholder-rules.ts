@@ -57,10 +57,10 @@ export function checkPlaceholders(plan: PlanTasks, projectMarkers: string[] = []
   const findings: Finding[] = [];
 
   for (const task of plan.tasks) {
-    findings.push(...checkMarkers(plan.file, task, markers));
-    findings.push(...checkPointsAtTask(plan.file, task));
-    findings.push(...checkLength(plan.file, task));
-    findings.push(...checkTemplate(plan.file, task));
+    findings.push(...checkMarkers(task.file, task, markers));
+    findings.push(...checkPointsAtTask(task.file, task));
+    findings.push(...checkLength(task.file, task));
+    findings.push(...checkTemplate(task.file, task));
   }
 
   return findings;

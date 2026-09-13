@@ -96,11 +96,11 @@ Violating the letter of this rule is violating its spirit.
 
 Run `lexforge verify --change <name> --json` and read the exit code.
 
-- `0` — the four measures found nothing, not the whole check: the rest needs reading,
+- `0` — the five measures found nothing, not the whole check: the rest needs reading,
   not running.
 - `1` — work. `summary` names the measure to go back to: `openTasks`,
-  `requirementsWithoutTrace`, `staleLabels`, `openDefects`. Fix what `findings` names,
-  run again, until `0`.
+  `requirementsWithoutTrace`, `staleLabels`, `openDefects`, `unrecordedTasks`. Fix what
+  `findings` names, run again, until `0`.
 - `2` — no check happened. Read `error.code`, repair the call or the config, write no
   report.
 
@@ -139,7 +139,7 @@ user - an argument about the design, never about the letter.
 
 Every claim - green tests, clean linter, requirement met - stands on a run inside the
 message that makes it. Run `lexforge check evidence --change <name> --require tests,lint`
-and read the exit code; `1` names a stamp taken on other code, so take it again first. An
+and read the exit code; `1` names a stamp taken on other code, so take it again. An
 exit code recalled from earlier or read off a compaction summary is not a run.
 
 ## Where the report goes
@@ -152,7 +152,7 @@ and a stored verdict rots on the next edit. An unfixed finding goes to
 
 | Excuse | Reality |
 |---|---|
-| "the automated evidence is real and it's enough to ship on" | One measure of four, and none of them read `design.md`. |
+| "the automated evidence is real and it's enough to ship on" | One measure of five, and none of them read `design.md`. |
 | "I'm trusting a summary of a summary for that part" | Then nothing runs under the verdict. Run it again. |
 | "put 'reread decision 4' at the top of tomorrow's list" | Reading postponed past the archive is reading nobody does. |
 | "objective grounds for a severity change, not just schedule pressure" | No code changed between the finding and the argument. |

@@ -72,8 +72,35 @@ function workspace(tasks: string, files: Record<string, string> = {}): string {
 }
 
 function plan(tasks: string): PlanTasks {
-  return { file: PLAN_FILE, tasks: parseTaskList(tasks) };
+  return { file: PLAN_FILE, tasks: parseTaskList(tasks, PLAN_FILE) };
 }
+
+describe("checkCoverage: план как индекс", () => {
+  it("находка о неизвестной ссылке называет файл задачи, а требование-без-задачи — файл индекса", () => {
+    const [task] = parseTaskList(
+      [
+        "- [ ] 2.1 Написать срок жизни сессии в `src/auth/session.ts`",
+        "      -> auth#Session expiers",
+      ].join("\n"),
+      "lexforge/changes/add-auth/tasks/02-second.md",
+    );
+
+    const delta = {
+      skipped: false,
+      requirements: [{ capability: "auth", name: "Password is stored hashed" }],
+    };
+
+    const findings = checkCoverage({ file: PLAN_FILE, tasks: [task!] }, delta);
+
+    const unknown = findings.filter((finding) => finding.rule === "requirement-link-unknown");
+    expect(unknown).toHaveLength(1);
+    expect(unknown[0]!.file).toBe("lexforge/changes/add-auth/tasks/02-second.md");
+
+    const notPlanned = findings.filter((finding) => finding.rule === "requirement-not-planned");
+    expect(notPlanned).toHaveLength(1);
+    expect(notPlanned[0]!.file).toBe(PLAN_FILE);
+  });
+});
 
 describe("checkCoverage: требование без задачи", () => {
   it("при трёх требованиях и ссылках на два выходит одна находка", () => {

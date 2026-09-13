@@ -1,35 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { CHECK_PLAN_DESCRIPTION } from "../../src/cli/commands/check.js";
 import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
+import { namedSectionFiles, splitPlanIntoIndex } from "../helpers/plan-index.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
-
-const SPEC = `## Purpose
-
-Holds what the sign-in of the product does and what it refuses to do.
-
-## ADDED Requirements
-
-### Requirement: Password is stored hashed
-
-The system SHALL store a password as a hash.
-
-#### Scenario: A password is saved
-
-- **WHEN** a user sets a password
-- **THEN** the store holds a hash of it
-`;
-
-const CLEAN = [
-  "## 1. Вход",
-  "",
-  "Depends on: none",
-  "",
-  "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/auth/store.ts`",
-  "      -> auth#Password is stored hashed",
-  "",
-].join("\n");
 
 /** A delta spec carrying one requirement per name given, for section-dependency fixtures. */
 function specWithRequirements(names: string[]): string {
@@ -43,14 +17,23 @@ function specWithRequirements(names: string[]): string {
     `## ADDED Requirements\n\n${requirements.join("\n")}`;
 }
 
+/**
+ * Writes the fixture as the index form `section-tasks-inline` now requires:
+ * `tasks.md` keeps each heading and a link, and the file that link points
+ * at keeps the section's own `Depends on:` line and tasks, split out of
+ * `tasks` (still written the old, flat way by every test below) by
+ * `splitPlanIntoIndex`.
+ */
 function sectionsWorkspace(tasks: string, requirementNames: string[]): string {
+  const { index, sections } = splitPlanIntoIndex(tasks);
   const root = makeWorkspace({
     "lexforge/config.yaml": "schema: spec-driven\n",
     "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
     "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
     "lexforge/changes/add-auth/specs/auth/spec.md": specWithRequirements(requirementNames),
     "lexforge/changes/add-auth/design.md": "## Context\n\nOne service, one database.\n",
-    "lexforge/changes/add-auth/tasks.md": tasks,
+    "lexforge/changes/add-auth/tasks.md": index,
+    ...namedSectionFiles("lexforge/changes/add-auth", sections),
   });
   created.push(root);
   return root;
@@ -61,9 +44,9 @@ function sectionsWorkspace(tasks: string, requirementNames: string[]): string {
  * floor on its own, so section-dependency fixtures trip no rule but the one
  * under test.
  */
-function taskLine(number: string, file: string, requirement: string): string {
+function taskLine(number: string, file: string, requirement: string, groupLabel: string): string {
   return (
-    `- [ ] ${number} Carry out the work this task exists for, editing \`${file}\`.\n` +
+    `- [ ] ${number} [${groupLabel}] Carry out the work this task exists for, editing \`${file}\`.\n` +
     `      -> auth#${requirement}`
   );
 }
@@ -88,7 +71,7 @@ describe("lexforge check plan: раздел без «Depends on:»", () => {
     // A leading blank line so the heading is not on line 1 — a rule that
     // reported a hardcoded line 1 would otherwise pass this test by
     // accident, since that happens to be where this section's heading sits.
-    const tasks = ["", "## 9. Only section", "", taskLine("9.1", "src/a.ts", "Req1"), ""].join(
+    const tasks = ["", "## 9. Only section", "", taskLine("9.1", "src/a.ts", "Req1", "A"), ""].join(
       "\n",
     );
     const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -109,8 +92,8 @@ describe("lexforge check plan: summary считает находки разде�
     const tasks = [
       "## 9. Mixed",
       "",
-      taskLine("9.1", "src/a.ts", "Req1"),
-      "- [ ] 9.2 Too short",
+      taskLine("9.1", "src/a.ts", "Req1", "A"),
+      "- [ ] 9.2 [A] Too short",
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -138,131 +121,6 @@ describe("lexforge check plan: summary считает находки разде�
   });
 });
 
-describe("lexforge check plan: два раздела none, общий файл", () => {
-  it("оба «none» и один файл в задачах — код 1, называет обе строкой с обоими разделами и файлом", async () => {
-    const tasks = [
-      "## 4. First",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("4.1", "src/shared.ts", "Req1"),
-      "",
-      "## 6. Second",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("6.1", "src/shared.ts", "Req2"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-    const concurrent = findingsOf(findings, "section-concurrent-file");
-
-    expect(exitCode).toBe(1);
-    expect(concurrent).toHaveLength(1);
-    // Section 6's own heading, line 8 of this fixture — not the file's
-    // first line, and not section 4's heading either.
-    expect(concurrent[0]!.line).toBe(8);
-    expect(concurrent[0]!.message).toContain("Section 4 and section 6 are concurrent");
-    expect(concurrent[0]!.message).toContain("src/shared.ts");
-  });
-});
-
-describe("lexforge check plan: два раздела ждут один и тот же третий, общий файл", () => {
-  it("оба ждут один и тот же раздел и делят файл — код 1, потому что он выпускает их разом", async () => {
-    const tasks = [
-      "## 9. Base",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("9.1", "src/base.ts", "Req1"),
-      "",
-      "## 4. First waiter",
-      "",
-      "Depends on: section 9",
-      "",
-      taskLine("4.1", "src/shared.ts", "Req2"),
-      "",
-      "## 6. Second waiter",
-      "",
-      "Depends on: section 9",
-      "",
-      taskLine("6.1", "src/shared.ts", "Req3"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2", "Req3"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-    const concurrent = findingsOf(findings, "section-concurrent-file");
-
-    expect(exitCode).toBe(1);
-    expect(concurrent).toHaveLength(1);
-    expect(concurrent[0]!.message).toContain("Section 4 and section 6 are concurrent");
-    expect(concurrent[0]!.message).toContain("src/shared.ts");
-  });
-});
-
-describe("lexforge check plan: цепочка зависимостей защищает общий файл", () => {
-  it("6 ждёт 4, 4 ждёт 9, 9 и 6 делят файл — находки нет: 6 не начнётся раньше закрытия 9", async () => {
-    const tasks = [
-      "## 9. Base",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("9.1", "src/shared.ts", "Req1"),
-      "",
-      "## 4. Middle",
-      "",
-      "Depends on: section 9",
-      "",
-      taskLine("4.1", "src/middle.ts", "Req2"),
-      "",
-      "## 6. Top",
-      "",
-      "Depends on: section 4",
-      "",
-      taskLine("6.1", "src/shared.ts", "Req3"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2", "Req3"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-
-    expect(exitCode).toBe(0);
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
-  });
-});
-
-describe("lexforge check plan: направление проверки достижимости", () => {
-  it("более ранний по тексту раздел ждёт более поздний — общий файл всё равно не даёт находки", async () => {
-    const tasks = [
-      "## 4. Earlier in the file, waits for the later one",
-      "",
-      "Depends on: section 6",
-      "",
-      taskLine("4.1", "src/shared.ts", "Req1"),
-      "",
-      "## 6. Later in the file, the one waited for",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("6.1", "src/shared.ts", "Req2"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-
-    expect(exitCode).toBe(0);
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
-  });
-});
-
 describe("lexforge check plan: «Depends on:» называет несуществующий раздел", () => {
   it("раздел 42 не существует — код 1, называет раздел 5 и раздел 42", async () => {
     const tasks = [
@@ -270,7 +128,7 @@ describe("lexforge check plan: «Depends on:» называет несущест
       "",
       "Depends on: section 42",
       "",
-      taskLine("5.1", "src/a.ts", "Req1"),
+      taskLine("5.1", "src/a.ts", "Req1", "A"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -294,13 +152,13 @@ describe("lexforge check plan: два раздела ждут друг друг�
       "",
       "Depends on: section 5",
       "",
-      taskLine("3.1", "src/a.ts", "Req1"),
+      taskLine("3.1", "src/a.ts", "Req1", "A"),
       "",
       "## 5. B",
       "",
       "Depends on: section 3",
       "",
-      taskLine("5.1", "src/b.ts", "Req2"),
+      taskLine("5.1", "src/b.ts", "Req2", "B"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
@@ -327,7 +185,7 @@ describe("lexforge check plan: раздел ждёт сам себя", () => {
       "",
       "Depends on: section 9",
       "",
-      taskLine("9.1", "src/a.ts", "Req1"),
+      taskLine("9.1", "src/a.ts", "Req1", "A"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -352,7 +210,7 @@ describe("lexforge check plan: значение «Depends on:» нечитаем
         "",
         `Depends on: ${value}`,
         "",
-        taskLine("9.1", "src/a.ts", "Req1"),
+        taskLine("9.1", "src/a.ts", "Req1", "A"),
         "",
       ].join("\n");
       const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -375,14 +233,14 @@ describe("lexforge check plan: повторная строка «Depends on:»",
       "",
       "Depends on: none",
       "",
-      taskLine("9.1", "src/shared.ts", "Req1"),
+      taskLine("9.1", "src/shared.ts", "Req1", "A"),
       "",
       "## 4. Duplicate lines",
       "",
       "Depends on: none",
       "Depends on: section 9",
       "",
-      taskLine("4.1", "src/shared.ts", "Req2"),
+      taskLine("4.1", "src/shared.ts", "Req2", "B"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
@@ -403,13 +261,13 @@ describe("lexforge check plan: повторный номер раздела", ()
       "",
       "Depends on: none",
       "",
-      taskLine("4.1", "src/a.ts", "Req1"),
+      taskLine("4.1", "src/a.ts", "Req1", "A"),
       "",
       "## 4. Also numbered four",
       "",
       "Depends on: none",
       "",
-      taskLine("4.2", "src/b.ts", "Req2"),
+      taskLine("4.2", "src/b.ts", "Req2", "B"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
@@ -426,82 +284,6 @@ describe("lexforge check plan: повторный номер раздела", ()
   });
 });
 
-describe("lexforge check plan: сравнение файлов по краткому и полному имени", () => {
-  it("полный путь в одном разделе и краткое имя того же файла в другом — конфликт находится", async () => {
-    const tasks = [
-      "## 4. First",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("4.1", "src/core/gates/plan-check.ts", "Req1"),
-      "",
-      "## 6. Second",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("6.1", "plan-check.ts", "Req2"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-    const concurrent = findingsOf(findings, "section-concurrent-file");
-
-    expect(exitCode).toBe(1);
-    expect(concurrent).toHaveLength(1);
-    expect(concurrent[0]!.message).toContain("Section 4 and section 6 are concurrent");
-  });
-
-  it("два разных SKILL.md под разными каталогами не считаются одним файлом", async () => {
-    const tasks = [
-      "## 4. First",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("4.1", "skills/lexforge-apply/SKILL.md", "Req1"),
-      "",
-      "## 6. Second",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("6.1", "skills/lexforge-verify/SKILL.md", "Req2"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-
-    expect(exitCode).toBe(0);
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
-  });
-
-  it("каталог, названный с завершающим /, не считается файлом", async () => {
-    const tasks = [
-      "## 4. First",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("4.1", "src/", "Req1"),
-      "",
-      "## 6. Second",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("6.1", "src/", "Req2"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-
-    expect(exitCode).toBe(0);
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
-  });
-});
-
 describe("lexforge check plan: план без нарушений раздела «Depends on:»", () => {
   it("каждый раздел несёт строку, цикла нет, общих файлов у одновременных разделов нет — находок нет", async () => {
     const tasks = [
@@ -509,19 +291,19 @@ describe("lexforge check plan: план без нарушений раздела
       "",
       "Depends on: none",
       "",
-      taskLine("1.1", "src/one.ts", "Req1"),
+      taskLine("1.1", "src/one.ts", "Req1", "A"),
       "",
       "## 2. Second",
       "",
       "Depends on: section 1",
       "",
-      taskLine("2.1", "src/two.ts", "Req2"),
+      taskLine("2.1", "src/two.ts", "Req2", "B"),
       "",
       "## 3. Third",
       "",
       "Depends on: section 1",
       "",
-      taskLine("3.1", "src/three.ts", "Req3"),
+      taskLine("3.1", "src/three.ts", "Req3", "C"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1", "Req2", "Req3"]);
@@ -532,16 +314,6 @@ describe("lexforge check plan: план без нарушений раздела
   });
 });
 
-const WITH_FINDING = [
-  "## 1. Вход",
-  "",
-  "Depends on: none",
-  "",
-  "- [ ] 1.1 Написать хранение пароля в виде хеша и оставить TODO на соль",
-  "      -> auth#Password is stored hashed",
-  "",
-].join("\n");
-
 const created: string[] = [];
 
 afterEach(() => {
@@ -550,197 +322,8 @@ afterEach(() => {
   }
 });
 
-function workspace(tasks: string, files: Record<string, string> = {}): string {
-  const root = makeWorkspace({
-    "lexforge/config.yaml": "schema: spec-driven\n",
-    "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
-    "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
-    "lexforge/changes/add-auth/specs/auth/spec.md": SPEC,
-    "lexforge/changes/add-auth/design.md": "## Context\n\nOne service, one database.\n",
-    "lexforge/changes/add-auth/tasks.md": tasks,
-    ...files,
-  });
-  created.push(root);
-  return root;
-}
-
 async function call(argv: string[], cwd: string) {
   const capture = createCapture();
   const exitCode = await run(argv, { cwd, stdout: capture.stdout, stderr: capture.stderr });
   return { exitCode, capture };
 }
-
-describe("lexforge check plan", () => {
-  it("на плане с находкой печатает один документ JSON и даёт код 1", async () => {
-    const root = workspace(WITH_FINDING);
-
-    const { exitCode, capture } = await call(
-      ["check", "plan", "--change", "add-auth", "--json"],
-      root,
-    );
-    const data = JSON.parse(capture.out) as {
-      outputVersion: number;
-      change: string;
-      findings: { rule: string; line: number }[];
-      summary: { placeholders: number; coverage: number; identifiers: number };
-      nextStep: string;
-    };
-
-    expect(exitCode).toBe(1);
-    expect(data.outputVersion).toBe(1);
-    expect(data.change).toBe("add-auth");
-    expect(data.findings).toHaveLength(1);
-    expect(data.findings[0]!.rule).toBe("task-placeholder");
-    expect(data.summary.placeholders).toBe(1);
-    expect(data.nextStep).toContain("lexforge check plan --change add-auth");
-  });
-
-  it("на чистом плане даёт код 0", async () => {
-    const root = workspace(CLEAN);
-
-    const { exitCode, capture } = await call(
-      ["check", "plan", "--change", "add-auth", "--json"],
-      root,
-    );
-
-    expect(exitCode).toBe(0);
-    expect((JSON.parse(capture.out) as { findings: unknown[] }).findings).toEqual([]);
-  });
-
-  it("вызов без --change даёт код 2 и называет обязательный флаг", async () => {
-    const root = workspace(CLEAN);
-
-    const { exitCode, capture } = await call(["check", "plan"], root);
-
-    expect(exitCode).toBe(2);
-    expect(capture.err).toContain("--change");
-    expect(capture.out).toBe("");
-  });
-});
-
-describe("lexforge check plan: неизвестный флаг", () => {
-  it("флаг-послабление даёт код 2 и печать поддерживаемых флагов", async () => {
-    const root = workspace(CLEAN);
-
-    const { exitCode, capture } = await call(
-      ["check", "plan", "--change", "add-auth", "--allow-placeholders"],
-      root,
-    );
-
-    expect(exitCode).toBe(2);
-    expect(capture.err).toContain("--allow-placeholders");
-    expect(capture.err).toContain("--change");
-    expect(capture.err).toContain("--json");
-    expect(capture.out).toBe("");
-  });
-});
-
-// The group carries `evidence` as well from the stage that writes it; the list
-// is built from the subcommands registered on the group, so it grows with them.
-describe("lexforge check без подкоманды", () => {
-  it("печатает подкоманды с описаниями и даёт код 2", async () => {
-    const root = workspace(CLEAN);
-
-    const { exitCode, capture } = await call(["check"], root);
-
-    expect(exitCode).toBe(2);
-    expect(capture.err).toContain("plan");
-    expect(capture.err).toContain(CHECK_PLAN_DESCRIPTION);
-    expect(capture.out).toBe("");
-  });
-
-  it("неизвестная подкоманда даёт тот же список и код 2", async () => {
-    const root = workspace(CLEAN);
-
-    const { exitCode, capture } = await call(["check", "dump"], root);
-
-    expect(exitCode).toBe(2);
-    expect(capture.err).toContain("plan");
-    expect(capture.err).toContain(CHECK_PLAN_DESCRIPTION);
-    expect(capture.out).toBe("");
-  });
-});
-
-describe("lexforge check plan: проверка не состоялась", () => {
-  it("несуществующий change даёт код 2 и печатает список активных changes", async () => {
-    const root = workspace(CLEAN);
-
-    const { exitCode, capture } = await call(
-      ["check", "plan", "--change", "add-billing"],
-      root,
-    );
-
-    expect(exitCode).toBe(2);
-    expect(capture.err).toContain("add-billing");
-    expect(capture.err).toContain("add-auth");
-    expect(capture.out).toBe("");
-  });
-
-  it("каталог без рабочего пространства даёт код 2 и называет первый шаг", async () => {
-    const root = makeWorkspace({ "src/app.ts": "export const app = 1;\n" });
-    created.push(root);
-
-    const { exitCode, capture } = await call(
-      ["check", "plan", "--change", "add-auth"],
-      root,
-    );
-
-    expect(exitCode).toBe(2);
-    expect(capture.err).toContain("lexforge init");
-    expect(capture.out).toBe("");
-  });
-});
-
-describe("lexforge check plan: репозиторий не нужен", () => {
-  it("в каталоге без git-репозитория проверка проходит и даёт код 0", async () => {
-    const root = workspace(CLEAN);
-
-    const { exitCode, capture } = await call(
-      ["check", "plan", "--change", "add-auth", "--json"],
-      root,
-    );
-
-    expect(exitCode).toBe(0);
-    expect(capture.err).not.toContain("git");
-    expect((JSON.parse(capture.out) as { findings: unknown[] }).findings).toEqual([]);
-  });
-});
-
-describe("lexforge check plan на файлах с переводами строк Windows", () => {
-  /** The same text, written the way an editor on Windows writes it. */
-  function crlf(text: string): string {
-    return text.replace(/\r?\n/g, "\r\n");
-  }
-
-  it("находит тот же плейсхолдер на той же строке, что и на файлах с переводами Unix", async () => {
-    const windows = workspace(crlf(WITH_FINDING), {
-      "lexforge/changes/add-auth/specs/auth/spec.md": crlf(SPEC),
-    });
-
-    const { exitCode, capture } = await call(
-      ["check", "plan", "--change", "add-auth", "--json"],
-      windows,
-    );
-    const data = JSON.parse(capture.out) as {
-      findings: { rule: string; line: number }[];
-      summary: { placeholders: number };
-    };
-
-    expect(exitCode).toBe(1);
-    expect(data.findings).toHaveLength(1);
-    expect(data.findings[0]!.rule).toBe("task-placeholder");
-    expect(data.findings[0]!.line).toBe(5);
-    expect(data.summary.placeholders).toBe(1);
-  });
-
-  it("на чистом плане с переводами Windows отвечает кодом 0", async () => {
-    const windows = workspace(crlf(CLEAN), {
-      "lexforge/changes/add-auth/specs/auth/spec.md": crlf(SPEC),
-    });
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], windows);
-
-    expect(exitCode).toBe(0);
-  });
-});
-

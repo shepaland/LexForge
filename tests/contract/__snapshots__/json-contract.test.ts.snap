@@ -135,73 +135,6 @@ exports[`контракт машинного вывода > отказ при м
 ]
 `;
 
-exports[`контракт машинного вывода defect > defect close > defect close: ключи data 1`] = `
-[
-  "defect",
-  "nextStep",
-  "outputVersion",
-  "workspaceRoot",
-]
-`;
-
-exports[`контракт машинного вывода defect > defect close > defect close: ключи defect 1`] = `
-[
-  "change",
-  "closedAt",
-  "file",
-  "id",
-  "level",
-  "line",
-  "recordedAt",
-  "state",
-  "summary",
-]
-`;
-
-exports[`контракт машинного вывода defect > defect list > defect list: ключи data 1`] = `
-[
-  "defects",
-  "nextStep",
-  "outputVersion",
-  "workspaceRoot",
-]
-`;
-
-exports[`контракт машинного вывода defect > defect list > defect list: ключи defects 1`] = `
-[
-  "change",
-  "file",
-  "id",
-  "level",
-  "line",
-  "recordedAt",
-  "state",
-  "summary",
-]
-`;
-
-exports[`контракт машинного вывода defect > defect record > defect record: ключи data 1`] = `
-[
-  "defect",
-  "nextStep",
-  "outputVersion",
-  "workspaceRoot",
-]
-`;
-
-exports[`контракт машинного вывода defect > defect record > defect record: ключи defect 1`] = `
-[
-  "change",
-  "file",
-  "id",
-  "level",
-  "line",
-  "recordedAt",
-  "state",
-  "summary",
-]
-`;
-
 exports[`контракт машинного вывода ворот > check evidence > check evidence: ключи data 1`] = `
 [
   "change",
@@ -317,6 +250,7 @@ exports[`контракт машинного вывода ворот > evidence 
 exports[`контракт машинного вывода ворот > verify > verify: ключи data 1`] = `
 [
   "change",
+  "dimensions",
   "findings",
   "nextStep",
   "notChecked",
@@ -342,67 +276,6 @@ exports[`контракт машинного вывода ворот > verify > 
   "openTasks",
   "requirementsWithoutTrace",
   "staleLabels",
-]
-`;
-
-exports[`контракт машинного вывода инициализации > init со списком инструментов > init: ключи data 1`] = `
-[
-  "created",
-  "nextStep",
-  "notes",
-  "outputVersion",
-  "removed",
-  "unchanged",
-  "unmanaged",
-  "updated",
-  "workspaceRoot",
-]
-`;
-
-exports[`контракт машинного вывода проверки установки > doctor на здоровой установке > doctor: имена и заголовки условий 1`] = `
-[
-  "workspace: Workspace and configuration",
-  "verification: Verification labels",
-  "skills: Installed skills",
-  "path: Command name on PATH",
-  "repository: Git repository",
-  "runtime: Node version",
-]
-`;
-
-exports[`контракт машинного вывода проверки установки > doctor на здоровой установке > doctor: ключи checks 1`] = `
-[
-  "findings",
-  "id",
-  "title",
-]
-`;
-
-exports[`контракт машинного вывода проверки установки > doctor на здоровой установке > doctor: ключи data 1`] = `
-[
-  "checks",
-  "findings",
-  "nextStep",
-  "outputVersion",
-  "summary",
-  "version",
-  "workspaceRoot",
-]
-`;
-
-exports[`контракт машинного вывода проверки установки > doctor на здоровой установке > doctor: ключи summary 1`] = `
-[
-  "checksPassed",
-  "checksTotal",
-  "findingsTotal",
-]
-`;
-
-exports[`контракт машинного вывода проверки установки > doctor с находкой о файле > doctor: ключи findings 1`] = `
-[
-  "level",
-  "message",
-  "path",
-  "rule",
+  "unrecordedTasks",
 ]
 `;

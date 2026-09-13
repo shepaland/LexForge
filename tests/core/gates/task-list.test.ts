@@ -224,6 +224,40 @@ describe("parseTaskList: имена файлов", () => {
   });
 });
 
+describe("parseTaskList: namedFiles не путает программу команды с файлом", () => {
+  it("голый путь без пробелов в обратных кавычках остаётся именованным, как и раньше", () => {
+    const tasks = parseTaskList("- [ ] 1.1 Смотри `tests/core/gates/x.test.ts` без команды\n");
+
+    expect(tasks[0]!.namedFiles).toEqual(["tests/core/gates/x.test.ts"]);
+  });
+
+  it("программа обёрнутого evidence red не попадает в namedFiles, а файл под ней попадает", () => {
+    const tasks = parseTaskList(
+      '- [ ] 1.1 Check: `node bin/lexforge.js evidence red --change c --task 1.2 --command "npx vitest run tests/core/gates/x.test.ts"`\n',
+    );
+
+    expect(tasks[0]!.namedFiles).toEqual(["tests/core/gates/x.test.ts"]);
+    expect(tasks[0]!.namedFiles).not.toContain("bin/lexforge.js");
+  });
+
+  it("каждый путь, которым командует программа, остаётся именованным", () => {
+    const tasks = parseTaskList(
+      "- [ ] 1.1 Check: `npx vitest run tests/core/gates/a.test.ts tests/core/gates/b.test.ts`\n",
+    );
+
+    expect(tasks[0]!.namedFiles).toEqual([
+      "tests/core/gates/a.test.ts",
+      "tests/core/gates/b.test.ts",
+    ]);
+  });
+
+  it("команда без единого аргумента после программы не именует ничего", () => {
+    const tasks = parseTaskList("- [ ] 1.1 Check: `node scripts/build.js`\n");
+
+    expect(tasks[0]!.namedFiles).toEqual([]);
+  });
+});
+
 describe("parseTaskList: текст без служебных частей", () => {
   it("номера и ссылки на требование в очищенный текст не входят", () => {
     const tasks = parseTaskList(

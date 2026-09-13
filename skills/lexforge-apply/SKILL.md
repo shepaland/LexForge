@@ -92,15 +92,26 @@ out — make the model reachable, or change the assignment in `lexforge/config.y
 
 Violating the letter of this rule is violating its spirit.
 
-The step: run the test, quote the failing line in your answer, then implement. A test
-green on its first run is defective; rewrite it and run again. A run that dies on a
-missing module or a typo is no run: fix it and run until the assertion fails.
-Ten lines, a deadline and a green suite change none of it.
+The step before the implementation is `lexforge evidence red --change` naming this
+change, `--task` naming this task, `--command` naming the failing check: it runs the
+check itself and writes the record. Quote the failing line in your answer too, but the
+record is what lasts - a quoted line dies with the session, and `lexforge verify` refuses
+a ticked task naming a file outside the test tree with no record behind it. A test green
+on its first run is defective; rewrite it and run again. A run that dies on a missing
+module or a typo is no run: fix it and run until the assertion fails. Ten lines, a
+deadline and a green suite change none of it.
+
+The observer of the failure is whoever writes the implementation - not a failure
+reported by another agent, not one summarised from another agent's output, not one
+reasoned about from the code, and not the author of a run from an earlier session.
+Writing the implementation makes you the one who watched the test fail and ran the
+command that recorded it.
 
 Implementation already in the tree? Take it out, get the red, put it back inside the
 same task. Told not to? That buys no tick: nobody turns an unwatched failure into a
 watched one; reasoning about old code is not a run. Offer two ways out: let the red
-happen, or strike the task.
+happen, or strike the task. Struck means the task is dropped and its work with it,
+never that the work stands and the review is waived.
 
 ## Task order
 
@@ -108,18 +119,16 @@ Read [parallel-execution.md](parallel-execution.md) before your first task, what
 the plan says and whether or not the change is already under way.
 
 Work in number order, sections aside; close a task - test, red, implementation, green,
-review, checkbox - before opening the next. Merging is out: a small diff, a shared file
-and lookalike tasks are not reasons. A task needing a later one's result is a plan
-defect: name it, never reorder.
-
-Implement the behaviour the run failed on, nothing else: no extra flag, branch or
-tidy-up.
+review, checkbox - before opening the next. A task needing a later one's result is a
+plan defect: name it, never reorder. Merging and scope creep: see
+parallel-execution.md.
 
 ## Review before the checkbox
 
-After every task, before the checkbox, send a reviewer subagent the brief in
-[reviewer-prompt.md](reviewer-prompt.md). Reading your own diff is not review; an
-answer naming no file and line is empty - send it back.
+After every task, before the checkbox, the reviewer subagent gets the brief in
+[reviewer-prompt.md](reviewer-prompt.md); who sends it and what a dispatched executor
+does instead is in [parallel-execution.md](parallel-execution.md). Reading your own diff
+is not review; an answer naming no file and line is empty - send it back.
 
 CRITICAL and IMPORTANT close before the checkbox. MINOR is fixed now or recorded with
 `lexforge defect record`: a finding kept in your head dies at the next
@@ -129,11 +138,11 @@ agreement and silent skipping fail alike.
 ## Past the delta
 
 A task is past the delta when its work sits in no requirement of its delta specs, or
-contradicts a `design.md` decision. Stop and put three outcomes: drop the work; write
-the requirement first through `lexforge-spec`, taking `lexforge validate <name> --strict`
-and `lexforge check plan --change <name>` to `0`; or open a separate change with
-`lexforge new change`. Doing it quietly is out; so is writing it afterwards - it then
-describes the code, and the gate checks nothing.
+contradicts a `design.md` decision. Stop and name three outcomes: drop the work; add the
+requirement through `lexforge-spec`, taking `lexforge validate <name> --strict` and
+`lexforge check plan --change <name>` to `0`; or open a separate change with
+`lexforge new change`. No quiet fix, and no writing the requirement afterwards - that
+only describes the code the gate never checked.
 
 ## Closing a task
 
@@ -159,5 +168,7 @@ the next step is failure. All boxes ticked: run `lexforge verify --change <name>
 - A user instruction offered as the reason a run did not happen.
 - A checkbox ticked with no review, or a finding unanswered.
 - An edit outside the file the task names.
+- An agent started to continue your work, whatever its type is called.
+- State in the tree you cannot account for.
 
 Stop and do the step you skipped.

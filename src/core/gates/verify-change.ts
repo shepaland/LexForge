@@ -3,9 +3,7 @@ import path from "node:path";
 import { UsageError } from "../../cli/errors.js";
 import { answerPath, workspacePath } from "../answer-path.js";
 import { changeBase, changedFiles } from "../git/change-base.js";
-import { assertRepository, readHead } from "../git/repository.js";
-import { worktreeDigest } from "../git/worktree-digest.js";
-import { readTextFile } from "../read-text.js";
+import { assertRepository } from "../git/repository.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
 import { makeFinding, type Finding } from "../validation/finding.js";
@@ -13,11 +11,11 @@ import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { readDeltaSpecs, requirementKey, type DeltaSpecs } from "./coverage-rules.js";
 import { DEFECT_OPEN_RULE, defectFindings } from "./defect-dimension.js";
-import { evidenceFile, readLedger } from "./evidence-store.js";
-import { freshnessFinding, labelState, type CodeState } from "./freshness.js";
 import { PLAN_ARTIFACT } from "./plan-check.js";
-import { parseTaskList, type PlanTask, type PlanTasks } from "./task-list.js";
+import { readPlanSource } from "./plan-source.js";
+import type { PlanTask, PlanTasks } from "./task-list.js";
 import { describedLabels, verificationEmpty } from "./verification-labels.js";
+import { evidenceFindings, redRecordFindings } from "./verify-change-evidence.js";
 
 /**
  * What this command does not measure. Exit code 0 is the most dangerous line
@@ -31,6 +29,20 @@ export const NOT_CHECKED = [
   "the quality of the code: naming, structure, what it costs to read",
 ];
 
+/**
+ * The other boundary: what this command does measure, one line per
+ * dimension, printed whatever the exit code. A clean run says nothing else
+ * about what happened, and without this list a reader has no way to see
+ * that a dimension ran and found nothing, as opposed to never having run.
+ */
+export const CHECKED_DIMENSIONS = [
+  "every checkbox in tasks.md is ticked",
+  "every ticked task naming production work carries its own red record",
+  "every delta-spec requirement has a trace in the code",
+  "every label described in verification carries a fresh stamp",
+  "no critical or important defect naming this change is open",
+];
+
 export interface VerifyChangeOptions {
   /** Any directory inside the project; the workspace root is looked up from it. */
   cwd: string;
@@ -42,6 +54,7 @@ export interface VerifyChangeSummary {
   requirementsWithoutTrace: number;
   staleLabels: number;
   openDefects: number;
+  unrecordedTasks: number;
 }
 
 export interface VerifyChangeData {
@@ -49,6 +62,8 @@ export interface VerifyChangeData {
   workspaceRoot: string;
   change: string;
   findings: Finding[];
+  /** The five dimensions folded into `findings`; the same list every time. */
+  dimensions: string[];
   /** What this command leaves to a person; the same list every time. */
   notChecked: string[];
   summary: VerifyChangeSummary;
@@ -81,6 +96,7 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
     ...traceFindings(plan, readDeltaSpecs(root, options.change), changed),
     ...evidenceFindings(root, options.change, labels),
     ...defectFindings(root, options.change),
+    ...redRecordFindings(root, options.change, plan),
   ];
 
   const nextStep =
@@ -94,6 +110,7 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
     workspaceRoot: answerPath(root),
     change: options.change,
     findings,
+    dimensions: CHECKED_DIMENSIONS,
     notChecked: NOT_CHECKED,
     summary: summarise(findings),
     nextStep,
@@ -133,22 +150,24 @@ function readPlan(root: string, change: string): PlanTasks {
     );
   }
 
+  const source = readPlanSource(artifact.resolvedOutputPath);
+
   return {
     file: workspacePath(root, artifact.resolvedOutputPath),
-    tasks: parseTaskList(readTextFile(artifact.resolvedOutputPath)),
+    tasks: source.tasks.map((task) => ({ ...task, file: workspacePath(root, task.file) })),
   };
 }
 
 /** One finding per open checkbox, naming the task and the line to open. */
 function openTaskFindings(plan: PlanTasks): Finding[] {
-  return plan.tasks.filter((task) => !task.done).map((task) => taskFinding(plan, task));
+  return plan.tasks.filter((task) => !task.done).map((task) => taskFinding(task));
 }
 
-function taskFinding(plan: PlanTasks, task: PlanTask): Finding {
+function taskFinding(task: PlanTask): Finding {
   const number = task.number === "" ? "" : ` ${task.number}`;
 
   return makeFinding(
-    plan.file,
+    task.file,
     task.line,
     "task-not-done",
     `Task${number} is still open: ${task.firstLine}`,
@@ -179,16 +198,16 @@ function traceFindings(plan: PlanTasks, delta: DeltaSpecs, changed: string[]): F
   for (const requirement of delta.requirements) {
     const key = requirementKey(requirement.capability, requirement.name);
     const tasks = byRequirement.get(key) ?? [];
-    const reason = missingTrace(tasks, changed);
+    const missing = missingTrace(tasks, changed);
 
-    if (reason) {
+    if (missing) {
       findings.push(
         makeFinding(
-          plan.file,
-          tasks[0]?.line ?? 1,
+          missing.anchor?.file ?? plan.file,
+          missing.anchor?.line ?? 1,
           "requirement-without-trace",
           `Requirement "${requirement.name}" of capability "${requirement.capability}" ` +
-            `has no trace in the code: ${reason}`,
+            `has no trace in the code: ${missing.reason}`,
         ),
       );
     }
@@ -200,68 +219,51 @@ function traceFindings(plan: PlanTasks, delta: DeltaSpecs, changed: string[]): F
 /**
  * Why a requirement counts as untraced, or nothing when it does not. Both
  * halves have to hold: every task that points at it is ticked, and at least one
- * file those tasks name is different from the base commit of the change.
+ * file those tasks name is different from the base commit of the change. The
+ * anchor names the task the reason talks about, so the finding's pointer never
+ * disagrees with its own message - a requirement no task names has none.
  */
-function missingTrace(tasks: PlanTask[], changed: string[]): string | undefined {
+function missingTrace(
+  tasks: PlanTask[],
+  changed: string[],
+): { reason: string; anchor: PlanTask | undefined } | undefined {
   if (tasks.length === 0) {
-    return (
-      "no task of the plan points at it. Add the task that carries it out and " +
-      "end its line with the reference to this requirement"
-    );
+    return {
+      reason:
+        "no task of the plan points at it. Add the task that carries it out and " +
+        "end its line with the reference to this requirement",
+      anchor: undefined,
+    };
   }
 
   const open = tasks.filter((task) => !task.done);
   if (open.length > 0) {
-    return `${listTasks(open)} that points at it is still open, so nothing has carried it out yet`;
+    return {
+      reason: `${listTasks(open)} that points at it is still open, so nothing has carried it out yet`,
+      anchor: open[0],
+    };
   }
 
   const files = [...new Set(tasks.flatMap((task) => task.files))];
   if (files.length === 0) {
-    return (
-      `${listTasks(tasks)} names no file in backticks, so there is nothing to ` +
-      "compare against the base commit of the change"
-    );
+    return {
+      reason:
+        `${listTasks(tasks)} names no file in backticks, so there is nothing to ` +
+        "compare against the base commit of the change",
+      anchor: tasks[0],
+    };
   }
 
   if (files.some((file) => changed.includes(file))) {
     return undefined;
   }
 
-  return (
-    `${listTasks(tasks)} names ${files.join(", ")}, and none of these files ` +
-    "differs from the base commit of the change"
-  );
-}
-
-/**
- * The third measure: what the ledger says about every check the project
- * describes. No command is run here. A gate that runs the test suite takes
- * minutes, and a check that slow is the one an agent learns to leave out.
- */
-function evidenceFindings(root: string, change: string, labels: string[]): Finding[] {
-  const current: CodeState = { head: readHead(root), worktreeDigest: worktreeDigest(root) };
-  const ledger = readLedger(root, change);
-  const file = workspacePath(root, evidenceFile(root, change));
-
-  const findings: Finding[] = [];
-
-  for (const label of labels) {
-    const record = ledger.records[label];
-    const finding = freshnessFinding({
-      file,
-      change,
-      label,
-      state: labelState(record, current),
-      record,
-      current,
-    });
-
-    if (finding) {
-      findings.push(finding);
-    }
-  }
-
-  return findings;
+  return {
+    reason:
+      `${listTasks(tasks)} names ${files.join(", ")}, and none of these files ` +
+      "differs from the base commit of the change",
+    anchor: tasks[0],
+  };
 }
 
 /** Task numbers as a message names them: "task 3.4" or "tasks 3.4, 3.5". */
@@ -284,6 +286,7 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
     requirementsWithoutTrace: count("requirement-without-trace"),
     staleLabels: count("evidence-not-fresh"),
     openDefects: count(DEFECT_OPEN_RULE),
+    unrecordedTasks: count("task-no-red-record"),
   };
 }
 
@@ -293,7 +296,11 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
  * when a reader is most likely to take it for the whole check.
  */
 function renderLines(data: VerifyChangeData): string[] {
-  const lines: string[] = [];
+  const lines: string[] = ["This command checks:"];
+  for (const item of data.dimensions) {
+    lines.push(`  - ${item}`);
+  }
+  lines.push("");
   let file = "";
 
   if (data.findings.length === 0) {

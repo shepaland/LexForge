@@ -1,13 +1,15 @@
 import { makeFinding, type Finding } from "../validation/finding.js";
-import { inlineCodeSpans, type PlanTasks } from "./task-list.js";
+import { inlineCodeSpans } from "./task-files.js";
+import type { PlanTasks } from "./task-list.js";
 
 /** Shorter than this a span is a service name, not a name the plan agreed on. */
 const MIN_IDENTIFIER_LENGTH = 3;
 
-/** One spelling of a name and the line of the task it was written on. */
+/** One spelling of a name, the line of the task it was written on and that task's own file. */
 interface Spelling {
   text: string;
   line: number;
+  file: string;
 }
 
 /**
@@ -29,12 +31,12 @@ export function checkIdentifiers(plan: PlanTasks): Finding[] {
       const spellings = byKey.get(key);
 
       if (!spellings) {
-        byKey.set(key, [{ text: span, line: task.line }]);
+        byKey.set(key, [{ text: span, line: task.line, file: task.file }]);
         continue;
       }
 
       if (!spellings.some((spelling) => spelling.text === span)) {
-        spellings.push({ text: span, line: task.line });
+        spellings.push({ text: span, line: task.line, file: task.file });
       }
     }
   }
@@ -52,7 +54,7 @@ export function checkIdentifiers(plan: PlanTasks): Finding[] {
 
     findings.push(
       makeFinding(
-        plan.file,
+        spellings[0]!.file,
         spellings[0]!.line,
         "identifier-spelling",
         `One name is written two ways in this plan: ${listed}. Pick one spelling ` +
