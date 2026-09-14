@@ -83,6 +83,54 @@ reports one finding per section until it is added. `npm install lexforge@1.4.0` 
 `lexforge init --tools <list>` bring the package and the skills current; the lines themselves
 are added to the plan by hand.
 
+## What's new in 1.5.0
+
+An executor handed a section starts no agent at all, and a ticked task rests on a failing run
+the command itself performed and recorded.
+
+- An executor starts no agent of any type. The session that holds the plan starts every agent
+  of the implementation stage. The ban reads the effect: an agent that continues the executor's
+  own work instead of looking at it is forbidden whatever the runtime calls its type. The rule
+  came out of a subagent that inherited a session's context, wrote eleven tasks on its own, and
+  a report that called that work somebody else's.
+- `lexforge evidence red --change <name> --task <id> --command <cmd>` runs the command itself
+  and writes one record per task id into `red-runs.json`. No flag accepts a ready-made failing
+  line, an exit code or an output tail. A run that comes back green exits `1` and writes
+  nothing; a command the shell could not start exits `2` with `red-run-command-failed`.
+- `verify` counts a fifth dimension and answers with a fifth number on `summary`,
+  `unrecordedTasks`. The rule `task-no-red-record` names a ticked task whose first named file
+  lies outside `tests/` and outside the change directory and that carries no red record. The
+  age of the change buys no exemption.
+- A commit, a branch or edits in the tree the executor did not make are called unaccounted,
+  with their paths, the commit and the branch written out, and work stops on them. Attributing
+  them to a foreign session, a parallel editor, another user or a tool running in the
+  background is refused: that is a claim about a person made with no evidence.
+- `tasks.md` is an index. It carries the title, the goal, the spec and one link per section,
+  and a section's `Depends on:` line and tasks live in a file one path segment below it. The
+  rule `section-tasks-inline` refuses a plan that keeps its tasks inside `tasks.md`, and the
+  one that links a file and leaves tasks behind the link as well.
+- Every task line carries a group label in square brackets after its number, such as
+  `- [ ] 1.1 [A]`: letters, digits and hyphens, eight characters at most. The independent
+  groups of one section go to different agents at the same time, and `check plan` refuses a
+  section whose two groups name the same file. The rules are `task-missing-group-label`,
+  `section-group-coverage-mismatch` and `section-group-shared-file`.
+- A task whose whole work is carrying code between files without changing behaviour carries
+  `(move)` after its group label and owes no red record: a move has no run to watch fail. A
+  task that adds a branch, a field or a rule never carries it.
+- An agent of the implementation stage works inside a budget of 300,000 tokens and reads large
+  files by line ranges. A section that does not fit the budget is handed over in parts, down to
+  one agent per task.
+- A `.ts` file under `src/` or `tests/` runs to 330 lines at most, held by
+  `tests/e2e/line-limit.test.ts`. Eighteen files past that line were split by subject; the
+  longest had been 1766 lines.
+
+A plan written before this release keeps its sections inside `tasks.md` and carries no labels,
+so `check plan` reports one finding per section and one per task until the plan is rewritten.
+`npm install lexforge@1.5.0` and `lexforge init --tools <list>` bring the package and the
+skills current; the index, the section files and the labels are added by hand. Tasks ticked
+before this release carry no red record, and `verify` names every one of them: record the run
+for each, declare the task a move where that is what it was, or clear the checkbox.
+
 ## Supported platforms
 
 | What | Value |
