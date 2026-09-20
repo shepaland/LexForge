@@ -132,6 +132,42 @@ skills current; the index, the section files and the labels are added by hand. T
 before this release carry no red record, and `verify` names every one of them: record the run
 for each, declare the task a move where that is what it was, or clear the checkbox.
 
+## What's new in 1.6.0
+
+A code file has a length a change may not take it past, and the answer to a file already over
+it is chosen by the owner before the plan is written, not by the agent while it types.
+
+- `file_limit` in `lexforge/config.yaml` carries the number and the covered files: `lines`,
+  400 when the key is absent, and `include`, 24 source and test extensions by default. A
+  project's `include` replaces that list rather than adding to it, and a `!` pattern such as
+  `!src/generated/**` leaves generated code out of the count. `lexforge init` writes the
+  section commented out into a new config; an existing one is not rewritten.
+- `long_files: refactor` or `long_files: keep` in a change's `.lexforge.yaml` records which
+  path the change takes for files already over the limit. Any other value is refused with
+  exit `2` and an error naming the field and the two values.
+- `lexforge-plan` counts the files its tasks will name before it writes `tasks.md`, shows
+  every one over the limit with its count, and asks which path the change takes. It never
+  chooses the path itself, and a user who hands the choice back is asked again.
+- `check plan` gains two rules. `long-file-without-path` names a long file the plan names
+  while `long_files` is unset, with the count, the limit and both values. On the `refactor`
+  path, `long-file-not-split-first` names a long file whose first task is not marked `(move)`.
+- `verify` counts a sixth dimension and answers with a sixth number on `summary`,
+  `filesOverLimit`. The rule `file-over-line-limit` names every covered file the change
+  touched that breaks the rule of its path: the file, its count at the start of the change,
+  its count now and the limit. The start count comes from the commit that brought the change
+  directory in, so a file's own growth is what is judged. A file the change deleted is not
+  reported, and with no `long_files` on record the `refactor` rule applies.
+- An executor makes no edit that takes a covered file from within the limit to over it: the
+  code goes into a new file instead. On `keep`, a file already over the limit gains no line,
+  and wiring a new file into it is paid for by moving a block of at least as many lines out.
+  Where no such block exists, the change goes back for re-planning on `refactor`.
+
+A change in flight when the project upgrades is judged by the new `verify`; if it touched a
+long file and records no path, it is judged as `refactor`, and adding `long_files` to its
+`.lexforge.yaml` is the way on. A workspace needs no migration: a `config.yaml` with no
+`file_limit` section runs on 400 lines and the default list. `npm install lexforge@1.6.0`
+and `lexforge init --tools <list>` bring the package and the skills current.
+
 ## Supported platforms
 
 | What | Value |

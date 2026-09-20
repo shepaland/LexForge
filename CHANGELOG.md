@@ -17,6 +17,54 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 1.6.0 — 2026-09-20
+
+A code file has a length a change may not take it past. Which way a file already over it
+goes is the owner's answer, given before the plan is written and recorded in the change.
+
+### Contract
+
+- `lexforge/config.yaml` gains a `file_limit` section with two keys. `lines` is the line
+  count a covered file may reach, 400 when the section or the key is absent. `include` is the
+  list of patterns the limit covers, 24 source and test extensions by default; a project's own
+  list replaces the default rather than adding to it. Patterns are globs matched with
+  `picomatch`, and one starting with `!` excludes, so `!src/generated/**` leaves generated code
+  out of the count. Markdown, JSON, YAML and lock files are outside the default list.
+- A change's `.lexforge.yaml` gains `long_files`, taking `refactor` or `keep`. Every command
+  that reads it refuses any other value with exit `2` and an error naming the field and the two
+  values it accepts.
+- `verify` checks a sixth dimension and answers with a sixth field on `summary`,
+  `filesOverLimit`. The rule is `file-over-line-limit`, and the finding names the file, its
+  line count at the start of the change, its count now and the limit. The start count is read
+  from the commit that brought the change directory in, so growth during the change is what is
+  judged. A file the change deleted is not reported. With no `long_files` recorded, the file is
+  judged by the `refactor` rule and the finding names both ways out.
+- `check plan` gains two finding rules. `long-file-without-path` names an existing covered file
+  a task names that is over the limit while the change records no `long_files`, with the count,
+  the limit and both values. `long-file-not-split-first` names, on the `refactor` path, a long
+  file whose first naming task is not declared `(move)`.
+- `lexforge init` writes the `file_limit` section into a new `config.yaml` commented out, with
+  the default list and the `!src/generated/**` example. An existing config is not rewritten and
+  runs on the defaults.
+- `picomatch` 4 is a runtime dependency of the package.
+
+### Other
+
+- `lexforge-plan` counts the lines of every existing covered file its tasks will name before it
+  writes `tasks.md`. When any is over the limit, it shows each one with its count, asks whether
+  the change takes `refactor` or `keep`, and writes the answer to `.lexforge.yaml` first. It
+  never chooses the path itself, and a user who hands the choice back is asked again. With no
+  long file it asks nothing.
+- On the `refactor` path the plan splits each long file in a task declared `(move)`, placed
+  before every other task naming that file.
+- An executor makes no edit that takes a covered file from within the limit to over it: the
+  code that would goes into a new file, written there from the start. On `keep`, a file already
+  over the limit gains no line, and wiring a new file into it is paid for by moving a block of
+  at least as many lines out. Where no such block exists, the work stops for re-planning on
+  `refactor` rather than adding the line.
+- The repository holds its own `.ts` files under `src/` and `tests/` to 400 lines now, the same
+  number the product ships as its default. It was 330 in 1.5.0.
+
 ## 1.5.0 — 2026-09-13
 
 An executor dispatched for a section starts no agent of any kind, and a ticked task rests on a
