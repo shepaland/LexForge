@@ -12,14 +12,15 @@ requirement left a trace in the code, and where the line sits that a machine doe
 
 ### Requirement: Four dimensions in one response
 
-`lexforge verify --change <name>` SHALL check five things in a single call and fold the
+`lexforge verify --change <name>` SHALL check six things in a single call and fold the
 findings into one list:
 
 - open checkboxes in `tasks.md`;
 - ticked tasks with no red record of their own;
 - delta-spec requirements with no trace in the code;
 - stamp state for every label in the `verification` section;
-- open ledger entries of level `critical` or `important` naming this change.
+- open ledger entries of level `critical` or `important` naming this change;
+- covered files the change touched that break the rule of its path for long files.
 
 The dimensions SHALL NOT be toggled off by flags and SHALL NOT be called separately: the
 check before completion runs as a whole, or the agent picks the one dimension that passes.
@@ -47,7 +48,8 @@ Every finding SHALL carry a rule id that shows which dimension it came from.
 
 - **WHEN** the tasks are closed, every ticked task that names production work carries a red
   record, every requirement has a trace, and every label is fresh, and the ledger holds no open
-  entry above MINOR for this change
+  entry above MINOR for this change, and no covered file the change touched breaks the rule of
+  its path for long files
 - **THEN** the command exits with code `0`
 
 #### Scenario: An open entry above MINOR
@@ -258,3 +260,47 @@ A record whose exit code is `0` SHALL count as no record.
   code from one file to another
 - **THEN** the dimension raises the finding and names its task id
 
+### Requirement: A touched file that breaks its path is a finding
+
+`verify` SHALL report a finding for each covered file the change touched that breaks the
+rule of the change's path for long files. The finding SHALL name the file, its line count at
+the start of the change, its line count now, and the limit.
+
+A file the change deleted SHALL NOT be reported.
+
+#### Scenario: A short file grown over the limit is reported
+
+- **WHEN** the change touched `src/cart.ts`, 380 lines at the start and 420 now, and the
+  limit is 400
+- **THEN** `verify` reports a finding naming `src/cart.ts`, 380, 420 and 400, and exits `1`
+
+#### Scenario: A long file grown on the keep path is reported
+
+- **WHEN** `long_files: keep` is recorded and the change touched `src/billing.ts`, 612 lines
+  at the start and 640 now
+- **THEN** `verify` reports a finding naming `src/billing.ts`, 612, 640 and 400
+
+#### Scenario: A long file left long on the refactor path is reported
+
+- **WHEN** `long_files: refactor` is recorded and the change touched `src/billing.ts`, 612
+  lines at the start and 590 now
+- **THEN** `verify` reports a finding naming `src/billing.ts`, 612, 590 and 400
+
+#### Scenario: A deleted file is not reported
+
+- **WHEN** the change deleted `src/legacy-billing.ts`, 900 lines at the start
+- **THEN** `verify` reports no finding about `src/legacy-billing.ts`
+
+### Requirement: With no recorded path, the refactor rule applies
+
+When the change's `.lexforge.yaml` holds no `long_files` and the change touched a covered
+file that was over the limit at the start, `verify` SHALL judge that file by the rule of the
+`refactor` path, and the finding SHALL name both ways out: recording `long_files`, or
+splitting the file.
+
+#### Scenario: An unplanned long file is judged strictly
+
+- **WHEN** no `long_files` is recorded and the executor touched `src/billing.ts`, 612 lines at
+  the start and 612 now, although no task named it
+- **THEN** `verify` reports a finding naming `src/billing.ts`, and the finding names
+  `long_files` and splitting the file as the two ways out

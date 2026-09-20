@@ -160,6 +160,7 @@ describe("verifyChange: счётчики", () => {
       staleLabels: 1,
       openDefects: 0,
       unrecordedTasks: 0,
+      filesOverLimit: 0,
     });
     expect(result.data.findings).toHaveLength(3);
   });

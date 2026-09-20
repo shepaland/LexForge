@@ -194,6 +194,56 @@
       "summary": "A misplaced (move) written without a space before the next token, such as (move)1.1, is glued to the task text when it is folded back in, giving (move)text instead of (move) text; cosmetic, pre-dates the combined-marker fix and holds in both branches alike",
       "state": "open",
       "recordedAt": "2026-09-13T18:28:03.359Z"
+    },
+    {
+      "id": "271db466",
+      "change": "file-line-limit",
+      "level": "minor",
+      "file": "tests/e2e/line-limit.test.ts",
+      "line": 95,
+      "summary": "Test name still says 'exceeds 330 lines' while LINE_LIMIT is 400; task 1.1 limited the edit to the constant",
+      "state": "open",
+      "recordedAt": "2026-09-19T16:57:20.301Z"
+    },
+    {
+      "id": "f944ca22",
+      "change": "file-line-limit",
+      "level": "minor",
+      "file": "src/core/gates/line-limit.ts",
+      "line": 30,
+      "summary": "isCovered compiles a picomatch matcher per pattern on every call; hoist compiled matchers if called over many files",
+      "state": "open",
+      "recordedAt": "2026-09-19T17:02:25.440Z"
+    },
+    {
+      "id": "6d4c9cc3",
+      "change": "file-line-limit",
+      "level": "minor",
+      "file": "src/core/gates/line-limit.ts",
+      "line": 53,
+      "summary": "Exported LineCounts interface was not asked for by task 2.11; the task gave counts as an inline type",
+      "state": "open",
+      "recordedAt": "2026-09-19T17:04:51.479Z"
+    },
+    {
+      "id": "474d9030",
+      "change": "file-line-limit",
+      "level": "minor",
+      "file": "skills/lexforge-apply/parallel-execution.md",
+      "line": 96,
+      "summary": "The brief list names the long_files path unconditionally; the requirement says when the change records one",
+      "state": "open",
+      "recordedAt": "2026-09-20T06:56:55.629Z"
+    },
+    {
+      "id": "a5d4c1be",
+      "change": "file-line-limit",
+      "level": "minor",
+      "file": "src/core/gates/plan-check.ts",
+      "line": 107,
+      "summary": "checkPlan reads .lexforge.yaml twice: once inside readChangeState and once for longFilePath",
+      "state": "open",
+      "recordedAt": "2026-09-20T07:06:31.223Z"
     }
   ]
 }

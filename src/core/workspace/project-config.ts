@@ -8,6 +8,37 @@ import { workspacePaths } from "./paths.js";
 export const DEFAULT_SCHEMA = "spec-driven";
 export const DEFAULT_LANGUAGE = "en";
 
+/** The line count a file may reach before `file_limit` in config.yaml sets its own. */
+export const DEFAULT_FILE_LIMIT_LINES = 400;
+
+/** The file extensions and path patterns `file_limit` covers with no `include` of its own. */
+export const DEFAULT_FILE_LIMIT_INCLUDE = [
+  "**/*.ts",
+  "**/*.tsx",
+  "**/*.js",
+  "**/*.jsx",
+  "**/*.mjs",
+  "**/*.cjs",
+  "**/*.py",
+  "**/*.go",
+  "**/*.rs",
+  "**/*.java",
+  "**/*.kt",
+  "**/*.kts",
+  "**/*.swift",
+  "**/*.rb",
+  "**/*.php",
+  "**/*.cs",
+  "**/*.c",
+  "**/*.h",
+  "**/*.cc",
+  "**/*.cpp",
+  "**/*.hpp",
+  "**/*.scala",
+  "**/*.vue",
+  "**/*.svelte",
+];
+
 /**
  * A check label goes into the evidence record and into the command the hints
  * print, so its form is fixed: lowercase words joined by hyphens.
@@ -90,6 +121,20 @@ const ModelsSchema = z
   // requirement forbids refusing.
   .nullish();
 
+/**
+ * The `file_limit` section: how many lines a file may reach and which files
+ * it covers. `lines` replaces the default number, `include` replaces the
+ * default list rather than adding to it.
+ */
+const FileLimitSchema = z
+  .object({
+    lines: z.number().int().positive().default(DEFAULT_FILE_LIMIT_LINES),
+    include: z.array(z.string()).min(1).default(DEFAULT_FILE_LIMIT_INCLUDE),
+  })
+  // zod does not re-parse a top-level `.default()` value, so the default names
+  // both fields itself rather than relying on the field-level defaults above.
+  .default({ lines: DEFAULT_FILE_LIMIT_LINES, include: DEFAULT_FILE_LIMIT_INCLUDE });
+
 /** Unknown top-level sections are dropped, not rejected: config.yaml grows over time. */
 const ProjectConfigSchema = z.object({
   schema: z.string().default(DEFAULT_SCHEMA),
@@ -99,6 +144,7 @@ const ProjectConfigSchema = z.object({
   verification: VerificationSchema,
   plan_placeholders: z.array(z.string()).default([]),
   models: ModelsSchema,
+  file_limit: FileLimitSchema,
 });
 
 export interface ProjectConfig {
@@ -114,6 +160,8 @@ export interface ProjectConfig {
   languageExplicit: boolean;
   /** The model assignment of this project. Empty in a project without the section. */
   models: ModelAssignment;
+  /** The `file_limit` section: the line limit and the files it covers. */
+  sizeLimit: { max: number; patterns: string[] };
 }
 
 export function readProjectConfig(root: string): ProjectConfig {
@@ -140,6 +188,7 @@ export function readProjectConfig(root: string): ProjectConfig {
     language: result.data.language ?? DEFAULT_LANGUAGE,
     languageExplicit: explicit,
     models: toAssignment(result.data.models),
+    sizeLimit: { max: result.data.file_limit.lines, patterns: result.data.file_limit.include },
   };
 }
 

@@ -339,3 +339,43 @@ task declared a move that does change behaviour passes a check it should have fa
 - **WHEN** a task adds a branch, a field or a rule, however small
 - **THEN** the skill writes no `(move)` on it and writes it as a test, a run and an
   implementation
+
+### Requirement: The plan skill asks the user for the path before writing the plan
+
+Before it writes `tasks.md`, the skill `lexforge-plan` SHALL count the lines of every
+existing covered file its tasks will name.
+
+When any of them is over the line limit, the skill SHALL show the user each such file with
+its line count, SHALL ask which path the change takes, `refactor` or `keep`, and SHALL
+record the user's answer as `long_files` in the change's `.lexforge.yaml` before it writes
+`tasks.md`.
+
+The skill SHALL NOT choose the path itself, and SHALL NOT write `tasks.md` before the user
+has answered.
+
+When none of the files is over the limit, the skill SHALL NOT ask.
+
+#### Scenario: A long file stops the plan until the user chooses
+
+- **WHEN** the plan for `add-refunds` will name `src/billing.ts`, 612 lines, and the limit is
+  400
+- **THEN** the skill shows `src/billing.ts` with 612 lines, asks for `refactor` or `keep`,
+  writes the answer to `.lexforge.yaml`, and only then writes `tasks.md`
+
+#### Scenario: No long file, no question
+
+- **WHEN** every existing covered file the plan will name is within the limit
+- **THEN** the skill writes `tasks.md` without asking about a path
+
+### Requirement: On the refactor path the splitting comes first
+
+On the `refactor` path, the skill `lexforge-plan` SHALL split each long file the plan names
+in a task declared `(move)`, and that task SHALL come before any other task naming the same
+file.
+
+#### Scenario: The split precedes the feature work
+
+- **WHEN** the change is on the `refactor` path and the plan names `src/billing.ts`, 612
+  lines
+- **THEN** the first task naming `src/billing.ts` is a `(move)` task that splits it, and the
+  task adding refunds to billing comes after it

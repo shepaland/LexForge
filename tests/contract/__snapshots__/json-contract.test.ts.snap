@@ -272,6 +272,7 @@ exports[`контракт машинного вывода ворот > verify > 
 
 exports[`контракт машинного вывода ворот > verify > verify: ключи summary 1`] = `
 [
+  "filesOverLimit",
   "openDefects",
   "openTasks",
   "requirementsWithoutTrace",

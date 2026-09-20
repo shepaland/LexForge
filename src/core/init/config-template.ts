@@ -1,5 +1,31 @@
 import { modelsSectionText } from "../models/catalogue.js";
-import { DEFAULT_SCHEMA } from "../workspace/project-config.js";
+import {
+  DEFAULT_FILE_LIMIT_INCLUDE,
+  DEFAULT_FILE_LIMIT_LINES,
+  DEFAULT_SCHEMA,
+} from "../workspace/project-config.js";
+
+/**
+ * The `lines`/`include` mapping that sits under the `file_limit:` key, one
+ * plain `#     - "pattern"` entry per line, `"!src/generated/**"` included as
+ * one more list entry. Uncommenting this on its own parses to
+ * `{ lines, include }` - no prose line breaks the list's indentation.
+ */
+export function fileLimitYamlBlockText(): string {
+  const patterns = [...DEFAULT_FILE_LIMIT_INCLUDE, "!src/generated/**"];
+  const includeLines = patterns.map((pattern) => `#     - "${pattern}"`).join("\n");
+
+  return `#   lines: ${DEFAULT_FILE_LIMIT_LINES}
+#   include:
+${includeLines}`;
+}
+
+/** The commented `file_limit` section: the header sentence, the key, and the uncomment-safe block. */
+function fileLimitSectionText(): string {
+  return `# file_limit: the line count a file may reach, and the files it covers. A "!" pattern leaves generated or vendored code out of the limit.
+# file_limit:
+${fileLimitYamlBlockText()}`;
+}
 
 /**
  * The `config.yaml` written by the initialisation. `schema` and the `models`
@@ -36,6 +62,8 @@ ${head}
 # verification:
 #   tests: npm test
 #   lint: npm run lint
+
+${fileLimitSectionText()}
 
 ${modelsSectionText(tools)}`;
 }

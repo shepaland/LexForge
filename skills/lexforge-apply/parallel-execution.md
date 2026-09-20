@@ -91,9 +91,10 @@ it: not a further executor, not a reviewer, not any type its runtime offers for
 delegating to itself. It returns to the session, which dispatches the reviewer.
 
 Also handed: the change name; `context` and `rules` from `lexforge/config.yaml`; the
-section's tasks; the requirements and decisions they trace to; and the instruction that
-it never touches `tasks.md` itself: for an executor, the loop's last step is not the
-checkbox but that task's own entry in the report it returns.
+line limit from `file_limit` and the change's `long_files` path; the section's tasks;
+the requirements and decisions they trace to; and the instruction that it never touches
+`tasks.md` itself: for an executor, the loop's last step is not the checkbox but that
+task's own entry in the report it returns.
 
 The executor runs on the model `stages.apply` assigns, read from
 `lexforge status --change <name> --tool <your runtime> --json`. A runtime that cannot
@@ -153,6 +154,32 @@ An executor that started one reports the violation in the entry of every task it
 touched and marks no checkbox for those tasks; the dispatching skill treats them as
 unclosed whatever code stands in the tree. The code is not thrown away - take the
 implementation out, watch it fail, and put it back inside the same task.
+
+## The line limit
+
+The limit is `file_limit.lines` in `lexforge/config.yaml`, 400 lines when the key is
+absent, checked over the files `file_limit.include` covers.
+
+No edit takes a covered file from within the limit to over it. Code that would goes
+into a new file instead, written there from the start - not moved out after the task
+has already pushed the file past the limit.
+
+On `long_files: keep`, a file already over the limit when the change started gains no
+line. Wiring a new file into it is paid for by moving an existing block of at least as
+many lines out into that new file. Where no such block exists, stop and report that the
+change needs re-planning on `refactor`; do not add the line anyway.
+
+Before closing a task, run `wc -l` on every covered file it wrote.
+
+| Excuse | Reality |
+|---|---|
+| "an edit outside the file the task names" | The line limit requires exactly that edit once the alternative crosses 400 lines - the red flag names a different problem, not this one. |
+| "a scope decision I have no authority to make unilaterally mid-task" | The limit already decided it. Putting new code in a new file is the task, not a scope call left for the reviewer. |
+| "not mine to decide inside this task" | Nothing is left to decide - over the limit, the code goes in a new file, every time. |
+| "report the overage to the reviewer in plain terms rather than hiding it or working around it" | Reporting an overage after causing it is not the same as not causing it. The file never crosses the limit in the first place. |
+| "unrequested tidy-up" / "scope creep dressed as a fix" | Moving a block out to pay for a new line is the rule on `keep`, not tidy-up - it is the task. |
+| "588 lines is still over the project's 400-line `file_limit`" / "chasing the count is moot" | Already over the limit bars adding a line at all on `keep`, whether or not the count was clean to start with. |
+| "the one import line the task itself calls for" | The task calling for the line does not pay for it. Moving an equal or larger block out does, or the task stops for re-planning. |
 
 ## Rationalizations
 

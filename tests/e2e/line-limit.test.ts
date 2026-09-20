@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** The line count a `.ts` file under `src/` or `tests/` must not exceed. */
-const LINE_LIMIT = 330;
+const LINE_LIMIT = 400;
 
 /** The two roots this check walks. */
 const WATCHED_ROOTS = ["src", "tests"];

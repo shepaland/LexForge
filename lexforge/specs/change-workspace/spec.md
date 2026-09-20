@@ -151,3 +151,22 @@ project is an edit its owner makes by hand.
   section
 - **THEN** the file stays byte for byte as it was, and the pipeline keeps running with an
   empty assignment
+
+### Requirement: A change records its path for long files
+
+A change SHALL record its path for covered files already over the line limit in its
+`.lexforge.yaml` as `long_files: refactor` or `long_files: keep`.
+
+Any other value of `long_files` SHALL be refused by every command that reads it, with an
+error naming the field and the two values it accepts.
+
+#### Scenario: The refactor path is recorded
+
+- **WHEN** the `.lexforge.yaml` of `add-refunds` holds `long_files: refactor`
+- **THEN** `check plan` and `verify` for `add-refunds` read the `refactor` path
+
+#### Scenario: An unknown value is refused
+
+- **WHEN** the `.lexforge.yaml` of `add-refunds` holds `long_files: split`
+- **THEN** `check plan --change add-refunds` exits `2` with an error naming `long_files` and
+  the values `refactor` and `keep`

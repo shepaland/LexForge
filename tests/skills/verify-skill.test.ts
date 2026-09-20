@@ -103,7 +103,7 @@ describe("раздел 9: порог CRITICAL/IMPORTANT против MINOR", () 
     expect(around).toMatch(/\bno\b/);
   });
 
-  it("машинная половина называет пять измерений, среди них unrecordedTasks, и «one measure of five» в рационализации", () => {
+  it("машинная половина называет шесть измерений, среди них filesOverLimit, и «one measure of six» в рационализации", () => {
     const machineHalf = section(bodyOf("lexforge-verify"), "The machine half");
 
     for (const dimension of [
@@ -112,6 +112,7 @@ describe("раздел 9: порог CRITICAL/IMPORTANT против MINOR", () 
       "staleLabels",
       "openDefects",
       "unrecordedTasks",
+      "filesOverLimit",
     ]) {
       expect(machineHalf, `не называет ${dimension}`).toContain(`\`${dimension}\``);
     }
@@ -121,13 +122,13 @@ describe("раздел 9: порог CRITICAL/IMPORTANT против MINOR", () 
 
     const zeroSentence = machineHalf.slice(zeroIndex, zeroIndex + 120).toLowerCase();
 
-    expect(zeroSentence).not.toMatch(/\bfour measures\b/);
-    expect(zeroSentence).toMatch(/\bfive measures\b/);
+    expect(zeroSentence).not.toMatch(/\bfive measures\b/);
+    expect(zeroSentence).toMatch(/\bsix measures\b/);
 
     const rationalizations = section(bodyOf("lexforge-verify"), "Rationalizations").toLowerCase();
 
-    expect(rationalizations).not.toMatch(/\bone measure of four\b/);
-    expect(rationalizations).toMatch(/\bone measure of five\b/);
+    expect(rationalizations).not.toMatch(/\bone measure of five\b/);
+    expect(rationalizations).toMatch(/\bone measure of six\b/);
   });
 
   it("lexforge defect record не рядом с CRITICAL/IMPORTANT без отрицания между ними: запись не заменяет починку", () => {

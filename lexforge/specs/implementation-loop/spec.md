@@ -567,3 +567,35 @@ section.
 - **THEN** `lexforge evidence record` runs once, after both executors have come back and every
   task of the wave is ticked, not after either group alone
 
+### Requirement: The executor does not take a file over the line limit
+
+An executor SHALL NOT make an edit that takes a covered file from within the line limit to
+over it. The new code that would take the file over SHALL go into a new file instead.
+
+On the `keep` path, an executor SHALL NOT add lines to a covered file that was over the
+limit at the start of the change; new code meant for it SHALL go into a new file.
+
+#### Scenario: Code that would cross the limit goes into a new file
+
+- **WHEN** a task adds 30 lines of refund logic to `src/cart.ts`, 390 lines, and the limit is
+  400
+- **THEN** the executor puts the refund logic into a new file and leaves `src/cart.ts` at 400
+  lines or fewer
+
+#### Scenario: A long file does not grow on the keep path
+
+- **WHEN** `long_files: keep` is recorded and a task adds a method to `src/billing.ts`, 612
+  lines
+- **THEN** the executor writes the method in a new file, and `src/billing.ts` ends the task
+  at 612 lines or fewer
+
+### Requirement: The brief names the limit and the path
+
+The brief a session hands an executor SHALL name the line limit and, when the change records
+one, its `long_files` path.
+
+#### Scenario: A brief carries the limit
+
+- **WHEN** the session dispatches an executor for a task of a change with a limit of 400 and
+  `long_files: keep`
+- **THEN** the brief names the limit 400 and the `keep` path

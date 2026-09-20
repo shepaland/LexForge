@@ -1,5 +1,6 @@
+import { countLines } from "../gates/line-limit.js";
 import { WORKSPACE_DIR } from "../workspace/paths.js";
-import { readGit, readHead } from "./repository.js";
+import { readGit, readHead, tryGit } from "./repository.js";
 
 /** Path of a change directory as git sees it, relative to the workspace root. */
 function changeDirectory(change: string): string {
@@ -54,4 +55,15 @@ export function changedFiles(root: string, base: string): string[] {
   );
 
   return [...files].sort();
+}
+
+/**
+ * A file's line count at the start of the change: its content in the base
+ * commit, not the working tree. `null` when the file was not in the base
+ * commit yet — it is a new file, with no start to measure growth against.
+ */
+export function startLineCount(root: string, base: string, file: string): number | null {
+  const call = tryGit(root, ["show", `${base}:${file}`]);
+
+  return call.ok ? countLines(call.output) : null;
 }

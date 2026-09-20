@@ -3,6 +3,7 @@ import { answerPath, workspacePath } from "../answer-path.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
 import { type Finding } from "../validation/finding.js";
+import { readChangeConfig } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { checkCoverage, readDeltaSpecs } from "./coverage-rules.js";
@@ -12,6 +13,7 @@ import {
   checkTaskGroupLabels,
 } from "./plan-check-groups.js";
 import { checkIdentifiers } from "./identifier-rules.js";
+import { checkLongFiles } from "./plan-check-long-files.js";
 import { checkPlaceholders } from "./placeholder-rules.js";
 import { checkSectionDependencies, type PlanSection } from "./plan-check-sections.js";
 import { readPlanSource } from "./plan-source.js";
@@ -102,6 +104,7 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
   };
 
   const sections = source.sections.map((section) => displaySection(root, section));
+  const longFilePath = readChangeConfig(root, options.change).longFilePath;
 
   const findings = [
     ...checkPlaceholders(plan, config.planPlaceholders),
@@ -111,6 +114,7 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
     ...checkTaskGroupLabels(plan),
     ...checkGroupCoverage(sections),
     ...checkGroupSharedFiles(sections),
+    ...checkLongFiles(root, plan, config.sizeLimit, longFilePath),
   ].sort((left, right) => left.line - right.line);
 
   const command = `lexforge check plan --change ${options.change}`;

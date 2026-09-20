@@ -120,9 +120,10 @@ the command itself performed and recorded.
 - An agent of the implementation stage works inside a budget of 300,000 tokens and reads large
   files by line ranges. A section that does not fit the budget is handed over in parts, down to
   one agent per task.
-- A `.ts` file under `src/` or `tests/` runs to 330 lines at most, held by
+- A `.ts` file under `src/` or `tests/` ran to 330 lines at most in this release, held by
   `tests/e2e/line-limit.test.ts`. Eighteen files past that line were split by subject; the
-  longest had been 1766 lines.
+  longest had been 1766 lines. The limit is 400 lines now and `file_limit` carries it: see
+  "Line limit".
 
 A plan written before this release keeps its sections inside `tasks.md` and carries no labels,
 so `check plan` reports one finding per section and one per task until the plan is rewritten.
@@ -442,6 +443,30 @@ Code `1` reports a problem in the project, code `2` a wrong call, and there are 
 
 `evidence.json` changes on every run, so two people working on the same change in parallel will get
 a merge conflict on it.
+
+## Line limit
+
+Every source and test file a change touches keeps to a line count: 400 lines by default, `wc -l`
+counting, a file at exactly 400 within it. The set of files covered is `file_limit.include` in
+`lexforge/config.yaml` — 24 source and test extensions out of the box (`**/*.ts`, `**/*.py`,
+`**/*.vue`, and so on); a project's own `include` replaces that list rather than adding to it.
+Markdown, JSON, YAML and lock files sit outside it by default. Generated or vendored code is left
+out with a negated pattern in `include`, for example `!src/generated/**`. Both the count and the
+covered set change with `file_limit.lines` and `file_limit.include` in `lexforge/config.yaml`.
+
+Before `lexforge-plan` writes `tasks.md`, it counts the files the tasks will name and shows every
+one over the limit. It asks one question about each: `refactor` it back under the limit, or `keep`
+it as is. The answer goes into the change's `.lexforge.yaml` as `long_files: refactor` or
+`long_files: keep`.
+
+`lexforge check plan` refuses a plan that names a long file with no `long_files` answer on record.
+On `refactor`, it also refuses a plan whose first task naming that file is not marked `(move)` — the
+split has to come before the rest of the work on that file.
+
+`lexforge verify` checks every covered file the change touched against the rule its path recorded:
+on `refactor` every touched file ends within the limit; on `keep` a file that was within the limit
+still ends within it, and a file already over it gains no line. A new file ends within the limit
+on either path.
 
 ## Limits
 

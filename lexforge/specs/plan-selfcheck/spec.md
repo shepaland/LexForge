@@ -432,3 +432,41 @@ keeping the link as the section's only content under its heading.
   carries a `Depends on:` line or tasks directly beneath that link
 - **THEN** the command reports a finding naming section 5 and instructing the author to
   remove the `Depends on:` line and tasks left behind the link, and exits `1`
+
+### Requirement: A long file named without a recorded path is a finding
+
+`check plan` SHALL report a finding for each existing covered file named by a task that is
+over the line limit when the change's `.lexforge.yaml` holds no `long_files`.
+
+The finding SHALL name the file, its line count, the limit, and the two values `long_files`
+accepts.
+
+#### Scenario: A long file with no path fails the plan
+
+- **WHEN** a task of `add-refunds` names `src/billing.ts`, 612 lines, the limit is 400, and
+  `.lexforge.yaml` holds no `long_files`
+- **THEN** `check plan --change add-refunds` reports a finding naming `src/billing.ts`, 612
+  lines, the limit 400, and `refactor` and `keep`, and exits `1`
+
+#### Scenario: A recorded path clears the finding
+
+- **WHEN** the same plan runs with `long_files: keep` in `.lexforge.yaml`
+- **THEN** `check plan` reports no finding about `src/billing.ts`
+
+### Requirement: On the refactor path a long file is split before other work on it
+
+On the `refactor` path, `check plan` SHALL report a finding for each long file whose first
+naming task is not declared `(move)`.
+
+#### Scenario: Feature work before the split fails the plan
+
+- **WHEN** `long_files: refactor` is recorded and the first task naming `src/billing.ts`, 612
+  lines, adds a refund method to it without `(move)`
+- **THEN** `check plan` reports a finding naming `src/billing.ts` and that task, and exits
+  `1`
+
+#### Scenario: A split placed first passes
+
+- **WHEN** `long_files: refactor` is recorded and the first task naming `src/billing.ts` is
+  declared `(move)`
+- **THEN** `check plan` reports no finding about the order of work on `src/billing.ts`
