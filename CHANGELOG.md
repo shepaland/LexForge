@@ -17,6 +17,53 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 1.7.0 — 2026-10-02
+
+Task context is scoped to one behavioural cycle. Full logs and execution history stay in
+files, while the CLI tracks evidence, review and continuation across agent handoffs.
+
+### Contract
+
+- New commands: `context --change --task [--max-bytes]`, `workflow migrate --change --to 2`,
+  `cycle start/run/review/close/restart`, and `resume --change`. Their JSON output uses
+  `outputVersion: 1`. A size limit rejects oversized context; it never drops requirements.
+- New changes include `workflow.json`, pinning workflow 2 and schema version 1. `new change`
+  lists it in `created`, and change `status` includes `workflow`. A change without the pin
+  stays on workflow 1; migration validates `execution-plan.json` and preserves task IDs,
+  task files and existing evidence.
+- `execution-plan.json` maps task IDs to cycles, file/symbol scope, requirements through
+  task links, design headings, acceptance criteria, dependencies, commands, test files,
+  material input files, environment names and specialist controls. Existing section
+  dependencies and task file scope must be preserved.
+- Workflow 2 records RED/GREEN against code state, tests, material inputs, runtime and
+  declared environment, with full logs and hashes. RED requires exit 1 and the complete
+  expected assertion line; known launch/compilation errors are refused. The reviewer must
+  still verify the cause. A pure `mode: "move"` cycle is allowed only when every task
+  explicitly declares `(move)`; regression GREEN and independent review remain mandatory.
+- `cycle review` binds an independent report to current GREEN. `cycle close` requires all
+  acceptance criteria and controls, no unresolved critical/important findings, valid
+  snapshots and a current verdict. `verify` adds `summary.unclosedCycles` for workflow 2
+  and reports `cycle-not-closed`; it checks current files against the latest reviewed
+  snapshots and detects changes outside the execution plan.
+- `cycle restart` retains previous attempts and the original review baseline. Added scope
+  needs a proven baseline. Closure saves `continuation.json`; `resume` recomputes state
+  from primary records, including unfinished cycles and open findings.
+- `evidence record` and `evidence red` now save full output under the change's `execution/`
+  directory. New records add `log` and `logHash`; old records remain readable. Output is
+  compact by default and `--stream` restores live output. Evidence checks additionally
+  report `stale-command` and `stale-log` for changed commands and damaged stored logs.
+
+### Other
+
+- Tasks retain their contract and links; journals hold execution history. Executor reports
+  contain the result, changed files, test commands/results, open problems and evidence links.
+- Review receives the cycle's before/after patch, including earlier uncommitted work only
+  as baseline. Snapshot helpers remain available for workflow 1.
+- The nine main `SKILL.md` files are 26% smaller. This measures instruction text, not
+  end-to-end token savings. Workflow-specific guides are read when applicable.
+- Markdown task and requirement readers ignore fenced examples without cutting required
+  content. README files document the new workflow, migration and commands in both languages.
+
 ## 1.6.0 — 2026-09-20
 
 A code file has a length a change may not take it past. Which way a file already over it

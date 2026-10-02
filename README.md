@@ -31,6 +31,43 @@ Then ask the agent for work in the usual words — "add X", "fix Y". The `lexfor
 class of work and the pipeline starts from there; the steps in full are in
 [First run](#first-run).
 
+## What's new in 1.7.0
+
+Agents receive the context of the current behavioural cycle: its tasks, linked requirements,
+decisions, files and test commands. Execution history and full logs stay in separate files.
+
+- `lexforge context --change <name> --task <id> --json` reads the relevant tasks from a
+  monolithic plan or section files. `--max-bytes` refuses an oversized answer without
+  dropping requirements or acceptance criteria.
+- Workflow 2 carries one behavioural result through the test, RED, GREEN and independent
+  review in one cycle. `execution-plan.json` maps the original task IDs beside the plan.
+  `cycle start` captures the baseline; review receives only that cycle's diff.
+- `cycle run` records the command, exit code, full log, test and declared input versions,
+  code state and environment. Evidence can survive an agent handoff when these inputs
+  remain current. Changed material inputs require a new run.
+- `cycle review` binds an independent report to the current GREEN. `cycle close` checks
+  criteria and findings, then saves `continuation.json`. `resume` rebuilds state from
+  primary records. After a requirement change, `cycle restart` preserves earlier attempts
+  and the original review baseline.
+- `evidence record` and `evidence red` save full output to files and return a summary with
+  a log link. `--stream` enables live output. A changed check command or damaged log makes
+  a new stamp stale.
+
+New changes pin workflow 2 and schema version 1 in `workflow.json`. Existing changes without
+that file keep workflow 1. To migrate, prepare `execution-plan.json` and run
+`lexforge workflow migrate --change <name> --to 2`. Tasks, their IDs and existing evidence
+are preserved.
+
+```bash
+npm install -g lexforge@1.7.0
+lexforge init --tools claude,codex  # name the runtimes you use
+lexforge context --change <name> --task <id> --json
+```
+
+[The guide and JSON formats](skills/lexforge-apply/execution-v2.md) cover cycle commands,
+material inputs and review reports. The nine main `SKILL.md` files are 26% shorter.
+End-to-end token savings still need measurement on comparable tasks.
+
 ## What's new in 1.3.0
 
 Agents of different vendors work in one repository, and every skill carries the model it
@@ -193,7 +230,7 @@ but once the branch is merged nothing is left that anyone will read later.
 | OpenSpec: requirements a program can check | `### Requirement:` with `WHEN`/`THEN` scenarios, checked by `validate --strict` |
 | OpenSpec: specs that stay in the repository | the delta is merged on `archive`, the change moves to `lexforge/changes/archive/` |
 | superpowers: the class of work named before design | the `lexforge` skill picks the schema: spike, `bounded`, `spec-driven` |
-| superpowers: TDD and subagent review | `lexforge-apply` runs both inside every task |
+| superpowers: TDD and subagent review | `lexforge-apply` runs tests and independent review for each behavioural cycle |
 | superpowers: no completion claim without fresh output | `evidence record` runs the command and stamps the commit and the tree |
 
 Neither donor had the rest. Placeholder-free plans, requirement coverage and stamp freshness are
@@ -223,8 +260,9 @@ on `blocked` it names what is missing and stops.
     lexforge-plan    ──► tasks.md             check plan → 0
     │
     ▼  isPlanningComplete = true
-IMPLEMENTATION — lexforge-apply, one task at a time
-    failing test ──► implementation ──► subagent review ──► evidence record
+IMPLEMENTATION — lexforge-apply, behavioural cycles (workflow 2)
+    cycle start ──► RED ──► implementation ──► GREEN ──► review ──► cycle close
+    at the wave boundary: evidence record
     task grew past the spec → stop and ask the user
     │
     ▼
@@ -247,13 +285,14 @@ The gates work out the state of the work themselves. `check plan` looks for work
 written down: placeholders, references to a neighbouring task, a delta requirement no task covers,
 a section whose `Depends on:` line is missing, repeated or names nothing readable, a task with no
 group label, two groups of one section naming the same file, and a plan that keeps its sections
-inside `tasks.md` instead of linking a file for each. `evidence red` runs the command of one task
+inside `tasks.md` instead of linking a file for each. In workflow 1, `evidence red` runs the command of one task
 and records the failing run against that task id, and `verify` names every ticked task that writes
 production code without such a record. `evidence
 record` runs the verification command the project declared and stamps it with the exit code, the
 commit and a fingerprint of the tree. `check evidence` compares the stamps against the code on
 disk, so an edit after a run leaves a stamp stale. `verify` collects these checks, but only reads
-stamps: a fresh one has to be taken before it is called.
+stamps: a fresh one has to be taken before it is called. Workflow 2 also checks closed cycles,
+review records and current files against the latest reviewed snapshots.
 
 `verify` and `archive` also read the project's defect ledger, `lexforge/defects.json`: an open
 `critical` or `important` entry recorded against the change blocks both, the same way a stale
@@ -379,7 +418,7 @@ released after your installation works the day it ships.
 The runtime is named by the caller, never guessed:
 `lexforge instructions <artifact> --change <name> --tool codex --json` and
 `lexforge status --change <name> --tool codex --json` answer with the provider and the model
-of that runtime. LexForge reads no environment variable. A call that names no runtime is a
+of that runtime. Runtime selection does not read environment variables. A call that names no runtime is a
 call whose runtime is unknown, and it resolves against the top level of the section. A skill
 running on another model hands the work to a subagent started on the assigned one; a skill
 that cannot reach that model stops and says so.
@@ -420,8 +459,8 @@ to skip an artifact do not open a closed gate.
 
 | Skill | Fires when | Result |
 | --- | --- | --- |
-| `lexforge-apply` | The artifacts are done, implementation is asked for | Tasks closed one at a time: failing test, implementation, subagent review, stamp |
-| `lexforge-verify` | Implementation is finished, before archiving | A report on four dimensions; one `CRITICAL` finding stops archiving |
+| `lexforge-apply` | The artifacts are done, implementation is asked for | Behavioural cycles with RED/GREEN, independent review and evidence; the legacy task loop for workflow 1 |
+| `lexforge-verify` | Implementation is finished, before archiving | Machine checks and review against requirements; open `CRITICAL` and `IMPORTANT` block completion |
 | `lexforge-archive` | The report has no `CRITICAL` findings | The delta in `lexforge/specs/`, the change in the archive, a question about the branch |
 | `lexforge-debug` | A test fails, a build breaks, code behaves unexpectedly | The cause named, a failing test for the bug, one edit at that point |
 
@@ -439,7 +478,7 @@ sections of `lexforge/config.yaml`, from where they reach `lexforge instructions
 | --- | --- |
 | `init` | Sets up the `lexforge/` workspace and installs the skills; `--tools`, `--scope`, `--language` |
 | `doctor` | Checks whether the local installation is healthy |
-| `new change <name>` | Creates the change directory with `.lexforge.yaml`; `--schema` overrides the project default |
+| `new change <name>` | Creates the change directory, `.lexforge.yaml` and `workflow.json`; `--schema` overrides the project default |
 | `status` | Shows the artifact statuses of one change, or lists the active changes |
 | `instructions <artifact> --change <name>` | Serves the template, the context, the rules and the instruction |
 | `validate <change>` | Checks the artifacts and requirements; `--strict` adds completeness checks |
@@ -447,6 +486,14 @@ sections of `lexforge/config.yaml`, from where they reach `lexforge instructions
 | `check evidence --change <name>` | Compares the stamps against the code on disk; `--require` narrows the labels |
 | `evidence record --change <name> --label <label>` | Runs the command of one label and records a stamp |
 | `evidence red --change <name> --task <id> --command <cmd>` | Runs the command of one task and records the failing run |
+| `context --change <name> --task <id>` | Returns current cycle context and source links; `--max-bytes` refuses oversize output without truncation |
+| `workflow migrate --change <name> --to 2` | Validates the cycle map and explicitly migrates to workflow 2 |
+| `cycle start --change <name> --cycle <id> --executor <identity>` | Captures the files before edits |
+| `cycle run --change <name> --cycle <id> --phase red\|green` | Runs the cycle's declared command and records evidence |
+| `cycle review --change <name> --cycle <id> --file <path>` | Registers an independent report against current GREEN |
+| `cycle close --change <name> --cycle <id>` | Checks cycle completion and saves continuation state |
+| `cycle restart --change <name> --cycle <id> --executor <identity>` | Starts a new attempt while retaining history and the original review baseline |
+| `resume --change <name>` | Rebuilds continuation state from primary records |
 | `verify --change <name>` | Checks a change before the work is called finished |
 | `archive <change>` | Merges the delta into the specs and moves the change to the archive |
 | `defect record --change <name>` | Records a defect against a change; `--level`, `--file`, `--line`, `--summary` |
@@ -463,7 +510,8 @@ versions; the JSON field names and the exit codes do not.
 | `1` | The command ran and found a violation: an unmet dependency, a requirement without a scenario, a leftover placeholder |
 | `2` | The command cannot run: an unknown argument, a missing change, no workspace, no git repository |
 
-Code `1` reports a problem in the project, code `2` a wrong call, and there are no other codes.
+Code `1` reports a finding or a rejected run. Code `2` means the call cannot proceed,
+including stale evidence or unmet cycle prerequisites.
 `doctor` has one exception: a missing workspace is a finding for it, so it answers `1`, not `2`.
 
 ## What to commit

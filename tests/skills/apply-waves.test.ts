@@ -195,8 +195,8 @@ describe("раздел 10: параллельные секции в lexforge-app
     const text = reviewerPromptText();
 
     expect(text).toMatch(/\[FILES\]/);
-    expect(text).toMatch(/git diff --stat \[BASE_SHA\]\.\.\[HEAD_SHA\] -- \[FILES\]/);
-    expect(text).toMatch(/git diff \[BASE_SHA\]\.\.\[HEAD_SHA\] -- \[FILES\]/);
+    expect(text).toContain("[CYCLE_PATCH]");
+    expect(text).toContain("[SNAPSHOTS]");
 
     const filesRowIndex = text.indexOf("`[FILES]`");
     expect(filesRowIndex, "строка [FILES] не найдена в таблице").toBeGreaterThan(-1);
@@ -209,24 +209,14 @@ describe("раздел 10: параллельные секции в lexforge-app
     expect(filesRow).not.toMatch(/section names/);
   });
 
-  it("CRITICAL (раунд 4): бриф несёт форму без коммита — WORKTREE — раз исполнитель не коммитит", () => {
+  it("review uses cycle snapshots even when earlier cycles are uncommitted", () => {
     const text = reviewerPromptText();
-    const lower = text.toLowerCase();
-
-    expect(text).toMatch(/`WORKTREE`/);
-    expect(lower).toMatch(/uncommitted work is the normal case under a wave/);
-
-    // Both diff forms are present in the fenced brief - a commit range and a
-    // worktree-only form - so the reviewer is never handed a range with
-    // nothing in it.
-    expect(text).toMatch(/git diff --stat -- \[FILES\]/);
-    expect(text).toMatch(/git diff -- \[FILES\]/);
-
-    for (const phrase of ["can hold a neighbouring section's work"]) {
-      expect(lower, `«${phrase}» неверно описывает диапазон без коммита`).not.toContain(
-        phrase.toLowerCase(),
-      );
-    }
+    expect(text).toContain("including earlier\nuncommitted work");
+    expect(text).toContain("Missing snapshots block review");
+    expect(text).toContain("including\nnew and deleted files");
+    expect(text).not.toContain("git diff -- [FILES]");
+    expect(text).not.toContain("[BASE_SHA]");
+    expect(text).toContain("Full log: [LOG]");
   });
 
   it("IMPORTANT 1 (раунд 5): бриф называет единственного отправителя — сессию, не исполнителя условно", () => {

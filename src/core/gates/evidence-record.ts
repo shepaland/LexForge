@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { runLoggedCommand } from "./logged-command.js";
 import { UsageError } from "../../cli/errors.js";
 import { answerPath, workspacePath } from "../answer-path.js";
 import { assertRepository, readHead } from "../git/repository.js";
@@ -11,7 +12,7 @@ import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { CONFIG_FILE, WORKSPACE_DIR } from "../workspace/paths.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { evidenceFile, putRecord, readLedger, type EvidenceRecord } from "./evidence-store.js";
-import { commandNeverStarted, runLabelCommand } from "./run-command.js";
+import { commandNeverStarted } from "./run-command.js";
 import { labelCommand } from "./verification-labels.js";
 
 export interface RecordEvidenceOptions {
@@ -23,6 +24,7 @@ export interface RecordEvidenceOptions {
   /** Where the output of the run is echoed while it runs. */
   stdout: OutputStream;
   stderr: OutputStream;
+  stream?: boolean;
 }
 
 export interface EvidenceRecordSummary {
@@ -66,12 +68,12 @@ export async function recordEvidence(
   // rather than after minutes of testing that nothing can be written down.
   readLedger(root, options.change);
 
-  const run = await runLabelCommand({
+  const run = await runLoggedCommand(root, options.change, {
     command,
     cwd: root,
     stdout: options.stdout,
     stderr: options.stderr,
-  });
+  }, options.stream);
 
   // A run that never started is not a red run: there is nothing to record, and
   // a stamp saying "exit code 127" would read as a check that failed. The shell
@@ -97,6 +99,8 @@ export async function recordEvidence(
     worktreeDigest: worktreeDigest(root),
     outputTail: run.outputTail,
     outputTruncated: run.outputTruncated,
+    log: run.log,
+    logHash: run.logHash,
   };
 
   putRecord(root, options.change, options.label, record);
@@ -136,6 +140,7 @@ export async function recordEvidence(
   return {
     data,
     lines: [
+      `Full log: ${run.log}`,
       `Check "${options.label}" finished with exit code ${record.exitCode} ` +
         `in ${record.durationMs} ms.`,
     ],

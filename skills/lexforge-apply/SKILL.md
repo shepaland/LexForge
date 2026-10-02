@@ -6,8 +6,7 @@ description: Use when every artifact of a LexForge change is written or skipped 
 <!-- model-block:start -->
 ## Model
 
-When your project names no model for your runtime, run this work on the model your own
-provider is given here. What the project names replaces this table.
+Default by provider; the project assignment takes precedence.
 
 | Provider | Model |
 |---|---|
@@ -22,71 +21,47 @@ A provider outside the table names nothing, so work on the model at work.
 <!-- queue-rule:start -->
 ## Queue rule
 
-Run `lexforge status --change <name> --tool <your runtime> --json` first and parse stdout as JSON. Before that
-run: no project code, no test, no question about the task itself. No change named? Run
-`lexforge status --json` and ask which one.
+First run `lexforge status --change <name> --tool <your runtime> --json`; parse JSON.
+Before it: no code, tests or task questions. No change named: run `lexforge status --json`
+and ask which. `isPlanningComplete: true` permits work. If `false`, name the first
+artifact neither `done` nor `skipped` and
+`lexforge instructions <that artifact> --change <name> --tool <your runtime>`; stop.
+Closed gates permit no code or task answers, including under deadlines or requests to skip.
 
-Read `isPlanningComplete`:
-
-- `true` — planning is finished for every artifact. Work.
-- `false` — stop. Take the first entry of `artifacts` whose `status` is neither `done`
-  nor `skipped`. Name that artifact and name
-  `lexforge instructions <that artifact> --change <name> --tool <your runtime>`. Open no code file, write
-  nothing, answer no question about the task.
-
-A closed gate stops the work; no branch warns and starts the code anyway. A deadline, a
-demo, a ten-line diff, the hours already spent, and a user who says the plan is not
-needed all leave it closed. Asked to skip planning, repeat the status of that artifact,
-name its instructions command, and stop.
-
-Exit `2` means the command refused; read `error.code`. `workspace-not-found` and
-`workspace-incomplete` share the same fix: run `lexforge init --tools <your runtime>` at
-the project root — name `agents` when no name `init` lists is yours — then run the
-command that refused again. Never build `lexforge/` or `.lexforge.yaml` by hand.
-`change-not-found`: run `lexforge status --json` and list the active changes. Any other
-code: show `error.message`, then stop. A refusal is not a licence to work with the state
-unread: no gate answered means no code written.
-
-Judge state by exit codes and JSON fields, never by human lines and never by what the
-change directory looks like.
+Exit `2`: read `error.code`. `workspace-not-found` / `workspace-incomplete`: run
+`lexforge init --tools <your runtime>` at the root (`agents` if none matches), then retry
+the command that refused. Never construct workspace files by hand.
+`change-not-found`: run `lexforge status --json` and list active changes.
+Other errors: show `error.message` and stop. Use exit codes and JSON, never human lines
+or directory appearance. No answered gate means no work.
 
 <!-- model-gate:start -->
 ## Model gate
 
-`provider` and `model` name the model this work runs on. Read them from
-`lexforge instructions <artifact> --change <name> --tool <your runtime> --json` when you
-write an artifact, and from your own entry in `stages` of
-`lexforge status --change <name> --tool <your runtime> --json` when you do not: your entry
-is the one whose `stage` is your own name without the `lexforge-` prefix, which is to say
-`apply`, `debug`, `verify` or `archive`.
-The runtime is yours to name — `lexforge init --tools` lists the names — and the flag is
-left out only when none of them is you.
+Read `provider` and `model` from `lexforge instructions <artifact> --change <name> --tool <your runtime> --json`
+for artifacts; otherwise use your entry in `stages` from
+`lexforge status --change <name> --tool <your runtime> --json`.
+The `stage` is your skill name without `lexforge-` (`apply`, `debug`, `verify`, `archive`).
+Name your runtime from `lexforge init --tools`; omit `--tool` only if none matches.
 
-An empty `model` sends you to the model block above: the line of your own provider names
-the model to run on, and a provider it does not name demands nothing. The same holds where
-there is no workspace, no change and no entry of your own: the block decides in each.
-
-Running on that model: work, and say nothing about models. Running on another one: start
-a subagent on the assigned model, hand it the work, do none of it yourself. Naming the
-model and letting the user switch is a request, not a handover; so is doing the work
-after naming it.
-
-Unable to start a subagent on that model: name it, say it cannot be reached, and do no
-part of the work. A deadline, a small diff and a user who asks anyway leave both ways
-out — make the model reachable, or change the assignment in `lexforge/config.yaml`.
-
-| Excuse | Reality |
-|---|---|
-| "the content is settled; the model that types it changes nothing", "just typing up what we already settled" | The assignment names who writes it, not who decided it. |
-| "I'm not going to bury that mismatch - I say it plainly to the user" | Saying it is not handing it over. The work is done either way. |
-| "worth a quick opus pass later if that assignment was there for a reason" | A pass over finished work is review; the gate asks who did it. |
-| "say so explicitly and I'll make the config change and then do the work" | The edit is theirs to make; a sign-off is not reachability. |
-| "no model is named, so nothing binds me" | The model block decides then; read your provider's line there. |
-| "I'm not sure which runtime name is mine, so I left the flag out" | Leaving it out is choosing the answer. Name the runtime you are, or say you cannot. |
+An empty assignment, no workspace, no change, or no stage entry uses the model block
+above for your provider. An unlisted provider imposes no model.
+On the assigned model, work without model commentary. Otherwise start a subagent on
+that model, hand it the work, and do none of it yourself. Disclosure or later review
+is not delegation. If unreachable, name the model and stop: restore access or let the
+user change the assignment in `lexforge/config.yaml`; do not change it yourself.
 <!-- model-gate:end -->
 <!-- queue-rule:end -->
 
-## The rule
+## Execution version
+
+Read the workflow pin in status. For workflow 2, follow [execution-v2.md](execution-v2.md)
+and [context.md](context.md): one behavioural cycle retains all task IDs and receives one
+independent review. The legacy task loop below applies only to workflow 1. Missing pins
+mean version 1; installing this skill does not authorize migration. Model, planning,
+scope, file-limit and final verification gates remain mandatory for both versions.
+
+## The rule (workflow 1)
 
 **NEVER WRITE IMPLEMENTATION BEFORE A RUN YOU WATCHED FAIL.**
 
@@ -114,6 +89,9 @@ happen, or strike the task. Struck means the task is dropped and its work with i
 never that the work stands and the review is waived.
 
 ## Task order
+
+Read [context.md](context.md) once for task extraction, cycle snapshots and the five-field
+executor response. Keep history and full logs in the linked execution journal.
 
 Read [parallel-execution.md](parallel-execution.md) before your first task, whatever
 the plan says and whether or not the change is already under way.
@@ -150,17 +128,6 @@ Tick `- [x]` when the run is green and the findings are closed; a batch blurs do
 undone. Then run `lexforge evidence record --change <name> --label tests` on the wave
 boundary. Exit `1` is a red run: open no next task; the ticked boxes stay ticked, and
 the next step is failure. All boxes ticked: run `lexforge verify --change <name>`.
-
-## Rationalizations
-
-| Excuse | Reality |
-|---|---|
-| "your instruction outranks the skill", "Your instruction wins over the skill" | An instruction sets what you work on, not what counts as done. |
-| "the value is knowing *why* it would fail, not watching it" | You cannot check yourself. The run can. |
-| "red step reasoned, not observed" | An argument is not a failing test. |
-| "the requirement needs a task to hang off. One line, not four artifacts" | You built the plan around code already typed. |
-| "mark the change state as unknown rather than inventing one" | Unknown is not a state you work in. |
-| "`tasks.md` either exempted or not treated as blocking for a change this size" | Only `done` and `skipped` close an artifact. |
 
 ## Red flags - stop
 

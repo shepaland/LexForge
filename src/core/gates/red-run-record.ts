@@ -1,3 +1,4 @@
+import { runLoggedCommand } from "./logged-command.js";
 import { UsageError } from "../../cli/errors.js";
 import { answerPath } from "../answer-path.js";
 import { assertRepository, readHead } from "../git/repository.js";
@@ -6,7 +7,7 @@ import type { CommandResult, OutputStream } from "../types.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readChangeConfig } from "../workspace/change-config.js";
 import { putRedRun, readRedRuns, type RedRunRecord } from "./red-run-store.js";
-import { commandNeverStarted, runLabelCommand } from "./run-command.js";
+import { commandNeverStarted } from "./run-command.js";
 
 export interface RecordRedRunOptions {
   /** Any directory inside the project; the workspace root is looked up from it. */
@@ -19,6 +20,7 @@ export interface RecordRedRunOptions {
   /** Where the output of the run is echoed while it runs. */
   stdout: OutputStream;
   stderr: OutputStream;
+  stream?: boolean;
 }
 
 export interface RecordRedRunData {
@@ -52,12 +54,12 @@ export async function recordRedRun(
   // rather than after minutes of testing that nothing can be written down.
   readRedRuns(root, options.change);
 
-  const run = await runLabelCommand({
+  const run = await runLoggedCommand(root, options.change, {
     command: options.command,
     cwd: root,
     stdout: options.stdout,
     stderr: options.stderr,
-  });
+  }, options.stream);
 
   // A run that never started is not a red run: there is nothing to record, and
   // a record saying "exit code 127" would read as a test that failed.
@@ -88,6 +90,7 @@ export async function recordRedRun(
         nextStep,
       },
       lines: [
+      `Full log: ${run.log}`,
         `Task ${options.task} ran "${options.command}" and it came back green ` +
           `(exit code 0). No record is written for a run that did not fail: ${nextStep}.`,
       ],
@@ -105,6 +108,8 @@ export async function recordRedRun(
     worktreeDigest: worktreeDigest(root),
     outputTail: run.outputTail,
     outputTruncated: run.outputTruncated,
+    log: run.log,
+    logHash: run.logHash,
   };
 
   putRedRun(root, options.change, options.task, record);
@@ -123,6 +128,7 @@ export async function recordRedRun(
   return {
     data,
     lines: [
+      `Full log: ${run.log}`,
       `Task ${options.task} ran "${options.command}" and finished with exit code ` +
         `${record.exitCode} in ${record.durationMs} ms. The record is written.`,
     ],

@@ -80,6 +80,7 @@ exports[`контракт машинного вывода > status по одно
   "outputVersion",
   "schema",
   "stages",
+  "workflow",
   "workspaceRoot",
 ]
 `;
@@ -233,6 +234,8 @@ exports[`контракт машинного вывода ворот > evidence 
   "durationMs",
   "exitCode",
   "head",
+  "log",
+  "logHash",
   "outputTail",
   "outputTruncated",
   "startedAt",

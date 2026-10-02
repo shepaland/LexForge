@@ -1,4 +1,6 @@
 import path from "node:path";
+import { cycleProblems } from "../execution/context.js";
+import { workflow } from "../execution/plan.js";
 
 import { UsageError } from "../../cli/errors.js";
 import { answerPath, workspacePath } from "../answer-path.js";
@@ -58,6 +60,7 @@ export interface VerifyChangeSummary {
   staleLabels: number;
   openDefects: number;
   unrecordedTasks: number;
+  unclosedCycles?: number;
   filesOverLimit: number;
 }
 
@@ -97,7 +100,10 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
   const changed = changedFiles(root, base);
   const longFilePath = readChangeConfig(root, options.change).longFilePath;
 
+  const workflow2 = workflow(root, options.change).version === 2;
+  const cycleFindings = cycleProblems(root, options.change).map(message => makeFinding(plan.file, 1, "cycle-not-closed", message));
   const findings = [
+    ...cycleFindings,
     ...openTaskFindings(plan),
     ...traceFindings(plan, readDeltaSpecs(root, options.change), changed),
     ...evidenceFindings(root, options.change, labels),
@@ -117,9 +123,13 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
     workspaceRoot: answerPath(root),
     change: options.change,
     findings,
-    dimensions: CHECKED_DIMENSIONS,
+    dimensions: workflow2
+      ? CHECKED_DIMENSIONS.map(dimension => dimension.includes("own red record")
+        ? "every behavioural cycle has valid RED/GREEN (or declared move regression), independent review and current reviewed files"
+        : dimension)
+      : CHECKED_DIMENSIONS,
     notChecked: NOT_CHECKED,
-    summary: summarise(findings),
+    summary: { ...summarise(findings), ...(workflow2 ? { unclosedCycles: cycleFindings.length } : {}) },
     nextStep,
   };
 

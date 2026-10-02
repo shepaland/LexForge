@@ -1,5 +1,11 @@
 # Reviewer brief
 
+For workflow 2, every use of “task” below means the full behavioural cycle with all
+original task IDs and acceptance criteria. Review once after GREEN. Validate declared
+material inputs and the actual RED assertion; ensure authorization, cryptography, tenant
+isolation and migration work receives its required specialist control. Return the JSON
+report described in [execution-v2.md](execution-v2.md), alongside file/line findings.
+
 Fill this in and send it to a general-purpose subagent after every task, before that
 task's own checkbox is marked. The sender is the session that read the plan: an
 executor starts no agent of any kind, so it never sends this brief itself. Where the
@@ -11,19 +17,20 @@ comes from this text: the subagent starts with no history of your session.
 
 | Slot | Where it comes from |
 |---|---|
-| `[TASK]` | the task line from `tasks.md`, word for word, with its `-> capability#requirement` reference |
+| `[TASK]` | the task line from its section file (or legacy `tasks.md`), word for word, with its `-> capability#requirement` reference |
 | `[REQUIREMENTS]` | every requirement named by that reference, copied from the change's delta specs |
 | `[DECISIONS]` | the decisions of `design.md` that touch this task |
-| `[BASE_SHA]` | the commit the task started from |
-| `[HEAD_SHA]` | the current commit, or the literal `WORKTREE` when the work is not committed |
+| `[CYCLE_PATCH]` | patch between this cycle’s before/after snapshots; see [context.md](context.md) |
+| `[SNAPSHOTS]` | paths to the manifest and immutable before/after files |
 | `[FILES]` | the paths this task itself names, one per line |
-| `[COMMAND]` | the command that confirms the task, and the output of its last run |
+| `[COMMAND]` | exact command, exit code and summary of its last run |
+| `[LOG]` | full log path, with relevant error excerpts supplied below |
 | `[PROJECT_RULES]` | `context` and `rules` from `lexforge/config.yaml` |
 
-Uncommitted work is the normal case under a wave: the executor commits nothing, so
-`[HEAD_SHA]` is usually `WORKTREE`, not a second commit. Either way `[FILES]` scopes
-the diff to this task's own paths - not because a wider look at a neighbour's work
-would be unwelcome, but because there is no commit range that could hold it.
+The cycle starts from the actual file contents before its first edit, including earlier
+uncommitted work. `[CYCLE_PATCH]` contains only this cycle's changes to `[FILES]`, including
+new and deleted files. Missing snapshots block review. A path-scoped working-tree diff
+still accumulates earlier cycles touching those paths and is not a cycle patch.
 
 ## What stays out
 
@@ -36,7 +43,7 @@ A reviewer who reads your reasoning grades your reasoning. A reviewer who reads
 "they need this by five" starts weighing a deadline nobody gave them. A reviewer who
 reads the last three reviews learns the tone and starts calling a second finding of the
 same kind a nitpick. If the reviewer asks for the session history, send the
-requirements, the decisions and the commit range again instead.
+requirements, the decisions and the cycle patch and snapshots again instead.
 
 ## The brief
 
@@ -58,25 +65,25 @@ implement. You have no history of the session that produced it and you do not ne
 
 ## The diff
 
-Base: [BASE_SHA]
-Head: [HEAD_SHA]
+Patch: [CYCLE_PATCH]
+Snapshots and manifest: [SNAPSHOTS]
 Files: [FILES]
 
-    Head is a commit:  git diff --stat [BASE_SHA]..[HEAD_SHA] -- [FILES]
-                        git diff [BASE_SHA]..[HEAD_SHA] -- [FILES]
-    Head is WORKTREE:  git diff --stat -- [FILES]
-                        git diff -- [FILES]
-
-Anything else that changed, committed or not, belongs to another task or another
-section of the same wave - out of scope here.
+Read the patch by file and hunk. Resolve line references against the after snapshot;
+use the before snapshot for deletions. The snapshot manifest maps paths to the project.
+Earlier changes in the same file are baseline context, outside this cycle's diff.
+For fix rounds, inspect the fix patch and the resulting full cycle against its original
+baseline. Use snapshot content when the live tree has moved on.
 
 ## How the task was confirmed
 
 Command: [COMMAND]
 
-Output of the last run:
+Exit code, counts and relevant excerpts:
 
 [OUTPUT]
+
+Full log: [LOG]
 
 ## Project rules
 
@@ -91,7 +98,8 @@ revision checked out, use `git worktree add` into a temporary directory.
 Run no test, no build, no script of the change: under a wave a neighbour is writing into
 the same tree, so a run you start yourself measures a state nobody owns, and its failure
 would come back as this task's failure. Read the diff handed to you and the output of the
-run the executor already performed.
+run the executor already performed: its summary and relevant excerpts first; open the
+linked full log only where needed to resolve a question.
 
 Do all of this yourself. Do not dispatch subagents: not to split the diff, not for a
 second opinion. A verdict from an agent you spawned counts for nothing here.

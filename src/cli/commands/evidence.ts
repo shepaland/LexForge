@@ -32,8 +32,9 @@ export function registerEvidence(program: Command, context: CliContext): void {
     .allowExcessArguments(false)
     .requiredOption("--change <name>", "change the stamp belongs to")
     .option("--label <label>", "check label described in the verification section")
+    .option("--stream", "also echo full command output")
     .option("--json", "print one JSON document instead of human output")
-    .action(async (options: { change: string; label?: string; json?: boolean }) => {
+    .action(async (options: { change: string; label?: string; stream?: boolean; json?: boolean }) => {
       const label = options.label ?? missingLabel(context.cwd);
 
       const result = await recordEvidence({
@@ -44,6 +45,7 @@ export function registerEvidence(program: Command, context: CliContext): void {
         // output carries the JSON document alone.
         stdout: options.json ? context.stderr : context.stdout,
         stderr: context.stderr,
+        stream: options.stream,
       });
 
       renderResult(result, {
@@ -65,9 +67,10 @@ export function registerEvidence(program: Command, context: CliContext): void {
     .requiredOption("--change <name>", "change the record belongs to")
     .requiredOption("--task <id>", "task id, as tasks.md writes it")
     .requiredOption("--command <command>", "command to run; its own run is what gets recorded")
+    .option("--stream", "also echo full command output")
     .option("--json", "print one JSON document instead of human output")
     .action(
-      async (options: { change: string; task: string; command: string; json?: boolean }) => {
+      async (options: { change: string; task: string; command: string; stream?: boolean; json?: boolean }) => {
         assertTaskKnown(context.cwd, options.change, options.task);
 
         const result = await recordRedRun({
@@ -79,6 +82,7 @@ export function registerEvidence(program: Command, context: CliContext): void {
           // output carries the JSON document alone.
           stdout: options.json ? context.stderr : context.stdout,
           stderr: context.stderr,
+          stream: options.stream,
         });
 
         renderResult(result, {

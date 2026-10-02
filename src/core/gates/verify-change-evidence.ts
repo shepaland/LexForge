@@ -1,3 +1,6 @@
+import { readProjectConfig } from "../workspace/project-config.js";
+import { hashFile } from "../execution/files.js";
+import { workflow } from "../execution/plan.js";
 import { workspacePath } from "../answer-path.js";
 import { readHead } from "../git/repository.js";
 import { worktreeDigest } from "../git/worktree-digest.js";
@@ -27,7 +30,7 @@ export function evidenceFindings(root: string, change: string, labels: string[])
       file,
       change,
       label,
-      state: labelState(record, current),
+      state: labelState(record, { ...current, command: readProjectConfig(root).verification[label], logValid: !record?.log || hashFile(root, record.log) === record.logHash }),
       record,
       current,
     });
@@ -78,6 +81,7 @@ function namesCheckedFile(task: PlanTask, change: string): boolean {
  * the same as one ticked today.
  */
 export function redRecordFindings(root: string, change: string, plan: PlanTasks): Finding[] {
+  if (workflow(root, change).version === 2) return []; // cycle gate validates RED/GREEN and review together
   const store = readRedRuns(root, change);
 
   return plan.tasks

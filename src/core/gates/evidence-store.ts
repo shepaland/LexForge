@@ -25,6 +25,8 @@ export interface EvidenceRecord {
   /** End of the combined output of the run. */
   outputTail: string;
   outputTruncated: boolean;
+  log?: string;
+  logHash?: string;
 }
 
 /** The whole ledger of a change: one last record per label. */
@@ -43,6 +45,8 @@ const EvidenceRecordSchema = z.object({
   worktreeDigest: z.string(),
   outputTail: z.string(),
   outputTruncated: z.boolean(),
+  log: z.string().optional(),
+  logHash: z.string().optional(),
 });
 
 const EvidenceLedgerSchema = z.object({
@@ -144,6 +148,7 @@ function stableLedger(ledger: EvidenceLedger): EvidenceLedger {
       worktreeDigest: record.worktreeDigest,
       outputTail: record.outputTail,
       outputTruncated: record.outputTruncated,
+      ...(record.log ? { log: record.log, logHash: record.logHash } : {}),
     };
   }
 

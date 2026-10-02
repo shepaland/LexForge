@@ -36,6 +36,7 @@ describe("createChange", () => {
 
     expect(result.exitCode).toBe(0);
     expect(config).toContain("schema: spec-driven");
+    expect(JSON.parse(readFileSync(path.join(root, "lexforge/changes/add-auth/workflow.json"), "utf8"))).toEqual({ version: 2, schema: "spec-driven", schemaVersion: 1 });
     expect(config).not.toContain("skip_");
     expect(result.nextStep).toBe("lexforge instructions proposal --change add-auth");
   });

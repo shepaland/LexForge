@@ -1,4 +1,5 @@
 import os from "node:os";
+import { registerContext } from "./commands/context.js";
 
 import { Command, CommanderError } from "commander";
 
@@ -93,6 +94,7 @@ export function createProgram(context: CliContext): Command {
   registerValidate(program, context);
   registerCheck(program, context);
   registerEvidence(program, context);
+  registerContext(program, context);
   registerDefect(program, context);
   registerVerify(program, context);
   registerArchive(program, context);

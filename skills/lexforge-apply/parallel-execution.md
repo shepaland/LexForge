@@ -1,5 +1,9 @@
 # Parallel execution
 
+For workflow 2 use [execution-v2.md](execution-v2.md): dispatch and review the behavioural
+cycle with all mapped task IDs; RED/GREEN are states within it. The task/section rules
+below describe workflow 1 only. Preserve its plan until migration is explicitly requested.
+
 Read this before your first task of this change, whatever the plan says and whether or
 not the change is already under way. It decides how a wave runs; the task-by-task loop
 in `SKILL.md` still runs inside every dispatched section.
@@ -91,8 +95,8 @@ it: not a further executor, not a reviewer, not any type its runtime offers for
 delegating to itself. It returns to the session, which dispatches the reviewer.
 
 Also handed: the change name; `context` and `rules` from `lexforge/config.yaml`; the
-line limit from `file_limit` and the change's `long_files` path; the section's tasks;
-the requirements and decisions they trace to; and the instruction that it never touches
+line limit from `file_limit` and the change's `long_files` path; the current cycle's tasks;
+only the requirements and decisions they trace to; and the instruction that it never touches
 `tasks.md` itself: for an executor, the loop's last step is not the checkbox but that
 task's own entry in the report it returns.
 
@@ -192,9 +196,10 @@ Before closing a task, run `wc -l` on every covered file it wrote.
 ## The checkbox and the stamp
 
 The executor never edits `tasks.md` (see above). Whether one report covers a whole
-section or one task, it carries, per task: the diff of the files that task names, the
-failing line of the run it watched fail, quoted, the command that confirmed it and its
-last output. The reviewer's verdict is not the executor's to carry: the session starts
+section or one task, use the five-field response in [context.md](context.md). Include
+links to the diff of the files that task names, scoped to the cycle's before/after snapshots;
+the failing line of the run it watched fail, quoted, the command that confirmed it and
+its exit code, counts and relevant errors. Full output stays in linked log files. The reviewer's verdict is not the executor's to carry: the session starts
 the reviewer, and the session reads what it comes back with. A group's executor returns
 one entry per task of its own group and ticks nothing. An entry with no quoted failure
 is not a green entry: send it back, or run that task in this session.

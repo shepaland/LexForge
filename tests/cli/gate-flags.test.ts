@@ -45,7 +45,7 @@ const PLAN = [
 const GATE_FLAGS: Array<[string, string[], string[]]> = [
   ["check plan", ["check", "plan"], ["--change", "--json"]],
   ["check evidence", ["check", "evidence"], ["--change", "--require", "--json"]],
-  ["evidence record", ["evidence", "record"], ["--change", "--label", "--json"]],
+  ["evidence record", ["evidence", "record"], ["--change", "--label", "--json", "--stream"]],
   ["verify", ["verify"], ["--change", "--json"]],
 ];
 

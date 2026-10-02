@@ -1,5 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 
+import { save } from "../execution/files.js";
+import path from "node:path";
 import { answerPath } from "../answer-path.js";
 import { UsageError } from "../../cli/errors.js";
 import { loadSchema } from "../schemas/load-schema.js";
@@ -45,6 +47,8 @@ export function createChange(options: CreateChangeOptions): CommandResult<Create
   mkdirSync(changeDir, { recursive: true });
   writeFileSync(configFile, `schema: ${schemaName}\n`, "utf8");
 
+  save(path.join(changeDir, "workflow.json"), { version: 2, schema: schemaName, schemaVersion: 1 });
+
   const first = schema.artifacts[0]!;
   const nextStep = `lexforge instructions ${first.id} --change ${name}`;
 
@@ -53,7 +57,7 @@ export function createChange(options: CreateChangeOptions): CommandResult<Create
     workspaceRoot: answerPath(root),
     change: name,
     schema: schemaName,
-    created: [answerPath(changeDir), answerPath(configFile)],
+    created: [answerPath(changeDir), answerPath(configFile), answerPath(path.join(changeDir, "workflow.json"))],
     nextStep,
   };
 

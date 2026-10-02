@@ -32,6 +32,7 @@ describe("состав ответа changeStatus", () => {
 
     expect(Object.keys(result.data)).toEqual([
       "outputVersion",
+      "workflow",
       "workspaceRoot",
       "change",
       "schema",

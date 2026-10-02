@@ -30,6 +30,8 @@ export interface RedRunRecord {
   /** End of the combined output of the run. */
   outputTail: string;
   outputTruncated: boolean;
+  log?: string;
+  logHash?: string;
 }
 
 /** The whole store of a change: one last record per task id. */
@@ -48,6 +50,8 @@ const RedRunRecordSchema = z.object({
   worktreeDigest: z.string(),
   outputTail: z.string(),
   outputTruncated: z.boolean(),
+  log: z.string().optional(),
+  logHash: z.string().optional(),
 });
 
 const RedRunStoreSchema = z.object({
@@ -145,6 +149,7 @@ function stableStore(store: RedRunStore): RedRunStore {
       worktreeDigest: record.worktreeDigest,
       outputTail: record.outputTail,
       outputTruncated: record.outputTruncated,
+      ...(record.log ? { log: record.log, logHash: record.logHash } : {}),
     };
   }
 

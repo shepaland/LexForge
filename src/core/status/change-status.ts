@@ -1,3 +1,4 @@
+import { workflow } from "../execution/plan.js";
 import {
   computeChangeState,
   type ArtifactState,
@@ -35,6 +36,7 @@ export interface StatusArtifact extends ArtifactState {
 
 export interface ChangeStatusData {
   outputVersion: 1;
+  workflow: ReturnType<typeof workflow>;
   workspaceRoot: string;
   change: string;
   schema: string;
@@ -87,6 +89,7 @@ export function changeStatus(options: ChangeStatusOptions): CommandResult<Change
 
   const data: ChangeStatusData = {
     outputVersion: 1,
+    workflow: workflow(root, options.change),
     workspaceRoot: answerPath(root),
     change: options.change,
     schema,

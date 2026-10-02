@@ -26,7 +26,7 @@ const ENTRY_HEAD = 3;
  * `lexforge/changes/<name>/evidence.json`, and a digest counting that file
  * would make every run stale the moment it finished.
  */
-export function worktreeDigest(root: string): string {
+export function worktreeDigest(root: string, exclude: string[] = []): string {
   const top = readGit(root, ["rev-parse", "--show-toplevel"]);
   const raw = readGit(root, [
     "status",
@@ -36,6 +36,7 @@ export function worktreeDigest(root: string): string {
     "--",
     ".",
     `:(exclude)${WORKSPACE_DIR}`,
+    ...exclude.map(file => `:(exclude,literal)${file}`),
   ]);
 
   const digest = createHash("sha256");

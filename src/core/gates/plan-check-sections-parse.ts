@@ -1,3 +1,4 @@
+import { fencedLines } from "../markdown-fences.js";
 import { splitTextLines } from "../read-text.js";
 import type { PlanTask } from "./task-list.js";
 
@@ -156,9 +157,11 @@ export function collectSectionFiles(tasks: PlanTask[]): string[] {
  */
 export function parseSections(content: string, tasks: PlanTask[], file: string = ""): PlanSection[] {
   const lines = splitTextLines(content);
+  const fenced = fencedLines(lines);
   const headings: { number: string; line: number }[] = [];
 
   for (let index = 0; index < lines.length; index += 1) {
+    if (fenced.has(index)) continue;
     const match = SECTION_HEADING.exec(lines[index]!);
     if (match) {
       headings.push({ number: match[1]!, line: index + 1 });

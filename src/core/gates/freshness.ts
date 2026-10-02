@@ -14,15 +14,17 @@ const SHORT_COMMIT = 8;
  * - `stale-worktree` — same commit, another working tree;
  * - `missing` — the ledger holds no record of this label.
  *
- * There is no sixth state that fails the check softly: a state that returned
+ * Changed commands or missing/modified full logs are stale as well. A state that returned
  * exit code 0 on a stale stamp is the way around the gate.
  */
-export type LabelState = "fresh" | "failed" | "stale-commit" | "stale-worktree" | "missing";
+export type LabelState = "fresh" | "failed" | "stale-commit" | "stale-worktree" | "stale-command" | "stale-log" | "missing";
 
 /** The state of the code a stamp is compared against. */
 export interface CodeState {
   head: string;
   worktreeDigest: string;
+  command?: string;
+  logValid?: boolean;
 }
 
 /**
@@ -34,6 +36,9 @@ export function labelState(record: EvidenceRecord | undefined, current: CodeStat
   if (!record) {
     return "missing";
   }
+
+  if (current.command !== undefined && record.command !== current.command) return "stale-command";
+  if (current.logValid === false) return "stale-log";
 
   if (record.head !== current.head) {
     return "stale-commit";
@@ -86,6 +91,10 @@ function reason(options: FreshnessFindingOptions): string {
       return "the ledger holds no stamp for it";
     case "failed":
       return `the last run finished with exit code ${record?.exitCode ?? "not 0"}`;
+    case "stale-command":
+      return "the configured command changed since the run";
+    case "stale-log":
+      return "the full log is missing or changed";
     case "stale-commit":
       return (
         `the stamp was taken on commit ${short(record?.head)}, and the working tree ` +

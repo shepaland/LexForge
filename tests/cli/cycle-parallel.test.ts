@@ -1,0 +1,31 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { expect, it } from 'vitest';
+import { writeAt } from '../helpers/git-workspace.js';
+import { dir, cycle, fixture, call, start, review } from '../helpers/execution-workspace.js';
+
+it('allows disjoint cycles to finish without resetting each other’s baselines', async () => {
+  const root = fixture();
+  const second = { ...cycle, id: 'second', tasks: ['2.1'], files: [{path:'src/second.txt',symbols:[]},{path:'tests/second.cjs',symbols:[]}], testFiles:['tests/second.cjs'], command:'node tests/second.cjs', acceptance:[{id:'AC2',task:'2.1',description:'second returns hello'}] };
+  writeAt(root,`${dir}/execution-plan.json`,JSON.stringify({version:1,cycles:[cycle,second]}));
+  writeAt(root,`${dir}/tasks.md`,readFileSync(path.join(root,dir,'tasks.md'),'utf8')+'\n## 2. Independent\n\nDepends on: none\n\n- [ ] 2.1 [B] Write `src/second.txt` and `tests/second.cjs`. Check: `node tests/second.cjs`\n  -> greet#Other\n');
+  writeAt(root,'src/second.txt','old');
+  writeAt(root,'tests/second.cjs',readFileSync(path.join(root,'tests/check.cjs'),'utf8').replace('src/message.txt','src/second.txt'));
+  await start(root);
+  expect((await call(root,['cycle','start','--cycle','second','--executor','second-worker'])).exitCode).toBe(0);
+  expect((await call(root,['cycle','run','--cycle','greeting','--phase','red'])).exitCode).toBe(0);
+  expect((await call(root,['cycle','run','--cycle','second','--phase','red'])).exitCode).toBe(0);
+  writeAt(root,'src/second.txt','hello');
+  expect((await call(root,['cycle','run','--cycle','second','--phase','green'])).exitCode).toBe(0);
+  const args=review(root,{acceptance:['AC2']});args[3]='second';
+  expect((await call(root,args)).exitCode).toBe(0);
+  expect((await call(root,['cycle','close','--cycle','second'])).exitCode).toBe(0);
+  writeAt(root,'src/message.txt','hello');
+  expect((await call(root,['cycle','run','--cycle','greeting','--phase','green'])).exitCode).toBe(0);
+  expect((await call(root,review(root))).exitCode).toBe(0);
+  expect((await call(root,['cycle','close','--cycle','greeting'])).exitCode).toBe(0);
+  const {cycleProblems}=await import('../../src/core/execution/context.js');
+  expect(cycleProblems(root,'demo')).toEqual([]);
+  writeAt(root,'outside.txt','unreviewed');
+  expect(cycleProblems(root,'demo').join(' ')).toContain('outside the execution plan');
+});

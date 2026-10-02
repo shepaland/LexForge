@@ -1,3 +1,4 @@
+import { hashFile } from "../execution/files.js";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
@@ -71,7 +72,7 @@ export function checkEvidence(options: CheckEvidenceOptions): CommandResult<Chec
 
   for (const label of labels) {
     const record = ledger.records[label];
-    const state = labelState(record, current);
+    const state = labelState(record, { ...current, command: config.verification[label], logValid: !record?.log || hashFile(root, record.log) === record.logHash });
 
     reports.push({
       label,

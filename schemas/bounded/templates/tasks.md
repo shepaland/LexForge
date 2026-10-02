@@ -1,3 +1,5 @@
+<!-- Workflow 2: add execution-plan.json mapping every original task ID to one behavioural cycle, with acceptance criteria, scoped sources, test command/files, material inputs/environment, dependencies and specialist controls. Test/RED/GREEN are cycle states. Workflow 1 remains unchanged until explicit migration. -->
+
 <!-- Delete every comment and every angle placeholder before you hand this in. -->
 
 # <change name> - implementation plan
@@ -18,6 +20,10 @@
      - [ ] 1.3 [A] <run the test and watch it fail>
      - [ ] 1.4 [A] <write the implementation>
      - [ ] 1.5 [A] <run the test and watch it pass> -->
+
+<!-- Keep requirements, acceptance checks, scope and links in each task. Put execution
+     history in execution/<cycle>/journal.md and full output in linked log files.
+     Link task -> journal -> evidence; preserve task IDs and evidence records. -->
 
 <!-- A task that carries out a requirement of a delta spec ends with a line
      "-> <capability>#<requirement name>", the name copied from the heading

@@ -11,6 +11,13 @@ The split changes no task's id. `red-runs.json` reads a task by its id alone, ne
 file or line, so a record written before the split still answers for the same task after
 it.
 
+Keep each task's requirement, acceptance checks, file scope and links in its section
+file. Execution history belongs in `execution/<cycle>/journal.md`, linked from the task;
+full command output belongs in log files linked from that journal. The task remains the
+current contract. Preserve task IDs, checkboxes and evidence references when moving
+old history. Executors read only their current task or cycle and its linked requirements
+and decisions; use the apply skill's `scripts/extract-task.mjs` for a legacy monolith.
+
 A plan of nine sections can run to 190 lines and 43,000 characters, about 11,000 tokens for
 one read - an executor that needs one section would pay for all nine.
 
@@ -30,3 +37,13 @@ Write the answer as `long_files: <answer>` in the change's `.lexforge.yaml` befo
 On `refactor`, each long file the plan names gets a task declared `(move)` that splits it,
 coming before every other task that names the same file. On `keep`, a task that would add
 code to a long file names a new file for that code instead.
+
+## Workflow 2 context map
+
+For a change pinned to workflow 2, also write `execution-plan.json` beside `tasks.md`.
+Map all original task IDs to behavioural cycles, preserving requirements, criteria and
+section dependencies. One test/RED/GREEN result is one cycle; phases do not require
+separate agents. Declare file and symbol scope, test command/files, expected assertion,
+material inputs/environment, linked design headings and specialist controls. See
+[the execution guide](../lexforge-apply/execution-v2.md). A version 1 plan needs no sidecar
+until migration is explicitly requested. Never renumber tasks to accommodate the map.

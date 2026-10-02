@@ -1,3 +1,4 @@
+import { fencedLines } from "../markdown-fences.js";
 import { splitTextLines } from "../read-text.js";
 import { readFiles, readNamedFiles } from "./task-files.js";
 
@@ -149,8 +150,10 @@ export interface PlanTasks {
 export function parseTaskList(content: string, file: string = ""): PlanTask[] {
   const tasks: PlanTask[] = [];
   const lines = splitTextLines(content);
+  const fenced = fencedLines(lines);
 
   for (let index = 0; index < lines.length; index += 1) {
+    if (fenced.has(index)) continue;
     const match = TASK_LINE.exec(lines[index]!);
     if (!match) {
       continue;
@@ -175,7 +178,7 @@ export function parseTaskList(content: string, file: string = ""): PlanTask[] {
 
     while (index + 1 < lines.length) {
       const next = lines[index + 1]!;
-      if (!CONTINUATION.test(next) || TASK_LINE.test(next)) {
+      if (!CONTINUATION.test(next) || (!fenced.has(index + 1) && TASK_LINE.test(next))) {
         break;
       }
 
