@@ -6,46 +6,45 @@
 
 **English** · [Русский](README.ru.md)
 
-LexForge is built for repeatable coding-agent quality and lower token use.
-Required checks define completion; task-specific context and saved results reduce repeated
-reading and execution. Nine skills take a change from request to archive.
+LexForge helps coding agents meet the same quality requirements on each run and spend fewer
+tokens repeating work. Agents get context for their task, save check results and resume where
+they left off. Nine skills guide them from the request through tests, review and archive.
 
 ![The agent says the change is done; `lexforge verify` answers exit 1 until the checks have actually been run](https://raw.githubusercontent.com/shepaland/LexForge/main/docs/media/verify.gif)
 
-The agent has written the code and ticked every box. `verify` answers `1`: the ledger holds no
-stamp for either check. `evidence record` runs the command itself and writes the stamp, and only
-then does `verify` answer `0`. That change is kept in [`examples/notes`](examples/notes).
+In this example, the agent has written the code and checked off the tasks, but `verify`
+returns `1` because the checks have not run. `evidence record` runs them and saves the results.
+Then `verify` returns `0`. The example files are in [`examples/notes`](examples/notes).
 
-LexForge is built out of two systems: the artifacts and the machine-checkable shape of requirements
-come from **OpenSpec**, the gates and behavioural rules for the agent from **superpowers**.
+LexForge takes its requirements documents and their workflow from OpenSpec.
+Its testing and review rules come from superpowers.
 
 ## Quick start
 
 ```bash
-npm install -g lexforge       # the skills call the command by this name on PATH
+npm install -g lexforge       # skills need this command on PATH
 lexforge init --tools claude  # agents · claude · codex · cursor · opencode
-lexforge doctor               # six conditions, each named with or without a finding
+lexforge doctor               # check the installation
 ```
 
-Then ask the agent for work in the usual words — "add X", "fix Y". The `lexforge` skill names the
-class of work and the pipeline starts from there; the steps in full are in
-[First run](#first-run).
+Ask the agent to “add X” or “fix Y”. The `lexforge` skill identifies the type of task and
+starts the appropriate workflow. See [First run](#first-run) for setup details.
 
 ## Changes by version
 
-| Version | Repeatable quality | Token use and repeated work |
-| --- | --- | --- |
-| [2.0.0](CHANGELOG.md#200--2026-10-03) | Migration retains completed work only when supported by evidence. | Confirmed tasks are not repeated; remaining evidence gaps get checked separately. |
-| [1.7.0](CHANGELOG.md#170--2026-10-02) | Each cycle requires tests and independent review; resuming checks that results still apply. | Only the current cycle enters context. Full logs and history stay in files; skill instructions are shorter. |
-| [1.6.0](CHANGELOG.md#160--2026-09-20) | File size limits keep the code involved in changes and reviews manageable. | Splitting large files lets agents read the relevant part rather than the entire file. |
-| [1.5.0](CHANGELOG.md#150--2026-09-13) | Failing tests require recorded runs; executors cannot create chains of subagents. | Plans use separate files, large files are read in sections, and agents work within token budgets. |
-| [1.4.0](CHANGELOG.md#140--2026-09-11) | Dependencies and shared files are checked before parallel work; serious defects block completion. | A ledger preserves findings across stages; minor defects can wait without an immediate fix cycle. |
-| [1.3.0](CHANGELOG.md#130--2026-09-05) | Each runtime gets suitable models without mixing assignments between Claude, Codex and other agents. | Skill defaults remove repeated model selection; stage complexity determines the required model tier. |
-| [1.2.0](CHANGELOG.md#120--2026-08-31) | Model assignments specify who handles planning, implementation and review. | Models can be matched to stages to manage cost; this does not itself limit token counts. |
-| [1.1.0](CHANGELOG.md#110--2026-08-30) | Checks read files consistently on Windows, macOS and Linux; launch failures cannot pass as test results. | Correct installation diagnostics eliminate false errors an agent would otherwise have to investigate. |
-| [1.0.0](CHANGELOG.md#100--2026-08-30) | A shared process from requirements to verification sets repeatable conditions for completion. | Requirements, plans and evidence stay in the project for reuse in later stages. |
+| Version | What the update gives you |
+| --- | --- |
+| [2.0.0](CHANGELOG.md#200--2026-10-03) | Moving to the new workflow preserves confirmed work so the agent can finish what remains. Tokens are not spent repeating accepted tasks; missing checks run separately. |
+| [1.7.0](CHANGELOG.md#170--2026-10-02) | Agents read context for the current task group. Logs and history stay in files. Each cycle requires tests and independent review, and another agent can continue from saved results. |
+| [1.6.0](CHANGELOG.md#160--2026-09-20) | Files are limited to 400 lines by default. Smaller files let agents read the relevant code and check an edit without loading a large file in full. |
+| [1.5.0](CHANGELOG.md#150--2026-09-13) | A failing test must actually be run. Executors cannot spawn more agents; they read their part of the plan and work within a token budget. |
+| [1.4.0](CHANGELOG.md#140--2026-09-11) | Independent plan sections run in parallel after dependency and shared-file checks. Review findings are saved; serious issues must be fixed, while minor ones can wait. |
+| [1.3.0](CHANGELOG.md#130--2026-09-05) | Skills provide default models, with project overrides for Claude, Codex and other runtimes. There is no need to repeat setup before each task. |
+| [1.2.0](CHANGELOG.md#120--2026-08-31) | You can choose models for planning, coding and review to control the cost of each stage. Token counts depend on the work itself. |
+| [1.1.0](CHANGELOG.md#110--2026-08-30) | Windows file reading and command lookup are fixed. Line endings no longer cause checks to miss errors, and agents no longer have to investigate false installation warnings. |
+| [1.0.0](CHANGELOG.md#100--2026-08-30) | Requirements, plans and check results stay in the project. Agents use them at each stage; tasks cannot be completed without the required checks. |
 
-Token savings need measurement on equivalent tasks; the table describes how unnecessary work is reduced.
+Total token use has not yet been compared on equivalent tasks.
 
 Update the CLI and skills together, naming the runtimes you use:
 
@@ -54,49 +53,47 @@ npm install -g lexforge@2.0.0
 lexforge init --tools claude,codex
 ```
 
-Existing changes move to workflow 2 separately. Preview what will be preserved and what needs verification:
+Changes already in progress move to workflow 2 separately. First, check which results can be preserved:
 
 ```sh
 lexforge workflow migrate --change <name> --to 2 --dry-run --json
 ```
 
-[Migration steps](skills/lexforge-apply/execution-v2.md#safe-migration-of-existing-work).
-For automation: 2.0.0 changes the `workflow migrate` response; read schema fields from `status.workflow`.
-The [CHANGELOG](CHANGELOG.md) lists compatibility changes and requirements for older plans.
+Follow the [migration instructions](skills/lexforge-apply/execution-v2.md#safe-migration-of-existing-work)
+for the remaining steps. If scripts call the CLI, account for the changed `workflow migrate`
+response in 2.0.0: read schema fields from `status.workflow`. The [CHANGELOG](CHANGELOG.md)
+lists other compatibility changes and requirements for older plans.
 
 ## Supported platforms
 
 | What | Value |
 | --- | --- |
-| Operating system | Linux, macOS and Windows — the suite runs on all three in CI |
+| Operating system | Linux, macOS and Windows; the suite runs on all three in CI |
 | Node.js | 20.19.0 or newer, the version from `engines`; CI covers 20.19 and 22 |
 | Agent runtime | `agents`, `claude`, `codex`, `cursor`, `opencode` |
 | git | a repository with at least one commit; without it `evidence record`, `check evidence`, `verify` and `archive` answer `2`. `lexforge init` needs none |
 
-Windows is a first-class target, not a best effort: a file is read whatever line ending it carries,
-paths come back in answers with `/`, `doctor` looks the command name up through `PATHEXT`, and one
-healthy installation is counted as one.
+Windows supports CRLF line endings and command lookup through `PATHEXT`.
+Paths in responses use `/`. The `lexforge.cmd` wrapper is not counted as a separate installation.
 
 ## What the merge buys you
 
-Each donor solves half the problem and breaks without the other. OpenSpec describes the steps but
-does nothing to stop an agent from walking around them; superpowers keeps the agent disciplined,
-but once the branch is merged nothing is left that anyone will read later.
+LexForge combines OpenSpec documents with the agent workflow rules from superpowers.
+The CLI checks that documents are ready and test results are current before the next stage.
 
 | Taken from | What LexForge does with it |
 | --- | --- |
-| OpenSpec: the order `proposal → specs → design → tasks` | the schema fixes it, `status` shows the queue, a `blocked` artifact is not written |
-| OpenSpec: requirements a program can check | `### Requirement:` with `WHEN`/`THEN` scenarios, checked by `validate --strict` |
-| OpenSpec: specs that stay in the repository | the delta is merged on `archive`, the change moves to `lexforge/changes/archive/` |
-| superpowers: the class of work named before design | the `lexforge` skill picks the schema: spike, `bounded`, `spec-driven` |
-| superpowers: TDD and subagent review | `lexforge-apply` runs tests and independent review for each behavioural cycle |
-| superpowers: no completion claim without fresh output | `evidence record` runs the command and stamps the commit and the tree |
+| OpenSpec: the order `proposal → specs → design → tasks` | the schema sets the order, `status` shows readiness; a `blocked` document cannot be written |
+| OpenSpec: requirements format | `### Requirement:` with `WHEN`/`THEN` scenarios, checked by `validate --strict` |
+| OpenSpec: specifications in the repository | the delta is merged on `archive`, the change moves to `lexforge/changes/archive/` |
+| superpowers: identifying the task type before design | the `lexforge` skill chooses an investigation (spike) or the `bounded` / `spec-driven` schema |
+| superpowers: test-driven development (TDD) and independent review | `lexforge-apply` runs tests and independent review for each behavioural cycle |
+| superpowers: completion backed by check results | `evidence record` runs the command and links the result to the commit and file state |
 
-Neither donor had the rest. Placeholder-free plans, requirement coverage and stamp freshness are
-checked by a command instead of by persuasion, and no command has a flag that turns a rule off. The
-skills share state through `lexforge status --change <name> --json`, so none of them guesses what
-is already done. Two duplications are cut: the design lives only in the change directory, and
-`tasks.md` serves as the plan.
+The CLI also checks plans for placeholders and requirements without tasks, and checks whether
+saved results are stale. These checks have no disable flag. Skills read the current state
+through `lexforge status --change <name> --json`. The design and plan stay in the change
+directory without separate copies for each skill.
 
 ## How it works
 
@@ -137,33 +134,32 @@ behaviour; it works without a LexForge workspace too.
 
 ## Artifacts, gates, archive
 
-Every change lives in `lexforge/changes/<name>/`: `proposal.md`, the delta specs, `design.md` and
-`tasks.md`, in the order the schema fixes.
+Change documents live in `lexforge/changes/<name>/`: the proposal `proposal.md`,
+requirements changes (delta specs), design decisions in `design.md` and the plan `tasks.md`.
+The schema sets their order. Checks between stages are called gates.
 
-The gates work out the state of the work themselves. `check plan` looks for work the plan has not
-written down: placeholders, references to a neighbouring task, a delta requirement no task covers,
-a section whose `Depends on:` line is missing, repeated or names nothing readable, a task with no
-group label, two groups of one section naming the same file, and a plan that keeps its sections
-inside `tasks.md` instead of linking a file for each. In workflow 1, `evidence red` runs the command of one task
-and records the failing run against that task id, and `verify` names every ticked task that writes
-production code without such a record. `evidence
-record` runs the verification command the project declared and stamps it with the exit code, the
-commit and a fingerprint of the tree. `check evidence` compares the stamps against the code on
-disk, so an edit after a run leaves a stamp stale. `verify` collects these checks, but only reads
-stamps: a fresh one has to be taken before it is called. Workflow 2 also checks closed cycles,
-review records and current files against the latest reviewed snapshots.
+`check plan` finds placeholders, references used in place of task descriptions and requirements
+without tasks. It also checks section dependencies, group labels and files shared by groups
+that would run concurrently. Each plan section must have its own file, linked from `tasks.md`.
 
-`verify` and `archive` also read the project's defect ledger, `lexforge/defects.json`: an open
-`critical` or `important` entry recorded against the change blocks both, the same way a stale
-stamp does, and an open `minor` entry never blocks. `lexforge defect record --change <name>
---level <level> --file <path> --line <n> --summary <text>` adds an entry, `lexforge defect close
-<id>` marks one fixed, and `lexforge defect list` reads the ledger back, narrowed by `--change`
-and `--open`. The ledger holds every entry ever recorded, open or closed, and an entry outlives
-the change it was found in.
+In workflow 1, `evidence red` records a failing test run for a task. `verify` reports completed
+tasks that write production code without such a record. `evidence record` runs a project check
+and saves its result, exit code, commit and working-tree fingerprint as a stamp.
+Editing the code makes the stamp stale; `check evidence` detects this.
 
-`archive` merges the delta into `lexforge/specs/<capability>/spec.md` and moves the change
-directory to `lexforge/changes/archive/<date>-<name>/`. The repository keeps the specs of the
-shipped behaviour, plus the whole change with the stamps of its runs.
+`verify` reads saved results, so checks must run first. Workflow 2 also checks cycle closure,
+review reports and current files against the latest reviewed snapshots. A cycle includes a
+failing test (RED), implementation, a passing test (GREEN) and independent review.
+
+An open `critical` or `important` entry in `lexforge/defects.json` blocks `verify` and `archive`.
+A `minor` entry can remain open. `lexforge defect record --change <name> --level <level>
+--file <path> --line <n> --summary <text>` adds an entry, `lexforge defect close <id>` closes it,
+and `lexforge defect list` shows the ledger. Use `--change` and `--open` to filter entries.
+Open and closed defects remain after the change is archived.
+
+`archive` merges requirements changes into `lexforge/specs/<capability>/spec.md` and moves
+the change directory to `lexforge/changes/archive/<date>-<name>/`. The repository retains
+current requirements and the work history with its check results.
 
 ## Installation
 
@@ -174,14 +170,13 @@ which is how the skills call it. A project install pins the version and is calle
 npm install --save-dev lexforge && npx lexforge --version
 ```
 
-The two ways are not equivalent. `doctor` looks for the name `lexforge` on `PATH`: with
-a `devDependencies`-only install it reports `path-not-resolved`, and with both installs at once
-`path-multiple-installs`, because the call reaches a package other than the one answering.
+With only a `devDependencies` install, the command may be unavailable on `PATH`.
+In that case, `doctor` reports `path-not-resolved`. When local and global installs resolve to
+different packages, it reports `path-multiple-installs`.
 
-The skills are installed by `lexforge init --tools <list>`, names separated by commas.
-`--scope project` (the default) puts them in the project, `--scope user` in the home directory, and
-`--language <code>` names the language the project writes its artifacts in. Every runtime keeps its
-skills in its own place:
+`lexforge init --tools <list>` installs skills for the runtimes listed, separated by commas.
+`--scope project` installs them in the project (the default); `--scope user` uses the home
+directory. `--language <code>` sets the document language. Directories depend on the runtime:
 
 | Runtime | Project directory | User directory |
 | --- | --- | --- |
@@ -191,7 +186,7 @@ skills in its own place:
 | `cursor` | `.cursor/skills` | `~/.cursor/skills` |
 | `opencode` | `.opencode/skills` | `~/.config/opencode/skills` |
 
-The name `agents` is the shared directory that several agents read.
+Several agents can read the shared `agents` directory.
 
 ## First run
 
@@ -201,9 +196,9 @@ The name `agents` is the shared directory that several agents read.
 lexforge init --tools claude
 ```
 
-It prints what it created: `lexforge/config.yaml`, `lexforge/specs/`, `lexforge/changes/archive/`
-and nine skill directories. Without `--tools` it installs no skills and lists the runtimes whose
-directories already exist — the choice stays with a human.
+The command creates `lexforge/config.yaml`, `lexforge/specs/`, `lexforge/changes/archive/`
+and nine skill directories. Without `--tools`, it lists detected runtimes and asks you to
+choose which ones to install skills for.
 
 ### 2. Check the installation
 
@@ -221,9 +216,9 @@ OK    Node version
 Next step: installation is healthy. Ask your agent to start work, for example: lexforge new change <name>
 ```
 
-Right after installation it gives two findings and exit code `1`: `init` creates no git repository
-and fills in no `verification` section, and the gates need both. The repository comes from
-`git init` and a first commit; the labels are added to `lexforge/config.yaml`:
+In a new directory, `doctor` reports two findings and returns `1` if there is no git repository
+and no commands in `verification`. Run `git init`, make a first commit and add your check
+commands to `lexforge/config.yaml`:
 
 ```yaml
 verification:
@@ -236,14 +231,11 @@ from the workspace root. From here the commands are called by the agent.
 
 ## Model assignment
 
-The stages of a change reward different models: cutting a proposal is not grinding through
-`tasks.md`. Every skill opens with a model block - the model it wants, one line per
-provider - and reads that line when the project names none - so a repository works from the first run on whichever
-agent opens it. The planning skills and the completion check name the strong model of a
-provider, the implementation and debugging skills the middle one, and archival names none.
+Each skill starts with a model block containing settings per provider. Planning and completion
+checks use a strong model; implementation and debugging use a mid-tier model. Archiving does
+not require a separate model.
 
-What the project says wins. The `models` section of `lexforge/config.yaml` holds one entry
-per runtime, and a stage resolves against the entry of the runtime the call comes from:
+To override these settings, name models for your runtimes in `lexforge/config.yaml`:
 
 ```yaml
 models:
@@ -260,50 +252,41 @@ models:
       - claude-sonnet-5
 ```
 
-An entry decides alone: the top level is not read for a runtime that has one, so two agents
-of different vendors work in one repository without either reaching for the other's model. A
-runtime with no entry takes the top-level `default`, and a project that names neither leaves
-every skill on the model of its own model block.
+The runtime's entry in `models.tools` takes precedence. If absent, the top-level `default`
+applies. With neither present, the skill uses its own model block.
 
-`lexforge init --tools claude,codex` writes an entry for each named runtime that has a vendor
-of its own - `claude` for Anthropic, `codex` for OpenAI - and no `default`. `cursor`,
-`opencode` and `agents` front several vendors, so their models are yours to name.
+`lexforge init --tools claude,codex` adds Anthropic settings for `claude` and OpenAI settings
+for `codex`, without a top-level `default`. Set the provider and model yourself for `cursor`,
+`opencode` and `agents`.
 
-The catalogue `providers` is seeded from the list that ships with the version installed, and
-it is yours from then on: add a provider or a model name by editing the file, and it counts as
-known to this project without waiting for a release. Nothing is checked against it, so a model
-released after your installation works the day it ships.
+The installed package seeds the `providers` catalogue. You can edit it. Model names are not
+validated against it, so you can specify a new name without updating LexForge.
 
-The runtime is named by the caller, never guessed:
-`lexforge instructions <artifact> --change <name> --tool codex --json` and
-`lexforge status --change <name> --tool codex --json` answer with the provider and the model
-of that runtime. Runtime selection does not read environment variables. A call that names no runtime is a
-call whose runtime is unknown, and it resolves against the top level of the section. A skill
-running on another model hands the work to a subagent started on the assigned one; a skill
-that cannot reach that model stops and says so.
+Pass the runtime explicitly through `--tool`, for example
+`lexforge instructions <artifact> --change <name> --tool codex --json` or
+`lexforge status --change <name> --tool codex --json`.
+Without `--tool`, the command uses the top level of `models`; runtime selection does not read
+environment variables. If the current model differs from the assigned one, the skill hands
+work to a subagent on that model. If it cannot start that model, it stops and explains why.
 
 ### A project installed before this version
 
-Nothing changes until you ask for it. `lexforge init` leaves an existing `config.yaml`
-untouched, the missing `models` section included, and a project without the section gets an
-empty assignment: no command refuses, and every skill stays on the model of its own block. A
-key left over from the roles this release removed is ignored, and no command refuses because
-of it. Switching the section on is one edit - paste the block above into
-`lexforge/config.yaml` and fill in the names you use.
+`lexforge init` preserves an existing `config.yaml`. Without `models`, skills use their own
+settings. Old role keys are ignored. To assign models, add the block above to
+`lexforge/config.yaml` and replace the names.
 
 ### The handover in each runtime
 
-The gate names no runtime, because the same nine skills install into five of them. Whether a
-skill can start a subagent on a named model is the runtime's own business.
+Starting a subagent on another model depends on the runtime. All five runtimes use the same skills.
 
 | Runtime | Model selection for a subagent |
 |---|---|
-| `claude` | Confirmed: a subagent is started on a named model, and the handover works as described. |
-| `agents`, `codex`, `cursor`, `opencode` | Not confirmed here. Until a run shows otherwise, leave that runtime without an entry in the `models` section: its agents then stay on the model their skills name, and no handover is asked for. |
+| `claude` | Starting a subagent on the assigned model has been tested. |
+| `agents`, `codex`, `cursor`, `opencode` | Handover has not been tested in this project. Until verified, leave the runtime without an entry in `models` and use the model specified by the skill. |
 
 ## The nine skills
 
-The agent picks a skill by the `description` line in its `SKILL.md`. Planning is carried by five.
+The agent picks a skill by the `description` field in `SKILL.md`. Five skills handle planning.
 
 | Skill | Fires when | Result |
 | --- | --- | --- |
@@ -313,8 +296,7 @@ The agent picks a skill by the `description` line in its `SKILL.md`. Planning is
 | `lexforge-design` | Decisions are asked for, on the `spec-driven` schema | `design.md`, agreed one section at a time |
 | `lexforge-plan` | A plan is asked for, or `validate` finds a defect in it | `tasks.md`, each task naming a file and a verification command |
 
-There is no "warn and write the file anyway" branch: a deadline, the size of the edit and a request
-to skip an artifact do not open a closed gate.
+Skills wait until required documents are ready before starting implementation.
 
 | Skill | Fires when | Result |
 | --- | --- | --- |
@@ -323,13 +305,12 @@ to skip an artifact do not open a closed gate.
 | `lexforge-archive` | The report has no `CRITICAL` findings | The delta in `lexforge/specs/`, the change in the archive, a question about the branch |
 | `lexforge-debug` | A test fails, a build breaks, code behaves unexpectedly | The cause named, a failing test for the bug, one edit at that point |
 
-The implementation skills read `isPlanningComplete`: while a single artifact is neither written nor
-skipped, work does not start. `lexforge-debug` carries no such block, because a bug also happens
-where there is no LexForge workspace.
+Implementation skills check `isPlanningComplete`. Work starts once each document is prepared
+or explicitly skipped. `lexforge-debug` also works without a LexForge workspace.
 
-An edit to an installed skill does not survive: `doctor` compares the file byte for byte with what
-the package ships, and the next `init` restores it. Project rules go into the `context` and `rules`
-sections of `lexforge/config.yaml`, from where they reach `lexforge instructions`.
+Do not edit installed skills to configure a project. `doctor` detects differences from the
+package, and the next `init` overwrites the file. Put project rules in `context` and `rules`
+in `lexforge/config.yaml`; agents receive them through `lexforge instructions`.
 
 ## Commands and exit codes
 
@@ -341,7 +322,7 @@ sections of `lexforge/config.yaml`, from where they reach `lexforge instructions
 | `status` | Shows the artifact statuses of one change, or lists the active changes |
 | `instructions <artifact> --change <name>` | Serves the template, the context, the rules and the instruction |
 | `validate <change>` | Checks the artifacts and requirements; `--strict` adds completeness checks |
-| `check plan --change <name>` | Looks for work the plan has not written down |
+| `check plan --change <name>` | Checks plan completeness, dependencies and task groups |
 | `check evidence --change <name>` | Compares the stamps against the code on disk; `--require` narrows the labels |
 | `evidence record --change <name> --label <label>` | Runs the command of one label and records a stamp |
 | `evidence red --change <name> --task <id> --command <cmd>` | Runs the command of one task and records the failing run |
@@ -359,9 +340,8 @@ sections of `lexforge/config.yaml`, from where they reach `lexforge instructions
 | `defect close <id>` | Marks a recorded defect as fixed |
 | `defect list` | Lists recorded defects; `--change` and `--open` narrow the list |
 
-Every command accepts `--json`: a single JSON document goes to standard output and nothing else,
-the lines for humans go to standard error. The wording of the human output changes between
-versions; the JSON field names and the exit codes do not.
+With `--json`, commands write one JSON document to standard output and human messages to
+standard error. Changes to JSON fields and exit codes are listed in the [CHANGELOG](CHANGELOG.md).
 
 | Code | When |
 | --- | --- |
@@ -389,38 +369,36 @@ a merge conflict on it.
 
 ## Line limit
 
-Every source and test file a change touches keeps to a line count: 400 lines by default, `wc -l`
-counting, a file at exactly 400 within it. The set of files covered is `file_limit.include` in
-`lexforge/config.yaml` — 24 source and test extensions out of the box (`**/*.ts`, `**/*.py`,
-`**/*.vue`, and so on); a project's own `include` replaces that list rather than adding to it.
-Markdown, JSON, YAML and lock files sit outside it by default. Generated or vendored code is left
-out with a negated pattern in `include`, for example `!src/generated/**`. Both the count and the
-covered set change with `file_limit.lines` and `file_limit.include` in `lexforge/config.yaml`.
+The default limit is 400 lines, set by `file_limit.lines` in `lexforge/config.yaml`.
+Lines are counted as in `wc -l`; exactly 400 is allowed. `file_limit.include` selects the
+files to check. Its defaults cover 24 source and test extensions, including `**/*.ts`,
+`**/*.py` and `**/*.vue`. A project's list replaces the defaults. Markdown, JSON, YAML and
+lock files are excluded by default. Use a pattern such as `!src/generated/**` to exclude
+generated or vendored code.
 
-Before `lexforge-plan` writes `tasks.md`, it counts the files the tasks will name and shows every
-one over the limit. It asks one question about each: `refactor` it back under the limit, or `keep`
-it as is. The answer goes into the change's `.lexforge.yaml` as `long_files: refactor` or
-`long_files: keep`.
+Before writing `tasks.md`, `lexforge-plan` counts lines in the files its tasks will touch.
+For files over the limit, the user chooses `refactor` (split the file) or `keep` (retain it
+without further growth). The choice is stored in the change's `.lexforge.yaml` as
+`long_files: refactor` or `long_files: keep`.
 
-`lexforge check plan` refuses a plan that names a long file with no `long_files` answer on record.
-On `refactor`, it also refuses a plan whose first task naming that file is not marked `(move)` — the
-split has to come before the rest of the work on that file.
+`lexforge check plan` rejects a plan that names a long file without a `long_files` setting.
+For `refactor`, the first task for that file must be marked `(move)`, so code is moved before
+other edits.
 
-`lexforge verify` checks every covered file the change touched against the rule its path recorded:
-on `refactor` every touched file ends within the limit; on `keep` a file that was within the limit
-still ends within it, and a file already over it gains no line. A new file ends within the limit
-on either path.
+`lexforge verify` checks touched files. With `refactor`, they must fit the limit. With `keep`,
+a file already over the limit must not grow; other files must stay within the limit.
+New files must fit the limit in both cases.
 
 ## Limits
 
-`check plan` looks for placeholders with regular expressions, so a phrase like "add error handling"
-in the author's own words will not match. The set grows as findings come in.
+`check plan` finds placeholders with regular expressions and may miss a vague task phrased
+differently. Rules are extended as cases are found.
 
-A stamp is tied to the commit and a fingerprint of the working tree. An edit after a run leaves it
-stale, but the reverse does not hold: a stamp does not say the coverage is sufficient.
+A stamp is tied to a commit and working-tree fingerprint. Edits require another run.
+The stamp itself does not establish that tests cover all the required behaviour.
 
-Whether the implementation follows `design.md` is not computed by a machine. If the agent departs
-from the design, only the `lexforge-verify` skill will catch it — that is, the same agent.
+An agent using `lexforge-verify` assesses whether code follows `design.md`.
+The CLI does not check the meaning of those decisions.
 
 ## License
 
