@@ -1,3 +1,5 @@
+import { migrationFreshness } from "./migration-freshness.js";
+import { effectiveCompletion } from "./effective-completion.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { readDefectLedger } from "../defects/store.js";
 import { changeBase } from "../git/change-base.js";
@@ -46,6 +48,7 @@ export function context(
     acceptance: [],
     controls: [],
   };
+  const completion = pin.version === 2 ? effectiveCompletion(root, change, cycles) : undefined;
   const content = sources(root, change, c);
   const s = selected ? readState(root, change, c.id) : undefined;
   const valid = [];
@@ -76,6 +79,12 @@ export function context(
     workflow: pin,
     cycle: selected?.id ?? null,
     tasks: content.tasks,
+    ...(completion ? {
+      completed_tasks: c.tasks.filter(id => completion.completed.includes(id)),
+      open_tasks: c.tasks.filter(id => completion.open.includes(id)),
+      task_origins: Object.fromEntries(c.tasks.filter(id => completion.origins[id]).map(id => [id, completion.origins[id]])),
+      migration_details: completion.details,
+    } : {}),
     requirements: content.requirements,
     requirement_ids: content.requirements.map((r) => r.id),
     design_decisions: content.design,
@@ -137,21 +146,19 @@ export function continuation(root: string, change: string, persist = false) {
   const cycles = executionPlan(root, change, pin.version === 2);
   const tasks = taskSource(root, change).tasks;
   const states = cycles.map((c) => ({ c, s: readState(root, change, c.id) }));
-  const closed = states.filter(
-    ({ c, s }) => s && historicalValid(root, change, c, s),
-  );
-  const completed = closed.flatMap(({ c }) => c.tasks);
-  const next = states.find(
-    ({ c }) =>
-      !closed.some((x) => x.c.id === c.id) &&
-      c.dependsOn.every((id) => closed.some((x) => x.c.id === id)),
-  );
+  const completion = effectiveCompletion(root, change, cycles);
+  const completed = completion.completed;
+  const next = states.find(({ c }) =>
+    !completion.cycles.find(x => x.id === c.id)!.complete &&
+    c.dependsOn.every(id => completion.cycles.find(x => x.id === id)?.complete));
   const result = {
     outputVersion: 1,
     change,
     workflow: pin,
     current_revision: codeState(root),
     completed_tasks: completed,
+    task_origins: completion.origins,
+    migration_details: completion.details,
     valid_evidence: states.flatMap(({ c, s }) =>
       s && currentGreen(root, change, c, s)
         ? [{ cycle: c.id, log: s.runs.at(-1)!.log }]
@@ -169,7 +176,7 @@ export function continuation(root: string, change: string, persist = false) {
     next_step: next
       ? {
           cycle: next.c.id,
-          tasks: next.c.tasks,
+          tasks: next.c.tasks.filter(id => completion.open.includes(id)),
           dependencies: next.c.dependsOn,
           phase: next.s?.runs.at(-1)?.phase ?? "not-started",
         }
@@ -189,6 +196,16 @@ export function cycleProblems(root: string, change: string): string[] {
   if (workflow(root, change).version !== 2) return [];
   try {
     const cycles = executionPlan(root, change, true);
+    const completion = effectiveCompletion(root, change, cycles);
+    if (completion.ledger) {
+      return [...migrationFreshness(root, change, cycles, completion.ledger),
+        ...completion.open.map(id => {
+          const task = completion.ledger!.tasks.find(t => t.id === id);
+          return `Migration task ${id}: ${task?.classification ?? "incomplete"}; ${task?.gaps[0]?.minimumAction ?? "complete native execution and review"}`;
+        }),
+        ...completion.cycles.filter(c => !c.complete).map(c => `Cycle ${c.id} is partially complete or open: ${c.open.join(", ")}`),
+      ];
+    }
     const issues: string[] = [];
     checkFinalScope(root, change, cycles);
     const closed = cycles

@@ -1,3 +1,7 @@
+import { migrationFreshness } from "../execution/migration-freshness.js";
+import { executionPlan } from "../execution/plan.js";
+import { effectiveCompletion } from "../execution/effective-completion.js";
+import { readMigrationState } from "../execution/migration-state.js";
 import path from "node:path";
 import { cycleProblems } from "../execution/context.js";
 import { workflow } from "../execution/plan.js";
@@ -62,6 +66,7 @@ export interface VerifyChangeSummary {
   unrecordedTasks: number;
   unclosedCycles?: number;
   filesOverLimit: number;
+  migration?: {confirmed:number;open:number;freshnessFindings:number};
 }
 
 export interface VerifyChangeData {
@@ -101,6 +106,16 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
   const longFilePath = readChangeConfig(root, options.change).longFilePath;
 
   const workflow2 = workflow(root, options.change).version === 2;
+  let migrationSummary;
+  if (workflow2) {
+    try {
+      if (readMigrationState(root, options.change)) {
+        const completion = effectiveCompletion(root, options.change);
+        for (const task of plan.tasks) task.done = completion.completed.includes(task.number);
+        migrationSummary = {confirmed: completion.completed.length, open: completion.open.length, freshnessFindings: migrationFreshness(root, options.change, executionPlan(root, options.change, true), completion.ledger!).length};
+      }
+    } catch { /* cycleProblems reports corrupt migration state as a gate finding */ }
+  }
   const cycleFindings = cycleProblems(root, options.change).map(message => makeFinding(plan.file, 1, "cycle-not-closed", message));
   const findings = [
     ...cycleFindings,
@@ -129,7 +144,7 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
         : dimension)
       : CHECKED_DIMENSIONS,
     notChecked: NOT_CHECKED,
-    summary: { ...summarise(findings), ...(workflow2 ? { unclosedCycles: cycleFindings.length } : {}) },
+    summary: { ...summarise(findings), ...(migrationSummary ? {migration:migrationSummary} : {}), ...(workflow2 ? { unclosedCycles: cycleFindings.length } : {}) },
     nextStep,
   };
 

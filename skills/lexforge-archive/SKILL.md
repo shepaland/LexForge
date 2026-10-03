@@ -48,8 +48,6 @@ user change the assignment in `lexforge/config.yaml`; do not change it yourself.
 
 **NEVER ARCHIVE WITHOUT A VERIFICATION REPORT IN FRONT OF YOU.**
 
-Violating the letter of this rule is violating its spirit.
-
 The report is the one `lexforge-verify` writes: requirements against behaviour, plan
 against work done, `design.md` decisions against implementation, zero findings above
 MINOR. No report here? Name `lexforge-verify` next and stop. CRITICAL or IMPORTANT open?
@@ -119,3 +117,5 @@ direct request, confirmed separately.
 - A file under `lexforge/specs/` edited by hand while a conflict is open.
 - A branch merged, pushed or deleted before the user answered.
 - An exit code named instead of read.
+
+Migration: [authorization, preview, reconciliation, freshness](../lexforge-apply/execution-v2.md#safe-migration-of-existing-work).

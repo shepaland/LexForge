@@ -275,3 +275,15 @@ describe("коды возврата команды doctor", () => {
     expect(exitCode).toBe(2);
   });
 });
+
+it('migration preview returns actionable compact JSON through the CLI', async () => {
+  const { migrationFixture, callMigration } = await import('../helpers/migration-workspace.js');
+  const w = migrationFixture([{id:'1.1',checked:true}]);
+  try {
+    const answer = await callMigration(w.root,['workflow','migrate','--to','2','--dry-run']);
+    expect(answer.exitCode).toBe(0);
+    expect(answer.data).toMatchObject({outputVersion:1,mode:'dry-run',applied:false,summary:{tasks:1,needsVerification:1}});
+    expect(answer.data.gaps[0]).toMatchObject({code:expect.any(String),minimumAction:expect.any(String),details:expect.stringContaining('--dry-run')});
+    expect(JSON.stringify(answer.data)).not.toContain('Implement behavior');
+  } finally {w.remove();}
+});

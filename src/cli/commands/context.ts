@@ -5,7 +5,10 @@ import {
   context as taskContext,
   continuation,
 } from "../../core/execution/context.js";
-import { migrate } from "../../core/execution/plan.js";
+import { reconcile, reconcileReview } from "../../core/execution/reconciliation.js";
+import { applyMigration } from "../../core/execution/migration-apply.js";
+import { migrationPreview } from "../../core/execution/migration-analysis-output.js";
+import { refuse } from "../../core/execution/files.js";
 import {
   startCycle,
   runCycle,
@@ -68,9 +71,38 @@ export function registerContext(program: Command, ctx: CliContext): void {
   refuseWithoutSubcommand(flow);
   common(flow.command("migrate"))
     .requiredOption("--to <version>", "target workflow version")
-    .action((o) =>
-      locked(o, () => output(migrate(root(), o.change, o.to), o.json)),
-    );
+    .option("--dry-run", "analyze migration without changing files")
+    .option("--task <id>", "show one task decision")
+    .option("--class <classification>", "show decisions in one class")
+    .action(async (o) => {
+      if (o.to !== "2") refuse("Only explicit migration to workflow 2 is supported");
+      if (o.dryRun) {
+        const preview = migrationPreview(root(), o.change, {
+          task: o.task,
+          classification: o.class,
+        });
+        const blocked =
+          ("blockers" in preview && Array.isArray(preview.blockers) && preview.blockers.length > 0) ||
+          ("findings" in preview && preview.findings.length > 0) ||
+          ("task" in preview && preview.task?.classification === "conflict") ||
+          ("tasks" in preview && preview.tasks.some(task => task.classification === "conflict"));
+        output(preview, o.json, blocked ? 1 : 0);
+        return;
+      }
+      if (o.task || o.class) refuse("--task and --class require --dry-run");
+      return output(await applyMigration(root(), o.change), o.json);
+    });
+  common(flow.command("reconcile"))
+    .requiredOption("--cycle <id>", "cycle containing checked existing work")
+    .requiredOption("--executor <identity>", "check executor identity")
+    .action(o => locked(o, async () => {
+      const result = await reconcile(root(), o.change, o.cycle, o.executor);
+      output(result, o.json, result.accepted ? 0 : 1);
+    }));
+  common(flow.command("reconcile-review"))
+    .requiredOption("--cycle <id>", "reconciled cycle")
+    .requiredOption("--file <path>", "independent reconciliation review JSON")
+    .action(o => locked(o, () => output(reconcileReview(root(), o.change, o.cycle, o.file), o.json)));
   const group = program
     .command("cycle")
     .description("Execute and review one behavioural cycle");

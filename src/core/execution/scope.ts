@@ -1,3 +1,9 @@
+import { readMigrationState } from "./migration-state.js";
+import {
+  reconciliations,
+  reconciliationApproved,
+  reconciliationProof,
+} from "./reconciliation.js";
 import { existsSync } from "node:fs";
 import { z } from "zod";
 import { worktreeDigest } from "../git/worktree-digest.js";
@@ -29,20 +35,22 @@ export function checkStartScope(
   const file = local(root, `${changeDir(change)}/execution/baseline.json`);
   const paths = plannedFiles(all);
   const outsideDigest = worktreeDigest(root, paths);
+  const migration = readMigrationState(root, change);
   const baseline = existsSync(file)
     ? baselineSchema.parse(json(file))
-    : { files: hashes(root, paths), outsideDigest };
+    : migration
+      ? {
+          files: Object.fromEntries(
+            migration.sourceHashes
+              .filter((s) => s.kind === "code")
+              .map((s) => [s.path, s.hash]),
+          ),
+          outsideDigest: migration.outsideDigest,
+        }
+      : { files: hashes(root, paths), outsideDigest };
   if (baseline.outsideDigest !== outsideDigest)
     refuse("Unaccounted changes outside the execution plan");
-  const expected = { ...baseline.files };
-  const completed = all
-    .flatMap((c) => {
-      const state = readState(root, change, c.id);
-      return state && historicalValid(root, change, c, state) ? [state] : [];
-    })
-    .sort((a, b) => a.closedAt!.localeCompare(b.closedAt!));
-  for (const state of completed)
-    Object.assign(expected, state.runs.at(-1)!.snapshotHashes);
+  const expected = accountedFiles(root, change, all, baseline.files);
   const previous = restart ? readState(root, change, cycle.id) : undefined;
   const current = hashes(
     root,
@@ -50,6 +58,13 @@ export function checkStartScope(
   );
   for (const [name, hash] of Object.entries(current)) {
     const existingScope = previous?.beforeHashes[name] !== undefined;
+    if (
+      migration &&
+      !existingScope &&
+      expected[name] === undefined &&
+      hash !== "<missing>"
+    )
+      refuse(`No proven migration baseline for added scope: ${name}`);
     if (
       restart &&
       !existingScope &&
@@ -86,6 +101,7 @@ export function checkRunScope(
     refuse("Files outside the execution plan changed");
   const file = local(root, `${changeDir(change)}/execution/baseline.json`);
   const baseline = baselineSchema.parse(json(file));
+  const expected = accountedFiles(root, change, all, baseline.files);
   for (const other of all) {
     if (other.id === cycle.id) continue;
     const state = readState(root, change, other.id);
@@ -94,7 +110,7 @@ export function checkRunScope(
       .map((file) => file.path)
       .filter((file) => !cycle.files.some((own) => own.path === file));
     const current = hashes(root, paths);
-    if (paths.some((path) => current[path] !== baseline.files[path]))
+    if (paths.some((path) => current[path] !== expected[path]))
       refuse(`Unstarted cycle files changed: ${other.id}`);
   }
 }
@@ -109,4 +125,33 @@ export function checkFinalScope(
   const baseline = baselineSchema.parse(json(file));
   if (worktreeDigest(root, plannedFiles(cycles)) !== baseline.outsideDigest)
     refuse("Unreviewed changes outside the execution plan");
+}
+
+/** Replay accepted snapshots over the immutable migration or native baseline. */
+function accountedFiles(
+  root: string,
+  change: string,
+  all: Cycle[],
+  baseline: Record<string, string>,
+) {
+  const snapshots: { time: string; files: Record<string, string> }[] = [];
+  for (const c of all) {
+    const state = readState(root, change, c.id);
+    if (state && historicalValid(root, change, c, state))
+      snapshots.push({
+        time: state.closedAt!,
+        files: state.runs.at(-1)!.snapshotHashes,
+      });
+    if (readMigrationState(root, change))
+      for (const { record } of reconciliations(root, change, c))
+        if (reconciliationApproved(record) && reconciliationProof(root, record))
+          snapshots.push({
+            time: record.review!.reviewedAt,
+            files: record.snapshotHashes,
+          });
+  }
+  const expected = { ...baseline };
+  for (const snapshot of snapshots.sort((a, b) => a.time.localeCompare(b.time)))
+    Object.assign(expected, snapshot.files);
+  return expected;
 }

@@ -31,6 +31,38 @@ Then ask the agent for work in the usual words — "add X", "fix Y". The `lexfor
 class of work and the pipeline starts from there; the steps in full are in
 [First run](#first-run).
 
+## What's new in 2.0.0
+
+Safe migration preserves trustworthy completed tasks when moving an existing change from
+workflow 1 to workflow 2. Start with a read-only report:
+
+```sh
+lexforge workflow migrate --change <name> --to 2 --dry-run --json
+```
+
+- The report distinguishes confirmed history, evidence gaps, incomplete tasks and conflicts.
+  `--task` and `--class` open details without loading the full plan or logs.
+- `workflow reconcile` and `workflow reconcile-review` record current checks and independent
+  approval for existing work. They preserve provenance without inventing a historical RED.
+- Apply repeats analysis under a lock and installs the ledger before switching the workflow
+  pin. Interrupted prepared state can recover; identical reruns make no changes.
+- `resume` skips confirmed work. Mixed cycles keep all context and run only open tasks.
+  Later edits can stale current proof while preserving the historical completion record.
+- Verify and archive reject unresolved gaps, conflicts, damaged evidence and stale coverage.
+
+**Breaking CLI change:** migration apply now returns a migration report instead of the pin
+object. Read schema fields from `status.workflow`. Conflicting migrations are refused.
+See [the changelog](CHANGELOG.md#200--2026-10-03) for the complete contract changes and
+[the migration guide](skills/lexforge-apply/execution-v2.md#safe-migration-of-existing-work)
+for reconciliation and recovery commands.
+
+```bash
+npm install -g lexforge@2.0.0
+lexforge init --tools claude,codex
+```
+
+Package and skill updates do not authorize migration of existing changes.
+
 ## What's new in 1.7.0
 
 Agents receive the context of the current behavioural cycle: its tasks, linked requirements,
@@ -54,9 +86,27 @@ decisions, files and test commands. Execution history and full logs stay in sepa
   a new stamp stale.
 
 New changes pin workflow 2 and schema version 1 in `workflow.json`. Existing changes without
-that file keep workflow 1. To migrate, prepare `execution-plan.json` and run
-`lexforge workflow migrate --change <name> --to 2`. Tasks, their IDs and existing evidence
-are preserved.
+that file keep workflow 1. Installing or updating the package does not authorize migration.
+Prepare `execution-plan.json` and inspect the read-only preview:
+
+```sh
+lexforge workflow migrate --change <name> --to 2 --dry-run --json
+```
+
+The compact report counts confirmed, uncertain, incomplete and conflicting tasks. Filter
+with `--task <id>` or `--class needs-verification`. Historical confirmation requires
+linked checks, code state and independent acceptance review; a checkbox or global stamp
+alone is insufficient. `workflow reconcile` runs current checks and
+`workflow reconcile-review` records independent approval with origin `reconciled`, without
+inventing RED. Failed, stale or incomplete attempts remain unconfirmed.
+
+After authorization, apply repeats analysis under the execution lock, writes the durable
+ledger before the workflow pin and refuses changed or conflicting inputs. Rerun to recover
+a matching prepared ledger after interruption; preserve unexplained edits for inspection.
+An identical rerun is a no-op. `resume` skips confirmed tasks and exposes their origins.
+Mixed cycles retain all context and acceptance criteria while only open IDs are executed.
+Later edits preserve history but require fresh current proof for verify and archive.
+See [the migration procedure and review format](skills/lexforge-apply/execution-v2.md#safe-migration-of-existing-work).
 
 ```bash
 npm install -g lexforge@1.7.0
@@ -487,7 +537,7 @@ sections of `lexforge/config.yaml`, from where they reach `lexforge instructions
 | `evidence record --change <name> --label <label>` | Runs the command of one label and records a stamp |
 | `evidence red --change <name> --task <id> --command <cmd>` | Runs the command of one task and records the failing run |
 | `context --change <name> --task <id>` | Returns current cycle context and source links; `--max-bytes` refuses oversize output without truncation |
-| `workflow migrate --change <name> --to 2` | Validates the cycle map and explicitly migrates to workflow 2 |
+| `workflow migrate --change <name> --to 2` | Previews with `--dry-run`; applies a recoverable migration after authorization |
 | `cycle start --change <name> --cycle <id> --executor <identity>` | Captures the files before edits |
 | `cycle run --change <name> --cycle <id> --phase red\|green` | Runs the cycle's declared command and records evidence |
 | `cycle review --change <name> --cycle <id> --file <path>` | Registers an independent report against current GREEN |

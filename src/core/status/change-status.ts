@@ -1,3 +1,5 @@
+import { effectiveCompletion } from "../execution/effective-completion.js";
+import { readMigrationState } from "../execution/migration-state.js";
 import { workflow } from "../execution/plan.js";
 import {
   computeChangeState,
@@ -35,6 +37,7 @@ export interface StatusArtifact extends ArtifactState {
 }
 
 export interface ChangeStatusData {
+  completion?: { completed: string[]; open: string[]; origins: Record<string, string>; details: string | null };
   outputVersion: 1;
   workflow: ReturnType<typeof workflow>;
   workspaceRoot: string;
@@ -87,7 +90,10 @@ export function changeStatus(options: ChangeStatusOptions): CommandResult<Change
 
   const nextStep = nextStepForChange(options.change, state);
 
+  const completion = workflow(root, options.change).version === 2 && readMigrationState(root, options.change)
+    ? effectiveCompletion(root, options.change) : undefined;
   const data: ChangeStatusData = {
+    ...(completion ? { completion: {completed: completion.completed, open: completion.open, origins: completion.origins, details: completion.details} } : {}),
     outputVersion: 1,
     workflow: workflow(root, options.change),
     workspaceRoot: answerPath(root),
@@ -134,6 +140,7 @@ function renderLines(data: ChangeStatusData): string[] {
     lines.push("Planning is complete: every artifact is written or skipped.");
   }
 
+  if (data.completion) lines.push(`Completion: ${data.completion.completed.length} confirmed, ${data.completion.open.length} open; history: ${data.completion.details}`);
   return lines;
 }
 

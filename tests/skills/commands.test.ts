@@ -36,6 +36,8 @@ describe("список команд читается из программы CLI
       "migrate",
       "new",
       "plan",
+      "reconcile",
+      "reconcile-review",
       "record",
       "record",
       "red",

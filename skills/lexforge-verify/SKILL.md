@@ -57,8 +57,6 @@ user change the assignment in `lexforge/config.yaml`; do not change it yourself.
 
 **NO VERDICT WITHOUT A RUN IN THE MESSAGE THAT CARRIES IT.**
 
-Violating the letter of this rule is violating its spirit.
-
 ## The machine half
 
 Run `lexforge verify --change <name> --json` and read the exit code.
@@ -134,3 +132,5 @@ and a stored verdict rots on the next edit. An unfixed finding goes to
 - A level lowered while the code stayed the same.
 
 Go back to the skipped section.
+
+Migration: [authorization, preview, reconciliation, freshness](../lexforge-apply/execution-v2.md#safe-migration-of-existing-work).

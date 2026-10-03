@@ -65,6 +65,7 @@ export function workflow(root: string, change: string) {
       version: z.union([z.literal(1), z.literal(2)]),
       schema: z.string(),
       schemaVersion: z.literal(1),
+      migration: z.string().optional(),
     })
     .strict()
     .safeParse(json(file));
@@ -221,14 +222,6 @@ export function executionPlan(
   if (required && tasks.some((t) => !assigned.has(t.number)))
     refuse("Every task must map to one cycle");
   return cycles;
-}
-export function migrate(root: string, change: string, to: string) {
-  if (to !== "2") refuse("Only explicit migration to workflow 2 is supported");
-  const old = workflow(root, change);
-  executionPlan(root, change, true);
-  const next = { ...old, version: 2 };
-  save(local(root, `${changeDir(change)}/workflow.json`), next);
-  return next;
 }
 export interface Snippet {
   path: string;

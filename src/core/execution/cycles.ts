@@ -1,3 +1,4 @@
+import { effectiveCompletion } from "./effective-completion.js";
 import { randomUUID } from "node:crypto";
 import { checkStartScope, checkRunScope } from "./scope.js";
 import { readChangeState } from "../status/change-status.js";
@@ -76,10 +77,11 @@ export function startCycle(
   if (previous && !restart) refuse("Cycle already started; resume its state");
   if (restart && !previous) refuse("Nothing to restart");
   const all = executionPlan(root, change, true);
+  const completion = effectiveCompletion(root, change, all);
+  if (completion.cycles.find(x => x.id === id)?.complete && !previous)
+    refuse("Cycle tasks are already complete; inspect migration history or plan follow-up work");
   for (const dep of c.dependsOn) {
-    const d = all.find((x) => x.id === dep)!;
-    const s = readState(root, change, dep);
-    if (!s || !historicalValid(root, change, d, s))
+    if (!completion.cycles.find(x => x.id === dep)?.complete)
       refuse(`Dependency not closed with valid proof: ${dep}`);
   }
   for (const other of all) {

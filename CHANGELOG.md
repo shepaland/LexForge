@@ -17,6 +17,51 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 2.0.0 — 2026-10-03
+
+Existing workflow 1 changes can migrate without losing trustworthy completed work.
+Historical completion and current verification are tracked separately.
+
+### Contract
+
+- Breaking: `workflow migrate --change --to 2` returns a compact migration envelope
+  instead of the workflow pin object. It includes `outputVersion`, `version`, `change`,
+  `mode`, `applied`, `sourceWorkflow`, `targetWorkflow`, `inputDigest`, `summary`,
+  `completedWrites`, `ledger` and `nextStep`; the old top-level `schema` and
+  `schemaVersion` fields are no longer returned. Read the pin through `status.workflow`.
+- Apply refuses conflicting or damaged evidence and invalid mappings. Checked boxes and
+  a global check stamp alone do not confirm tasks. Existing callers must inspect the
+  read-only `--dry-run` report before applying; `--task` and `--class` filter details.
+  Filtered and unfiltered previews return exit 1 for reported blockers.
+- New commands: `workflow reconcile --change --cycle --executor` and
+  `workflow reconcile-review --change --cycle --file`. They record current checks and
+  independent acceptance review with origin `reconciled`, without fabricated RED.
+- Migrated pins include a ledger integrity reference. `migration.json` preserves source
+  hashes, original evidence, decisions and provenance. Missing or modified referenced
+  evidence blocks continuation and final gates.
+- Status adds migration completion details. Context and resume expose completed/open task
+  IDs, origins and ledger links. Fully confirmed predecessors satisfy dependencies;
+  mixed cycles execute only their open tasks while retaining all acceptance context.
+- Verify reports migration gaps and stale current coverage separately from historical
+  completion, with migration counters in its summary. Archive requires the same gates
+  and preserves the migration ledger.
+
+### Other
+
+- Apply reanalyzes under the execution lock, guards revision, worktree, configuration,
+  task sources and targets, installs the durable ledger, and commits the workflow pin last.
+  Matching prepared state recovers on rerun; identical applied state is a no-op.
+- Reconciliation reviews append immutable records, including when the check preceded
+  migration. Resolved legacy conflicts remain in the audit history.
+- The first native cycle uses the migrated baseline and accepted later snapshots, so
+  unreviewed edits cannot be absorbed as pre-existing work.
+- English and Russian guides cover preview, trust policy, reconciliation, recovery,
+  mixed cycles and installation boundaries. Updating the package does not authorize
+  migration of existing changes.
+
+Upgrade the CLI with `npm install -g lexforge@2.0.0`, then refresh installed skills with
+`lexforge init --tools <list>`. Preview each explicitly authorized migration separately.
+
 ## 1.7.0 — 2026-10-02
 
 Task context is scoped to one behavioural cycle. Full logs and execution history stay in

@@ -3,8 +3,7 @@
 Read the workflow pin from `lexforge status --change <name> --tool <runtime> --json`.
 A change without a pin is workflow 1: retain its agreed plan and legacy gates. Never
 migrate it merely because a newer skill is installed. An explicitly requested migration
-uses `lexforge workflow migrate --change <name> --to 2`; it validates the sidecar and
-preserves tasks and old evidence. New changes pin workflow 2 and schema version 1.
+starts with the read-only preview below. New changes pin workflow 2 and schema version 1.
 
 ## Context and unit of work
 
@@ -150,3 +149,83 @@ For requested changes use `"verdict": "changes-requested"` and findings with `id
 `level` (`critical`, `important`, `minor`), `message` including a file/line reference,
 and `resolved`. Approval must name every acceptance ID and required control. These are
 claims to verify through the linked review, tests and sources, not substitutes for them.
+
+## Safe migration of existing work
+
+Installing or updating LexForge does not authorize migration. Keep an unpinned change
+on workflow 1 until the user requests its migration. First create the explicit cycle map
+without rewriting original tasks, then preview the whole change:
+
+```sh
+lexforge workflow migrate --change <name> --to 2 --dry-run --json
+```
+
+Read counts, blockers and minimum actions. Use `--task <id>` or `--class
+needs-verification` with `--dry-run` for detail; the default report contains bounded
+summaries, not full task bodies or logs. Checked boxes and global GREEN stamps alone
+cannot confirm a task. Historical confirmation needs exact task/acceptance links, code
+state, successful checks with intact logs, and an independent approving review with
+identity, provenance and acceptance coverage. Conflicting or damaged evidence blocks apply.
+
+For checked existing work missing trustworthy proof, run the mapped current check:
+
+```sh
+lexforge workflow reconcile --change <name> --cycle <id> --executor <identity> --json
+```
+
+It saves an actual attempt, full log and source snapshot. Obtain an independent review
+of the existing implementation against all covered acceptance criteria, then register it:
+
+```sh
+lexforge workflow reconcile-review --change <name> --cycle <id> --file <report.json> --json
+```
+
+The report has this separate format; copy the real `attempt` returned by the check:
+
+```json
+{
+  "version": 1,
+  "origin": "reconciled",
+  "attempt": "<actual-attempt-id>",
+  "reviewer": "independent-reviewer",
+  "executor": "<identity>",
+  "verdict": "approved",
+  "tasks": ["1.1"],
+  "acceptance": ["AC-1.1"]
+}
+```
+
+Use the actual covered task and criterion IDs. Reconciliation has no RED phase and is
+never backdated. Failed checks, rejected/incomplete reviews, executor self-review and
+changed code or inputs leave the task unconfirmed. Attempts remain available. Review adds an immutable record, so a check started before
+apply can be reviewed afterwards. A current approval can resolve contradictory legacy
+evidence; the original conflict remains recorded as `resolvedConflicts`. Obtain
+real independent judgment; declared identities alone cannot prove independence.
+
+Repeat preview. If the user already authorized this migration, proceed after resolving
+blockers; otherwise obtain authorization for this specific preview before apply:
+
+```sh
+lexforge workflow migrate --change <name> --to 2 --json
+lexforge resume --change <name> --json
+```
+
+Apply reanalyzes under `execution.lock`, guards input and target hashes, durably installs
+`migration.json`, then atomically pins workflow 2 last. A matching prepared ledger after
+interruption can be completed by rerunning apply. Unexplained target or temporary-file
+edits are recovery conflicts: preserve them and inspect; never delete audit history to
+force migration. Identical reruns return `already-applied` without writes. A native
+workflow 2 change returns `native` and receives no migration ledger.
+
+`resume` reports historical, reconciled and native task origins. A fully confirmed cycle
+satisfies dependencies without invented native closure. In a mixed cycle, pass all source
+and acceptance context to the executor but assign only `open_tasks`; the remaining work
+still needs native execution and independent review. Never reopen confirmed work just to
+manufacture RED. Evidence gaps for checked work can be reconciled before or after apply.
+
+Historical completion remains recorded when code, inputs, commands, mappings or criteria
+change. Current coverage becomes stale separately. Run the named current check; changed
+contracts require current reconciliation/review. `verify` and `archive` require complete
+and current proof, intact migration evidence and accounted file scope. Archive checks
+before writes and moves the unchanged ledger with the change. Existing whole-project
+verification and human review remain required.
