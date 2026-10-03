@@ -78,6 +78,7 @@ describe("checkForCliUpdate", () => {
 
     const outcome = await updateCheck!.checkForCliUpdate({
       currentVersion: "2.0.0",
+      platform: "linux",
       fetchLatestVersion: async () => "2.0.1",
       choose: async () => "update",
       install,
