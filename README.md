@@ -6,9 +6,9 @@
 
 **English** · [Русский](README.ru.md)
 
-A spec-driven pipeline for coding agents, with gates the agent cannot skip. Nine skills carry
-a change from the request to the archived spec, and `lexforge verify` answers with an exit code
-whether the work is done: a completion claim with no fresh command output behind it does not pass.
+LexForge is built for repeatable coding-agent quality and lower token use.
+Required checks define completion; task-specific context and saved results reduce repeated
+reading and execution. Nine skills take a change from request to archive.
 
 ![The agent says the change is done; `lexforge verify` answers exit 1 until the checks have actually been run](https://raw.githubusercontent.com/shepaland/LexForge/main/docs/media/verify.gif)
 
@@ -33,17 +33,19 @@ class of work and the pipeline starts from there; the steps in full are in
 
 ## Changes by version
 
-| Version | What changed and why it helps |
-| --- | --- |
-| [2.0.0](CHANGELOG.md#200--2026-10-03) | Moving to workflow 2 preserves confirmed results so the agent continues open tasks. Evidence gaps get separate checks, avoiding a full repeat of completed work. |
-| [1.7.0](CHANGELOG.md#170--2026-10-02) | Agents receive context for the current task group; tests, reviews and history stay in files. Work can pass to another agent and resume with checks that prior results still apply. |
-| [1.6.0](CHANGELOG.md#160--2026-09-20) | File length limits keep code from growing unchecked. For existing large files, you choose up front: split them or keep them without further growth. |
-| [1.5.0](CHANGELOG.md#150--2026-09-13) | The CLI runs and records the failing test itself, so an agent's claim cannot replace evidence. Plans use separate files and independent groups for controlled parallel execution. |
-| [1.4.0](CHANGELOG.md#140--2026-09-11) | Independent plan sections run in parallel. Review findings stay in a ledger: serious issues block completion; minor ones can be fixed later. |
-| [1.3.0](CHANGELOG.md#130--2026-09-05) | Claude, Codex and other runtimes can use their own models in one project. Skills provide model defaults to reduce setup. |
-| [1.2.0](CHANGELOG.md#120--2026-08-31) | Models can be assigned to stages, letting you choose a suitable model for planning, implementation and review. |
-| [1.1.0](CHANGELOG.md#110--2026-08-30) | Windows fixes make checks read files and find commands correctly. A command that cannot start is no longer recorded as a test result. |
-| [1.0.0](CHANGELOG.md#100--2026-08-30) | Nine skills take a task from request to archive. The CLI checks requirements, the plan and command results before work can be marked complete. |
+| Version | Repeatable quality | Token use and repeated work |
+| --- | --- | --- |
+| [2.0.0](CHANGELOG.md#200--2026-10-03) | Migration retains completed work only when supported by evidence. | Confirmed tasks are not repeated; remaining evidence gaps get checked separately. |
+| [1.7.0](CHANGELOG.md#170--2026-10-02) | Each cycle requires tests and independent review; resuming checks that results still apply. | Only the current cycle enters context. Full logs and history stay in files; skill instructions are shorter. |
+| [1.6.0](CHANGELOG.md#160--2026-09-20) | File size limits keep the code involved in changes and reviews manageable. | Splitting large files lets agents read the relevant part rather than the entire file. |
+| [1.5.0](CHANGELOG.md#150--2026-09-13) | Failing tests require recorded runs; executors cannot create chains of subagents. | Plans use separate files, large files are read in sections, and agents work within token budgets. |
+| [1.4.0](CHANGELOG.md#140--2026-09-11) | Dependencies and shared files are checked before parallel work; serious defects block completion. | A ledger preserves findings across stages; minor defects can wait without an immediate fix cycle. |
+| [1.3.0](CHANGELOG.md#130--2026-09-05) | Each runtime gets suitable models without mixing assignments between Claude, Codex and other agents. | Skill defaults remove repeated model selection; stage complexity determines the required model tier. |
+| [1.2.0](CHANGELOG.md#120--2026-08-31) | Model assignments specify who handles planning, implementation and review. | Models can be matched to stages to manage cost; this does not itself limit token counts. |
+| [1.1.0](CHANGELOG.md#110--2026-08-30) | Checks read files consistently on Windows, macOS and Linux; launch failures cannot pass as test results. | Correct installation diagnostics eliminate false errors an agent would otherwise have to investigate. |
+| [1.0.0](CHANGELOG.md#100--2026-08-30) | A shared process from requirements to verification sets repeatable conditions for completion. | Requirements, plans and evidence stay in the project for reuse in later stages. |
+
+Token savings need measurement on equivalent tasks; the table describes how unnecessary work is reduced.
 
 Update the CLI and skills together, naming the runtimes you use:
 
