@@ -1,6 +1,6 @@
 import { fencedLines } from "../markdown-fences.js";
 import { splitTextLines } from "../read-text.js";
-import { readFiles, readNamedFiles } from "./task-files.js";
+import { type FileDeclarationProblem, readTaskFileScope } from "./task-files.js";
 
 /**
  * A checkbox line of `tasks.md`: the mark, an optional number, a run of zero
@@ -117,6 +117,8 @@ export interface PlanTask {
    * run, not by which of them happens to write it in plain prose too.
    */
   namedFiles: string[];
+  /** Problems in an explicit Files declaration; presence suppresses legacy inference. */
+  fileDeclarationProblems: FileDeclarationProblem[];
   /**
    * File the task's own line lives in: the plan's own artifact file for a
    * plan written whole, or the linked file `readPlanSource` resolved the
@@ -186,6 +188,7 @@ export function parseTaskList(content: string, file: string = ""): PlanTask[] {
       index += 1;
     }
 
+    const fileScope = readTaskFileScope(own);
     tasks.push({
       number: match[3] ?? "",
       groups,
@@ -196,8 +199,9 @@ export function parseTaskList(content: string, file: string = ""): PlanTask[] {
       firstLine: own[0]!,
       cleanText: join(own.map((part) => part.replace(REQUIREMENT_LINK, "").trim())),
       links: own.flatMap(readLink),
-      files: readFiles(own),
-      namedFiles: readNamedFiles(own),
+      files: fileScope.files,
+      namedFiles: fileScope.namedFiles,
+      fileDeclarationProblems: fileScope.fileDeclarationProblems,
       file,
     });
   }

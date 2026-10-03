@@ -31,6 +31,47 @@ function isPathShaped(token: string): boolean {
   return token.includes("/") || EXTENSION.test(token);
 }
 
+/** A path shape that can safely name a file below the workspace root on every host OS. */
+export function isCanonicalTaskFile(value: string): boolean {
+  if (value === "" || value.startsWith("/") || value.includes("\\") || value.includes(":")) {
+    return false;
+  }
+
+  return value.split("/").every((segment) => segment !== "" && segment !== "." && segment !== "..");
+}
+
+export interface FileDeclarationProblem {
+  kind: "repeated" | "malformed" | "unsafe";
+  value?: string;
+}
+
+export interface TaskFileScope {
+  files: string[];
+  namedFiles: string[];
+  fileDeclarationProblems: FileDeclarationProblem[];
+}
+
+const FILES_LINE = /^Files:/;
+const FILES_DECLARATION = /^Files:\s*(`[^`]+`(?:\s*,\s*`[^`]+`)*)\s*$/;
+
+function declarations(lines: string[]): { present: boolean; values: string[]; problems: FileDeclarationProblem[] } {
+  const declarations = lines.map((line) => line.trim()).filter((line) => FILES_LINE.test(line));
+  if (declarations.length === 0) return { present: false, values: [], problems: [] };
+  if (declarations.length > 1) {
+    return { present: true, values: [], problems: [{ kind: "repeated" }] };
+  }
+
+  const match = FILES_DECLARATION.exec(declarations[0]!);
+  if (!match) return { present: true, values: [], problems: [{ kind: "malformed" }] };
+
+  const values = [...match[1]!.matchAll(INLINE_CODE)].map((item) => item[1]!.trim());
+  const unsafe = values.find((value) => !isCanonicalTaskFile(value));
+  if (unsafe !== undefined) {
+    return { present: true, values: [], problems: [{ kind: "unsafe", value: unsafe }] };
+  }
+  return { present: true, values: [...new Set(values)], problems: [] };
+}
+
 /**
  * The only programs `readNamedFiles` trusts to run a script handed to them
  * as their very next token. The list is short and closed on purpose: `node`,
@@ -96,6 +137,8 @@ function unwrapCommandQuotes(tokens: string[]): string[] {
  * is deliberately narrower than `namedFiles` below.
  */
 export function readFiles(lines: string[]): string[] {
+  const declaration = declarations(lines);
+  if (declaration.present) return declaration.values;
   const files: string[] = [];
 
   for (const span of inlineCodeSpans(lines)) {
@@ -103,7 +146,7 @@ export function readFiles(lines: string[]): string[] {
       continue;
     }
 
-    if (isPathShaped(span)) {
+    if (isPathShaped(span) && isCanonicalTaskFile(span)) {
       files.push(span);
     }
   }
@@ -138,11 +181,13 @@ export function readFiles(lines: string[]): string[] {
  * bare span.
  */
 export function readNamedFiles(lines: string[]): string[] {
+  const declaration = declarations(lines);
+  const spans = declaration.present ? checkCommandSpans(lines) : inlineCodeSpans(lines);
   const files: string[] = [];
 
-  for (const span of inlineCodeSpans(lines)) {
+  for (const span of spans) {
     if (!/\s/.test(span)) {
-      if (isPathShaped(span)) {
+      if (isPathShaped(span) && isCanonicalTaskFile(span)) {
         files.push(span);
       }
       continue;
@@ -156,11 +201,29 @@ export function readNamedFiles(lines: string[]): string[] {
     const operands = dropsInterpreterScript ? tokens.slice(2) : tokens.slice(1);
 
     for (const token of operands) {
-      if (isPathShaped(token)) {
+      if (isPathShaped(token) && isCanonicalTaskFile(token)) {
         files.push(token);
       }
     }
   }
 
-  return [...new Set(files)];
+  return [...new Set([...declaration.values, ...files])];
+}
+
+/** Reads writable scope, all named files and declaration diagnostics under one contract. */
+export function readTaskFileScope(lines: string[]): TaskFileScope {
+  const declaration = declarations(lines);
+  return {
+    files: readFiles(lines),
+    namedFiles: readNamedFiles(lines),
+    fileDeclarationProblems: declaration.problems,
+  };
+}
+
+/** The command span immediately following each Check: marker, excluding later prose spans. */
+function checkCommandSpans(lines: string[]): string[] {
+  return lines.flatMap((line) => {
+    const match = /Check:\s*`([^`]+)`/.exec(line);
+    return match ? [match[1]!.trim()] : [];
+  });
 }

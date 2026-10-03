@@ -68,8 +68,6 @@ user change the assignment in `lexforge/config.yaml`; do not change it yourself.
 
 **NEVER WRITE A TASK YOU CANNOT CARRY OUT FROM ITS OWN TEXT.**
 
-Violating the letter of this rule is violating its spirit.
-
 `TODO`, `TBD`, "clarify with the user", "the same way as task 3", "add error handling",
 "cover it with tests" - one defect under six names: the question is moved into the plan
 instead of answered before it. The engineer reads one task, not the conversation. A
@@ -80,6 +78,8 @@ step you do not understand is a question for the user, asked now.
 - `tasks.md` itself holds no task: see [plan-file-per-section.md](plan-file-per-section.md).
 - Numbered sections; tasks `- [ ] 1.1`, one action each.
 - Every task names the touched file and the confirming command.
+- File scope: see [plan-file-per-section.md](plan-file-per-section.md). Example:
+  ``Files: `src/http/routes.ts` ``.
 - Every requirement of the delta specs is closed by at least one task ending a line with
   `-> <capability>#<requirement name>`, the name copied word for word from its
   `### Requirement:` heading. A typo there leaves the requirement unplanned.

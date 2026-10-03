@@ -17,6 +17,36 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 2.2.0 — 2026-10-03
+
+Task plans can distinguish repository files from routes and external paths without
+rewriting descriptive text or breaking existing plans.
+
+### Contract
+
+- Tasks accept an optional `Files:` continuation line with comma-separated backtick
+  paths, for example ``Files: `src/http/routes.ts`, `tests/http/routes.test.ts` ``.
+  It defines exact writable scope instead of inferring it from task prose.
+- `check plan` reports `task-file-declaration` for repeated, empty, malformed or unsafe
+  declarations. Paths must be canonical and relative to the workspace root; an invalid
+  explicit declaration never falls back to inferred scope.
+- Without `Files:`, legacy inference remains available but ignores absolute paths, URLs,
+  traversal, backslashes, colons and noncanonical segments. Relative route names can still
+  be ambiguous: use `Files:` to separate them from repository files.
+
+### Other
+
+- Valid `Check:` file operands still participate in shared-file and long-file checks
+  without enlarging explicit writable scope. Execution-cycle path validation stays strict.
+- The planning skill documents `Files:`, root-relative paths and the prohibition on
+  resolving abbreviated names through filesystem search. Both README tables are updated.
+- Parser, plan diagnostics and execution-boundary regressions cover POSIX and Windows paths.
+
+After installing this version, refresh the planning skill with `lexforge init --tools <list>`.
+The GitHub release includes `lexforge-2.2.0.tgz`, installable with
+`npm install -g ./lexforge-2.2.0.tgz`. The updater continues to follow npm's `latest` tag;
+a GitHub release alone does not publish the version to npm.
+
 ## 2.1.0 — 2026-10-03
 
 Interactive CLI runs check npm for a newer version before executing the requested command.

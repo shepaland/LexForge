@@ -14,6 +14,7 @@ import {
 } from "./plan-check-groups.js";
 import { checkIdentifiers } from "./identifier-rules.js";
 import { checkLongFiles } from "./plan-check-long-files.js";
+import { checkTaskFileDeclarations } from "./plan-check-task-files.js";
 import { checkPlaceholders } from "./placeholder-rules.js";
 import { checkSectionDependencies, type PlanSection } from "./plan-check-sections.js";
 import { readPlanSource } from "./plan-source.js";
@@ -43,6 +44,7 @@ const SECTION_RULES = [
   "task-missing-group-label",
   "section-group-coverage-mismatch",
   "section-group-shared-file",
+  "task-file-declaration",
 ];
 
 export interface CheckPlanOptions {
@@ -114,6 +116,7 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
     ...checkTaskGroupLabels(plan),
     ...checkGroupCoverage(sections),
     ...checkGroupSharedFiles(sections),
+    ...checkTaskFileDeclarations(plan),
     ...checkLongFiles(root, plan, config.sizeLimit, longFilePath),
   ].sort((left, right) => left.line - right.line);
 
@@ -189,4 +192,3 @@ function renderLines(data: CheckPlanData): string[] {
 
   return lines;
 }
-

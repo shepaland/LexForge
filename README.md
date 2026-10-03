@@ -34,6 +34,7 @@ starts the appropriate workflow. See [First run](#first-run) for setup details.
 
 | Version | What the update gives you |
 | --- | --- |
+| [2.2.0](CHANGELOG.md#220--2026-10-03) | Routes and external absolute paths in task descriptions no longer become repository files. An optional `Files:` line gives exact writable scope; existing plans keep working and unsafe explicit paths are rejected. |
 | [2.1.0](CHANGELOG.md#210--2026-10-03) | Before running a command in a terminal, the CLI checks for a newer version. Choose to update through npm or continue with the installed version; scripts and JSON output run without a prompt. |
 | [2.0.0](CHANGELOG.md#200--2026-10-03) | Moving to the new workflow preserves confirmed work so the agent can finish what remains. Tokens are not spent repeating accepted tasks; missing checks run separately. |
 | [1.7.0](CHANGELOG.md#170--2026-10-02) | Agents read context for the current task group. Logs and history stay in files. Each cycle requires tests and independent review, and another agent can continue from saved results. |

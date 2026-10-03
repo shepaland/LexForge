@@ -98,6 +98,51 @@ describe("parseTaskList: ссылки на требования", () => {
 });
 
 describe("parseTaskList: имена файлов", () => {
+  it("явный Files задаёт точный writable scope, а Check остаётся только в namedFiles", () => {
+    const tasks = parseTaskList(
+      [
+        "- [ ] 1.1 [api] Изменить маршрут `/api/auth` и не считать `/etc/nginx/conf.d` файлом",
+        "      Files: `src/http/routes.ts`, `tests/http/routes fixture.test.ts`",
+        "      Check: `npx vitest run tests/http/routes.test.ts`",
+      ].join("\n"),
+    );
+
+    if (JSON.stringify(tasks[0]!.files) !== JSON.stringify([
+      "src/http/routes.ts",
+      "tests/http/routes fixture.test.ts",
+    ])) {
+      console.error("TASK_FILE_SCOPE_NOT_DISTINGUISHED");
+    }
+    expect(tasks[0]!.files, "TASK_FILE_SCOPE_NOT_DISTINGUISHED").toEqual([
+      "src/http/routes.ts",
+      "tests/http/routes fixture.test.ts",
+    ]);
+    expect(tasks[0]!.namedFiles, "TASK_FILE_SCOPE_NOT_DISTINGUISHED").toEqual([
+      "src/http/routes.ts",
+      "tests/http/routes fixture.test.ts",
+      "tests/http/routes.test.ts",
+    ]);
+  });
+
+  it("legacy inference сохраняет repo paths и отбрасывает неканонические значения", () => {
+    const tasks = parseTaskList(
+      [
+        "- [ ] 1.1 [api] Изменить `src/http/routes.ts` и `README.md`, упомянув `/api/auth`,",
+        "      `/etc/nginx/conf.d`, `https://example.test/health`, `../outside.ts`,",
+        "      `src//routes.ts`, `src/./routes.ts`, `src\\routes.ts` и `C:/temp/routes.ts`",
+      ].join("\n"),
+    );
+
+    expect(tasks[0]!.files, "TASK_FILE_SCOPE_NOT_DISTINGUISHED").toEqual([
+      "src/http/routes.ts",
+      "README.md",
+    ]);
+    expect(tasks[0]!.namedFiles, "TASK_FILE_SCOPE_NOT_DISTINGUISHED").toEqual([
+      "src/http/routes.ts",
+      "README.md",
+    ]);
+  });
+
   it("пути берутся из вставок в обратных кавычках", () => {
     const tasks = parseTaskList(
       [

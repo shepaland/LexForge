@@ -122,6 +122,23 @@ it("rejects noncanonical paths before scope comparisons", async () => {
     (await call(root, ["workflow", "migrate", "--to", "2"])).exitCode,
   ).toBe(2);
 });
+it.each(["/etc/nginx/conf.d", "../outside.ts", "C:/temp/routes.ts", "src\\routes.ts"])(
+  "keeps the strict cycle path boundary for %s",
+  async (unsafePath) => {
+    const root = fixture();
+    writeAt(
+      root,
+      `${dir}/execution-plan.json`,
+      JSON.stringify({
+        version: 1,
+        cycles: [{ ...cycle, files: [...cycle.files, { path: unsafePath, symbols: [] }] }],
+      }),
+    );
+
+    const result = await call(root, ["workflow", "migrate", "--to", "2"]);
+    expect(result.exitCode).toBe(2);
+  },
+);
 it("rejects a GREEN command that mutates ignored output after testing it", async () => {
   const root = fixture();
   const { git } = await import("../helpers/git-workspace.js");

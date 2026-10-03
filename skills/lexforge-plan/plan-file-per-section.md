@@ -18,6 +18,20 @@ current contract. Preserve task IDs, checkboxes and evidence references when mov
 old history. Executors read only their current task or cycle and its linked requirements
 and decisions; use the apply skill's `scripts/extract-task.mjs` for a legacy monolith.
 
+## Task file scope
+
+Name touched files as canonical workspace-root-relative paths. Never abbreviate a
+repository path or resolve a basename by searching the workspace: write
+`src/config/nginx.conf`, not `nginx.conf` plus an instruction to find it.
+
+When other task prose contains a backtick route or external path, use one `Files:`
+continuation line with comma-separated backtick paths for the exact writable scope:
+
+    Files: `src/http/routes.ts`, `tests/http/routes.test.ts`
+
+A task may omit `Files:` when safe legacy inference is unambiguous. `Check:` operands
+name verification files; they do not enlarge writable scope.
+
 A plan of nine sections can run to 190 lines and 43,000 characters, about 11,000 tokens for
 one read - an executor that needs one section would pay for all nine.
 
