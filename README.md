@@ -34,6 +34,7 @@ starts the appropriate workflow. See [First run](#first-run) for setup details.
 
 | Version | What the update gives you |
 | --- | --- |
+| [2.1.0](CHANGELOG.md#210--2026-10-03) | Before running a command in a terminal, the CLI checks for a newer version. Choose to update through npm or continue with the installed version; scripts and JSON output run without a prompt. |
 | [2.0.0](CHANGELOG.md#200--2026-10-03) | Moving to the new workflow preserves confirmed work so the agent can finish what remains. Tokens are not spent repeating accepted tasks; missing checks run separately. |
 | [1.7.0](CHANGELOG.md#170--2026-10-02) | Agents read context for the current task group. Logs and history stay in files. Each cycle requires tests and independent review, and another agent can continue from saved results. |
 | [1.6.0](CHANGELOG.md#160--2026-09-20) | Files are limited to 400 lines by default. Smaller files let agents read the relevant code and check an edit without loading a large file in full. |
@@ -49,7 +50,7 @@ Total token use has not yet been compared on equivalent tasks.
 Update the CLI and skills together, naming the runtimes you use:
 
 ```bash
-npm install -g lexforge@2.0.0
+npm install -g lexforge@latest
 lexforge init --tools claude,codex
 ```
 

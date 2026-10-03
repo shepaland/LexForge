@@ -5,6 +5,10 @@ import { Command, CommanderError } from "commander";
 
 import { packageVersion } from "../core/package-info.js";
 import type { CommandResult, OutputStream } from "../core/types.js";
+import {
+  checkForCliUpdate,
+  type UpdateOutcome,
+} from "../core/update-check.js";
 import { registerArchive } from "./commands/archive.js";
 import { registerCheck } from "./commands/check.js";
 import { registerDefect } from "./commands/defect.js";
@@ -29,6 +33,8 @@ export interface RunOptions {
   runningFile?: string;
   stdout?: OutputStream;
   stderr?: OutputStream;
+  /** Overrides the update decision for embedded and test callers. */
+  checkForUpdate?: () => Promise<UpdateOutcome>;
 }
 
 /**
@@ -156,5 +162,24 @@ function wantsJson(argv: string[]): boolean {
 
 export async function run(argv: string[], options: RunOptions): Promise<number> {
   const context = createCliContext(options);
+  const output = options.stdout ?? process.stdout;
+  const interactive =
+    process.stdin.isTTY === true &&
+    (output as OutputStream & { isTTY?: boolean }).isTTY === true &&
+    !wantsJson(argv);
+  if (argv.length > 0 && interactive) {
+    let outcome: UpdateOutcome = { kind: "continue", updateAvailable: false };
+    try {
+      outcome = options.checkForUpdate
+        ? await options.checkForUpdate()
+        : await checkForCliUpdate({
+            currentVersion: packageVersion(),
+            write: (message) => context.stdout.write(`${message}\n`),
+          });
+    } catch {
+      // An unavailable registry or prompt must not block the requested command.
+    }
+    if (outcome.kind === "updated") return 0;
+  }
   return runProgram(createProgram(context), argv, context);
 }

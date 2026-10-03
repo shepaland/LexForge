@@ -17,6 +17,31 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 2.1.0 — 2026-10-03
+
+Interactive CLI runs check npm for a newer version before executing the requested command.
+Users can update immediately or keep working with their installed version.
+
+### Contract
+
+- No command, flag, JSON field or exit-code changes. Update checks are skipped for
+  `--json`, redirected output and runs without an interactive terminal.
+
+### Other
+
+- When an update is available, enter `u` or `update` to run
+  `npm install -g lexforge@latest`. An empty, negative or unrecognized answer keeps the
+  installed version and executes the original command with its original arguments.
+- A successful installation ends the old process and asks the user to repeat the command.
+  Registry and installation failures allow the original command to continue.
+- Registry checks have a three-second timeout and a 64 KiB response limit. Version
+  comparison handles prereleases; Windows invokes `npm.cmd` through its command shell.
+- English and Russian README version tables describe the update choice.
+
+The updater follows npm's `latest` tag, not GitHub Releases. A GitHub release alone does
+not make a version available to the updater. The attached `lexforge-2.1.0.tgz` archive
+can be installed with `npm install -g ./lexforge-2.1.0.tgz`.
+
 ## 2.0.0 — 2026-10-03
 
 Existing workflow 1 changes can migrate without losing trustworthy completed work.
