@@ -31,229 +31,36 @@ Then ask the agent for work in the usual words — "add X", "fix Y". The `lexfor
 class of work and the pipeline starts from there; the steps in full are in
 [First run](#first-run).
 
-## What's new in 2.0.0
+## Changes by version
 
-Safe migration preserves trustworthy completed tasks when moving an existing change from
-workflow 1 to workflow 2. Start with a read-only report:
+| Version | What changed and why it helps |
+| --- | --- |
+| [2.0.0](CHANGELOG.md#200--2026-10-03) | Moving to workflow 2 preserves confirmed results so the agent continues open tasks. Evidence gaps get separate checks, avoiding a full repeat of completed work. |
+| [1.7.0](CHANGELOG.md#170--2026-10-02) | Agents receive context for the current task group; tests, reviews and history stay in files. Work can pass to another agent and resume with checks that prior results still apply. |
+| [1.6.0](CHANGELOG.md#160--2026-09-20) | File length limits keep code from growing unchecked. For existing large files, you choose up front: split them or keep them without further growth. |
+| [1.5.0](CHANGELOG.md#150--2026-09-13) | The CLI runs and records the failing test itself, so an agent's claim cannot replace evidence. Plans use separate files and independent groups for controlled parallel execution. |
+| [1.4.0](CHANGELOG.md#140--2026-09-11) | Independent plan sections run in parallel. Review findings stay in a ledger: serious issues block completion; minor ones can be fixed later. |
+| [1.3.0](CHANGELOG.md#130--2026-09-05) | Claude, Codex and other runtimes can use their own models in one project. Skills provide model defaults to reduce setup. |
+| [1.2.0](CHANGELOG.md#120--2026-08-31) | Models can be assigned to stages, letting you choose a suitable model for planning, implementation and review. |
+| [1.1.0](CHANGELOG.md#110--2026-08-30) | Windows fixes make checks read files and find commands correctly. A command that cannot start is no longer recorded as a test result. |
+| [1.0.0](CHANGELOG.md#100--2026-08-30) | Nine skills take a task from request to archive. The CLI checks requirements, the plan and command results before work can be marked complete. |
 
-```sh
-lexforge workflow migrate --change <name> --to 2 --dry-run --json
-```
-
-- The report distinguishes confirmed history, evidence gaps, incomplete tasks and conflicts.
-  `--task` and `--class` open details without loading the full plan or logs.
-- `workflow reconcile` and `workflow reconcile-review` record current checks and independent
-  approval for existing work. They preserve provenance without inventing a historical RED.
-- Apply repeats analysis under a lock and installs the ledger before switching the workflow
-  pin. Interrupted prepared state can recover; identical reruns make no changes.
-- `resume` skips confirmed work. Mixed cycles keep all context and run only open tasks.
-  Later edits can stale current proof while preserving the historical completion record.
-- Verify and archive reject unresolved gaps, conflicts, damaged evidence and stale coverage.
-
-**Breaking CLI change:** migration apply now returns a migration report instead of the pin
-object. Read schema fields from `status.workflow`. Conflicting migrations are refused.
-See [the changelog](CHANGELOG.md#200--2026-10-03) for the complete contract changes and
-[the migration guide](skills/lexforge-apply/execution-v2.md#safe-migration-of-existing-work)
-for reconciliation and recovery commands.
+Update the CLI and skills together, naming the runtimes you use:
 
 ```bash
 npm install -g lexforge@2.0.0
 lexforge init --tools claude,codex
 ```
 
-Package and skill updates do not authorize migration of existing changes.
-
-## What's new in 1.7.0
-
-Agents receive the context of the current behavioural cycle: its tasks, linked requirements,
-decisions, files and test commands. Execution history and full logs stay in separate files.
-
-- `lexforge context --change <name> --task <id> --json` reads the relevant tasks from a
-  monolithic plan or section files. `--max-bytes` refuses an oversized answer without
-  dropping requirements or acceptance criteria.
-- Workflow 2 carries one behavioural result through the test, RED, GREEN and independent
-  review in one cycle. `execution-plan.json` maps the original task IDs beside the plan.
-  `cycle start` captures the baseline; review receives only that cycle's diff.
-- `cycle run` records the command, exit code, full log, test and declared input versions,
-  code state and environment. Evidence can survive an agent handoff when these inputs
-  remain current. Changed material inputs require a new run.
-- `cycle review` binds an independent report to the current GREEN. `cycle close` checks
-  criteria and findings, then saves `continuation.json`. `resume` rebuilds state from
-  primary records. After a requirement change, `cycle restart` preserves earlier attempts
-  and the original review baseline.
-- `evidence record` and `evidence red` save full output to files and return a summary with
-  a log link. `--stream` enables live output. A changed check command or damaged log makes
-  a new stamp stale.
-
-New changes pin workflow 2 and schema version 1 in `workflow.json`. Existing changes without
-that file keep workflow 1. Installing or updating the package does not authorize migration.
-Prepare `execution-plan.json` and inspect the read-only preview:
+Existing changes move to workflow 2 separately. Preview what will be preserved and what needs verification:
 
 ```sh
 lexforge workflow migrate --change <name> --to 2 --dry-run --json
 ```
 
-The compact report counts confirmed, uncertain, incomplete and conflicting tasks. Filter
-with `--task <id>` or `--class needs-verification`. Historical confirmation requires
-linked checks, code state and independent acceptance review; a checkbox or global stamp
-alone is insufficient. `workflow reconcile` runs current checks and
-`workflow reconcile-review` records independent approval with origin `reconciled`, without
-inventing RED. Failed, stale or incomplete attempts remain unconfirmed.
-
-After authorization, apply repeats analysis under the execution lock, writes the durable
-ledger before the workflow pin and refuses changed or conflicting inputs. Rerun to recover
-a matching prepared ledger after interruption; preserve unexplained edits for inspection.
-An identical rerun is a no-op. `resume` skips confirmed tasks and exposes their origins.
-Mixed cycles retain all context and acceptance criteria while only open IDs are executed.
-Later edits preserve history but require fresh current proof for verify and archive.
-See [the migration procedure and review format](skills/lexforge-apply/execution-v2.md#safe-migration-of-existing-work).
-
-```bash
-npm install -g lexforge@1.7.0
-lexforge init --tools claude,codex  # name the runtimes you use
-lexforge context --change <name> --task <id> --json
-```
-
-[The guide and JSON formats](skills/lexforge-apply/execution-v2.md) cover cycle commands,
-material inputs and review reports. The nine main `SKILL.md` files are 26% shorter.
-End-to-end token savings still need measurement on comparable tasks.
-
-## What's new in 1.3.0
-
-Agents of different vendors work in one repository, and every skill carries the model it
-wants.
-
-- The `models` section of `lexforge/config.yaml` holds an entry per runtime. A stage
-  resolves against the entry of the runtime the call comes from, and that entry decides
-  alone, so a Codex agent never lands on a Claude model because a Claude agent works here
-  too.
-- `lexforge instructions` and `lexforge status` take `--tool <name>`. The runtime is named
-  by the caller: LexForge reads no environment variable and infers nothing.
-- Every skill opens with a model block - the model it runs on, one line per provider. The
-  planning skills and the completion check name the strong model of a provider, the
-  implementation and debugging skills the middle one, archival names none. A model named by
-  the project replaces the block.
-- The three roles are gone, and with them the `role` field of the answers. A role key left
-  in a `config.yaml` is ignored, and no command refuses because of it.
-- Upgrading means upgrading the package and reinstalling the skills together, with one
-  `lexforge init --tools <list>`: a skill of this version calls an option 1.2.0 does not
-  know. Details in [Model assignment](#model-assignment).
-
-## What's new in 1.4.0
-
-`lexforge-apply` runs independent sections of a plan at the same time, and a defect ledger
-holds what a review finds without stopping the work on every one of them.
-
-- Each section heading of `tasks.md` carries a `Depends on:` line — `none`, or the numbers of
-  the sections it needs closed first. The sections whose dependencies are closed form one
-  wave, and `lexforge-apply` hands each of them to its own executor. A section that is ready
-  alone runs task by task in the same session.
-- `check plan` gains seven rules about a plan's sections: a missing line, a value it cannot
-  read, a repeated line, a repeated section number, an unknown dependency, a cycle, and one
-  file named by two sections that become ready at the same moment.
-- `lexforge defect record`, `lexforge defect close` and `lexforge defect list` keep the ledger
-  at `lexforge/defects.json`. A review records what it finds at one of three levels,
-  `critical`, `important` or `minor`, without stopping to fix it on the spot.
-- The ledger sits beside `lexforge/config.yaml`, is committed with the repository, and stays
-  there when a change moves into the archive. An entry outlives the change it was found in.
-- An open `critical` or `important` entry against the change blocks `verify` and `archive` the
-  way a stale stamp already does. An open `minor` blocks nothing: it is named in the report,
-  recorded in the ledger, and the change archives with it open. Both commands answer with a
-  fourth count on `summary`, `openDefects`.
-- Two pauses are gone. A skill that meets `workspace-not-found` runs
-  `lexforge init --tools <your runtime>` at the project root itself and carries on. A planning
-  skill that finishes an artifact runs the next step the command named, and stops at the
-  boundary of planning, where `isPlanningComplete` turns `true`.
-
-A `tasks.md` written before this release carries no `Depends on:` line, so `check plan`
-reports one finding per section until it is added. `npm install lexforge@1.4.0` and
-`lexforge init --tools <list>` bring the package and the skills current; the lines themselves
-are added to the plan by hand.
-
-## What's new in 1.5.0
-
-An executor handed a section starts no agent at all, and a ticked task rests on a failing run
-the command itself performed and recorded.
-
-- An executor starts no agent of any type. The session that holds the plan starts every agent
-  of the implementation stage. The ban reads the effect: an agent that continues the executor's
-  own work instead of looking at it is forbidden whatever the runtime calls its type. The rule
-  came out of a subagent that inherited a session's context, wrote eleven tasks on its own, and
-  a report that called that work somebody else's.
-- `lexforge evidence red --change <name> --task <id> --command <cmd>` runs the command itself
-  and writes one record per task id into `red-runs.json`. No flag accepts a ready-made failing
-  line, an exit code or an output tail. A run that comes back green exits `1` and writes
-  nothing; a command the shell could not start exits `2` with `red-run-command-failed`.
-- `verify` counts a fifth dimension and answers with a fifth number on `summary`,
-  `unrecordedTasks`. The rule `task-no-red-record` names a ticked task whose first named file
-  lies outside `tests/` and outside the change directory and that carries no red record. The
-  age of the change buys no exemption.
-- A commit, a branch or edits in the tree the executor did not make are called unaccounted,
-  with their paths, the commit and the branch written out, and work stops on them. Attributing
-  them to a foreign session, a parallel editor, another user or a tool running in the
-  background is refused: that is a claim about a person made with no evidence.
-- `tasks.md` is an index. It carries the title, the goal, the spec and one link per section,
-  and a section's `Depends on:` line and tasks live in a file one path segment below it. The
-  rule `section-tasks-inline` refuses a plan that keeps its tasks inside `tasks.md`, and the
-  one that links a file and leaves tasks behind the link as well.
-- Every task line carries a group label in square brackets after its number, such as
-  `- [ ] 1.1 [A]`: letters, digits and hyphens, eight characters at most. The independent
-  groups of one section go to different agents at the same time, and `check plan` refuses a
-  section whose two groups name the same file. The rules are `task-missing-group-label`,
-  `section-group-coverage-mismatch` and `section-group-shared-file`.
-- A task whose whole work is carrying code between files without changing behaviour carries
-  `(move)` after its group label and owes no red record: a move has no run to watch fail. A
-  task that adds a branch, a field or a rule never carries it.
-- An agent of the implementation stage works inside a budget of 300,000 tokens and reads large
-  files by line ranges. A section that does not fit the budget is handed over in parts, down to
-  one agent per task.
-- A `.ts` file under `src/` or `tests/` ran to 330 lines at most in this release, held by
-  `tests/e2e/line-limit.test.ts`. Eighteen files past that line were split by subject; the
-  longest had been 1766 lines. The limit is 400 lines now and `file_limit` carries it: see
-  "Line limit".
-
-A plan written before this release keeps its sections inside `tasks.md` and carries no labels,
-so `check plan` reports one finding per section and one per task until the plan is rewritten.
-`npm install lexforge@1.5.0` and `lexforge init --tools <list>` bring the package and the
-skills current; the index, the section files and the labels are added by hand. Tasks ticked
-before this release carry no red record, and `verify` names every one of them: record the run
-for each, declare the task a move where that is what it was, or clear the checkbox.
-
-## What's new in 1.6.0
-
-A code file has a length a change may not take it past, and the answer to a file already over
-it is chosen by the owner before the plan is written, not by the agent while it types.
-
-- `file_limit` in `lexforge/config.yaml` carries the number and the covered files: `lines`,
-  400 when the key is absent, and `include`, 24 source and test extensions by default. A
-  project's `include` replaces that list rather than adding to it, and a `!` pattern such as
-  `!src/generated/**` leaves generated code out of the count. `lexforge init` writes the
-  section commented out into a new config; an existing one is not rewritten.
-- `long_files: refactor` or `long_files: keep` in a change's `.lexforge.yaml` records which
-  path the change takes for files already over the limit. Any other value is refused with
-  exit `2` and an error naming the field and the two values.
-- `lexforge-plan` counts the files its tasks will name before it writes `tasks.md`, shows
-  every one over the limit with its count, and asks which path the change takes. It never
-  chooses the path itself, and a user who hands the choice back is asked again.
-- `check plan` gains two rules. `long-file-without-path` names a long file the plan names
-  while `long_files` is unset, with the count, the limit and both values. On the `refactor`
-  path, `long-file-not-split-first` names a long file whose first task is not marked `(move)`.
-- `verify` counts a sixth dimension and answers with a sixth number on `summary`,
-  `filesOverLimit`. The rule `file-over-line-limit` names every covered file the change
-  touched that breaks the rule of its path: the file, its count at the start of the change,
-  its count now and the limit. The start count comes from the commit that brought the change
-  directory in, so a file's own growth is what is judged. A file the change deleted is not
-  reported, and with no `long_files` on record the `refactor` rule applies.
-- An executor makes no edit that takes a covered file from within the limit to over it: the
-  code goes into a new file instead. On `keep`, a file already over the limit gains no line,
-  and wiring a new file into it is paid for by moving a block of at least as many lines out.
-  Where no such block exists, the change goes back for re-planning on `refactor`.
-
-A change in flight when the project upgrades is judged by the new `verify`; if it touched a
-long file and records no path, it is judged as `refactor`, and adding `long_files` to its
-`.lexforge.yaml` is the way on. A workspace needs no migration: a `config.yaml` with no
-`file_limit` section runs on 400 lines and the default list. `npm install lexforge@1.6.0`
-and `lexforge init --tools <list>` bring the package and the skills current.
+[Migration steps](skills/lexforge-apply/execution-v2.md#safe-migration-of-existing-work).
+For automation: 2.0.0 changes the `workflow migrate` response; read schema fields from `status.workflow`.
+The [CHANGELOG](CHANGELOG.md) lists compatibility changes and requirements for older plans.
 
 ## Supported platforms
 
