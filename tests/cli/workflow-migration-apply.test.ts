@@ -112,7 +112,7 @@ it("an interruption at the pin leaves a durable recoverable ledger", async () =>
   const original = (await vi.importActual<typeof import("node:fs")>("node:fs"))
     .renameSync;
   vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
-    if (String(to).endsWith("/workflow.json")) {
+    if (path.basename(String(to)) === "workflow.json") {
       expect(
         existsSync(path.join(w.root, MIGRATION_DIR, "migration.json")),
       ).toBe(true);
@@ -140,7 +140,7 @@ it("refuses source changes during durable ledger installation before exposing wo
     .renameSync;
   vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
     original(from, to);
-    if (String(to).endsWith("/migration.json"))
+    if (path.basename(String(to)) === "migration.json")
       writeMigrationFile(w.root, "src/app.ts", "concurrent edit");
   });
   expect((await apply(w.root)).exitCode).not.toBe(0);
@@ -173,7 +173,7 @@ it.each(["outside", "head", "config", "index"])(
       .renameSync;
     vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
       rename(from, to);
-      if (!String(to).endsWith("/migration.json")) return;
+      if (path.basename(String(to)) !== "migration.json") return;
       if (kind === "outside")
         writeMigrationFile(w.root, "outside.txt", "changed");
       if (kind === "head")
