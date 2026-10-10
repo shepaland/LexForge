@@ -70,6 +70,8 @@ export function createGitWorkspace(files: Record<string, string> = {}): GitWorks
   );
 
   git(root, "init", "--initial-branch=main");
+  // A Windows runner sets core.autocrlf=true globally: a checkout would rewrite files with CRLF.
+  git(root, "config", "core.autocrlf", "false");
   const head = commitAll(root, "first commit");
 
   return {
