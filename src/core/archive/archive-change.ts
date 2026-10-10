@@ -7,6 +7,7 @@ import { readDefectLedger } from "../defects/store.js";
 import { capabilityOf, listSpecFiles } from "../gates/coverage-rules.js";
 import { describedLabels, verificationEmpty } from "../gates/verification-labels.js";
 import { verifyChange } from "../gates/verify-change.js";
+import { mergeFeature } from "../git/merge-feature.js";
 import { assertRepository } from "../git/repository.js";
 import { readTextFile } from "../read-text.js";
 import { loadSchema } from "../schemas/load-schema.js";
@@ -14,11 +15,12 @@ import { parseOutputTarget } from "../schemas/output-target.js";
 import { readChangeState } from "../status/change-status.js";
 import type { ChangeState } from "../artifact-graph/graph.js";
 import type { CommandResult } from "../types.js";
-import type { Finding } from "../validation/finding.js";
+import { makeFinding, type Finding } from "../validation/finding.js";
 import { readChangeConfig } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { workspacePaths } from "../workspace/paths.js";
 import { readProjectConfig } from "../workspace/project-config.js";
+import { copyMockups } from "./copy-mockups.js";
 import { applyChange, type CapabilityMerge, type MergedSpec } from "./apply-plan.js";
 import { renderLines, summarise } from "./archive-change-report.js";
 
@@ -64,6 +66,8 @@ export interface ArchiveChangeData {
   summary: ArchiveChangeSummary;
   /** Where the change now lives, empty when it was not moved. */
   archivePath: string;
+  /** True when the feature branch was merged into dev. */
+  merged: boolean;
   nextStep: string;
 }
 
@@ -115,19 +119,35 @@ export function archiveChange(options: ArchiveChangeOptions): CommandResult<Arch
 
   let archivePath = "";
   let written: string[] = [];
+  let merged = false;
+  let mockups: string[] = [];
   if (findings.length === 0 && merge) {
     // The specs are written first: they are rebuilt by running the command
     // again, while a directory moved ahead of them would have to be found by
     // hand.
     written = writeSpecs(root, merge.specs);
+    mockups = copyMockups(root, options.change);
     archivePath = moveToArchive(root, options.change, target);
+
+    try {
+      merged = mergeFeature(root, options.change).merged;
+    } catch (error) {
+      if (error instanceof UsageError && error.code === "merge-conflict") {
+        return mergeConflict(root, options.change, archivePath, written.length, mockups, error);
+      }
+      throw error;
+    }
   }
 
   const nextStep =
     findings.length > 0
       ? `fix the findings above, then run: lexforge archive ${options.change}`
-      : "ask the user how to finish the branch: merge it into the base branch, " +
-        "open a pull request, or leave it as it is";
+      : merged
+        ? "ask the user whether to merge dev into main; do not merge, push or delete " +
+          "any branch before the answer"
+        : `the merge into dev was skipped: change "${options.change}" was not built on its ` +
+          "feature branch. Ask the user how to finish the branch: merge it into the base " +
+          "branch, open a pull request, or leave it as it is";
 
   const data: ArchiveChangeData = {
     outputVersion: 1,
@@ -136,15 +156,64 @@ export function archiveChange(options: ArchiveChangeOptions): CommandResult<Arch
     findings,
     summary: summarise(checks, merge?.conflicts.length ?? 0, written.length),
     archivePath,
+    merged,
     nextStep,
   };
 
+  const lines = renderLines(data, written, openDefectsProjectWide);
+  if (mockups.length > 0) {
+    lines.push(`Mockups copied: ${mockups.join(", ")}`);
+  }
+
   return {
     data,
-    lines: renderLines(data, written, openDefectsProjectWide),
+    lines,
     nextStep,
     exitCode: findings.length > 0 ? 1 : 0,
   };
+}
+
+/**
+ * A conflict of the merge into dev is a result, not a usage error: the change
+ * is already archived and committed on its feature branch, so the command exits
+ * 1, lists each conflicting path as a finding and names the manual merge.
+ */
+function mergeConflict(
+  root: string,
+  change: string,
+  archivePath: string,
+  specsWritten: number,
+  mockups: string[],
+  error: UsageError,
+): CommandResult<ArchiveChangeData> {
+  const branch = `feature/${change}`;
+  const listed = /conflicts in: (.*)\. The merge was aborted/s.exec(error.message)?.[1] ?? "";
+  const paths = listed.split(", ").filter((entry) => entry.length > 0);
+  const findings = paths.map((file) =>
+    makeFinding(file, 1, "merge-conflict", `merging ${branch} into dev conflicts in this file`),
+  );
+  const nextStep =
+    `the change "${change}" is archived and committed on ${branch}; do not run archive again. ` +
+    `Merge by hand: check out dev, run git merge ${branch}, resolve ${paths.join(", ")}, ` +
+    "commit, then ask the user whether to merge dev into main";
+
+  const data: ArchiveChangeData = {
+    outputVersion: 1,
+    workspaceRoot: answerPath(root),
+    change,
+    findings,
+    summary: summarise([], 0, specsWritten),
+    archivePath,
+    merged: false,
+    nextStep,
+  };
+
+  const lines = [error.message, ...findings.map((f) => `  ${f.file}  ${f.rule}`)];
+  if (mockups.length > 0) {
+    lines.push(`Mockups copied: ${mockups.join(", ")}`);
+  }
+
+  return { data, lines, nextStep, exitCode: 1 };
 }
 
 /**

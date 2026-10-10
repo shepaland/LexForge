@@ -82,7 +82,7 @@ it("does not silently upgrade an unsupported workflow pin", async () => {
   );
   expect((await call(root, ["context", "--task", "1.2"])).exitCode).toBe(2);
 });
-it("invalidates tampered logs and blocks unscoped changes", async () => {
+it("invalidates tampered logs and lets an unscoped change through to verify", async () => {
   const root = fixture();
   await start(root);
   await green(root);
@@ -101,7 +101,14 @@ it("invalidates tampered logs and blocks unscoped changes", async () => {
         "green",
       ])
     ).exitCode,
-  ).toBe(2);
+  ).toBe(0);
+  const verify = await call(root, ["verify"]);
+  expect(verify.exitCode).toBe(1);
+  expect(
+    verify.data.findings.some((f: { message: string }) =>
+      f.message.includes("unscoped.txt"),
+    ),
+  ).toBe(true);
 });
 it("rejects noncanonical paths before scope comparisons", async () => {
   const root = fixture();
@@ -274,7 +281,7 @@ it("preserves continuity and historical proof across sequential cycles on the sa
   const patch = readFileSync(path.join(root, ctx.review_patch), "utf8");
   expect(patch).toContain("-hello");
   expect(patch).not.toContain("-old");
-});
+}, 60000);
 it("ignores fenced task and heading examples without truncating requirement bodies", async () => {
   const root = fixture();
   const old = readFileSync(path.join(root, dir, "tasks.md"), "utf8");

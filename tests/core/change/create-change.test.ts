@@ -7,19 +7,19 @@ import { UsageError } from "../../../src/cli/errors.js";
 import { computeChangeState } from "../../../src/core/artifact-graph/graph.js";
 import { createChange } from "../../../src/core/change/create-change.js";
 import { loadSchema } from "../../../src/core/schemas/load-schema.js";
-import { makeWorkspace, removeWorkspace } from "../../helpers/workspace.js";
+import { createGitWorkspace, type GitWorkspace } from "../../helpers/git-workspace.js";
 
-const created: string[] = [];
+const created: GitWorkspace[] = [];
 
 function workspace(files: Record<string, string> = {}): string {
-  const root = makeWorkspace({ "lexforge/config.yaml": "schema: spec-driven\n", ...files });
-  created.push(root);
-  return root;
+  const made = createGitWorkspace({ "lexforge/config.yaml": "schema: spec-driven\n", ...files });
+  created.push(made);
+  return made.root;
 }
 
 afterEach(() => {
   while (created.length > 0) {
-    removeWorkspace(created.pop()!);
+    created.pop()!.remove();
   }
 });
 

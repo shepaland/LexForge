@@ -119,40 +119,6 @@ NOT be added along the way.
 - **WHEN** code nearby is found that deserves a rewrite
 - **THEN** the change is not made inside this task
 
-### Requirement: A reviewer subagent looks at the work after each task
-
-The session SHALL dispatch a reviewer agent after each cycle and before ticking any
-checkbox of that cycle. This SHALL NOT be replaced by the executor's own read of its own
-change, and the executor SHALL NOT dispatch that reviewer itself.
-
-The reviewer SHALL work read-only: it does not edit the working tree, does not move `HEAD`,
-and does not launch subagents of its own.
-
-The reviewer SHALL NOT execute the project: it runs no test, no build, and no script of the
-change under review. It reads the diff and the run output it was handed. A verdict resting on
-a run the reviewer made itself SHALL NOT be accepted, and the brief SHALL be sent again
-saying so.
-
-The reviewer's reply SHALL carry strengths, findings at levels CRITICAL, IMPORTANT, and
-MINOR with a file and line for each, and a verdict.
-
-#### Scenario: A task closed without review
-
-- **WHEN** the cycle's run is green and one hour remains before the end of the day
-- **THEN** review is still sent by the session, and the checkbox waits on its reply
-
-#### Scenario: The reviewer runs the suite
-
-- **WHEN** the reviewer's reply rests its verdict on a pytest run it started itself
-- **THEN** the verdict is not accepted, and the brief is sent again saying the reviewer runs
-  nothing
-
-#### Scenario: The reviewer answers in generalities
-
-- **WHEN** the reviewer's reply is "looks good" with not one reference to a file and line
-- **THEN** the reply is not accepted, and the request is sent again pointing out the empty
-  review
-
 ### Requirement: The reviewer's context is assembled by hand
 
 The reviewer's assignment SHALL include: the task text with links to requirements, the
@@ -358,39 +324,6 @@ return what is green, and SHALL name what it did not reach.
   from `reviewer-prompt.md`, instead of returning to the session
 - **THEN** that dispatch is the forbidden one too, and the cycle's tasks stay unclosed until
   the session starts the reviewer itself
-
-### Requirement: The session dispatches one executor per cycle
-
-The session that holds the plan SHALL dispatch one executor per cycle.
-
-A cycle SHALL be the TDD triple: the task that writes the test, the task that runs it and
-watches it fail, and the task that writes the implementation, with its green run.
-
-The executor SHALL return its result to the session at the end of the cycle and SHALL mark
-no checkbox.
-
-The session SHALL then dispatch the reviewer for that cycle as its own agent, SHALL close
-every CRITICAL and IMPORTANT finding before ticking any checkbox, SHALL tick the boxes of
-the cycle, and SHALL dispatch the next executor only after that.
-
-No cycle's tasks SHALL be written on top of a cycle nobody has reviewed.
-
-#### Scenario: An executor returns at the end of the triple
-
-- **WHEN** an executor finishes the test, the watched-red run, and the green implementation
-  of one cycle
-- **THEN** it returns its result to the session and marks no checkbox itself
-
-#### Scenario: The session reviews before the next dispatch
-
-- **WHEN** a cycle's executor has returned
-- **THEN** the session dispatches the reviewer for that cycle, closes its CRITICAL and
-  IMPORTANT findings, ticks the cycle's boxes, and only then starts the next executor
-
-#### Scenario: A cycle built on an unreviewed one
-
-- **WHEN** a cycle's tasks are still unreviewed
-- **THEN** no further cycle's tasks are dispatched on top of it
 
 ### Requirement: Unaccounted state in the working tree stops the work
 
@@ -599,3 +532,92 @@ one, its `long_files` path.
 - **WHEN** the session dispatches an executor for a task of a change with a limit of 400 and
   `long_files: keep`
 - **THEN** the brief names the limit 400 and the `keep` path
+
+### Requirement: A reviewer subagent looks at the work after each wave
+
+The session SHALL dispatch one reviewer agent per wave once every cycle of the section has
+current GREEN, and before ticking any checkbox of that section. A cycle with `controls`
+SHALL get its own reviewer competent in that control. This SHALL NOT be replaced by the
+executor's own read of its own change, and the executor SHALL NOT dispatch a reviewer.
+
+The reviewer SHALL work read-only: it does not edit the working tree, does not move `HEAD`,
+and does not launch subagents of its own. It SHALL NOT execute the project; it reads the
+patches and the run output it was handed.
+
+The reviewer's reply SHALL carry findings at levels CRITICAL, IMPORTANT and MINOR, each
+with a cycle, a file and a line, and a verdict.
+
+After a fix round, the session SHALL send the reviewer the fix patch and the earlier
+findings only, not the whole wave again.
+
+#### Scenario: A section of four cycles
+
+- **WHEN** four cycles of one section reach GREEN
+- **THEN** the session dispatches one reviewer for the four, not four reviewers
+
+#### Scenario: A re-review after fixes
+
+- **WHEN** the reviewer raised two IMPORTANT findings and the executor fixed them
+- **THEN** the next reviewer receives the fix patch and the two findings, and not the
+  patches of the whole wave
+
+#### Scenario: The reviewer answers in generalities
+
+- **WHEN** the reviewer's reply is "looks good" with not one reference to a file and line
+- **THEN** the reply is not accepted, and the request is sent again pointing out the empty
+  review
+
+### Requirement: The session dispatches executors per cycle and reviews per wave
+
+The session that holds the plan SHALL dispatch one executor per cycle. The executor SHALL
+return its result at GREEN and SHALL mark no checkbox.
+
+The session SHALL dispatch the next section's executors only after the wave review of the
+current section is closed and its boxes are ticked.
+
+#### Scenario: Cycles of one section
+
+- **WHEN** a section holds three cycles
+- **THEN** the session dispatches three executors and, after all three return green, one
+  reviewer
+
+#### Scenario: The next section waits
+
+- **WHEN** a wave review of section 2 has an open IMPORTANT finding
+- **THEN** no executor of section 3 is dispatched
+
+### Requirement: Subagents run on the model of their stage
+
+The session SHALL start each executor on the model `stages` assigns to `apply` and each
+reviewer on the model it assigns to `verify`, read from `lexforge status --json`. With an
+empty assignment, the model block of the skill applies. A subagent SHALL NOT inherit the
+session's model by default.
+
+#### Scenario: A session on a heavier model
+
+- **WHEN** the session runs on Opus and `apply` resolves to a Sonnet model
+- **THEN** the executors start on the Sonnet model
+
+### Requirement: The executor's brief is the context output
+
+The executor's brief SHALL consist of the output of
+`lexforge context --change <name> --task <id> --json` for its cycle and the instruction to
+run the cycle. The brief SHALL NOT hand over the full plan, the full design or a shared
+brief file.
+
+#### Scenario: A shared brief file
+
+- **WHEN** the session is about to tell an executor to read a shared brief file before work
+- **THEN** it sends the context output of that cycle instead
+
+### Requirement: Waiting on a subagent does not poll
+
+On a runtime with a blocking wait for a subagent, the session SHALL wait with one blocking
+call per expected result and SHALL NOT call the wait in a loop with a short timeout.
+
+#### Scenario: Codex waits on an executor
+
+- **WHEN** a Codex session has dispatched an executor
+- **THEN** it waits with one `wait_agent` call with a long timeout instead of repeated short
+  waits
+

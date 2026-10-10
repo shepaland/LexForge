@@ -6,8 +6,7 @@ material inputs and the actual RED assertion; ensure authorization, cryptography
 isolation and migration work receives its required specialist control. Return the JSON
 report described in [execution-v2.md](execution-v2.md), alongside file/line findings.
 
-Fill this in and send it to a general-purpose subagent after every task, before that
-task's own checkbox is marked. The sender is the session that read the plan: an
+Fill this in and send it to a general-purpose subagent once the wave is green, before any checkbox of it is marked. The sender is the session that read the plan: an
 executor starts no agent of any kind, so it never sends this brief itself. Where the
 runtime can reach no agent at all, there is no sender: the task stops at its review,
 unmarked, rather than being sent anywhere. Everything the reviewer knows about the work
@@ -119,6 +118,9 @@ costs as much as a nitpick called CRITICAL.
 
 ## Answer in this form
 
+Every finding names its cycle, for example `c3-coupon`, so the session can tie it to one
+cycle of the wave.
+
 ### Strengths
 What the diff does well. Be specific; name files and lines.
 
@@ -167,3 +169,16 @@ with:
 turns a nitpick into a blocking entry. If a finding is wrong, answer it with the
 requirement quoted, the test, or the line of code that disproves it - never with silence
 and never with a fix you do not believe in.
+
+## A re-review
+
+A re-review checks the fixes, not the wave again. Hand the reviewer the fix patch and the
+earlier findings only. Leave out the cycles that had no finding, the snapshots of the
+whole wave and the old verdicts. The reviewer answers with `"scope": "fixes"` and says,
+for each earlier finding, whether the patch closes it, with `file:line`. A finding the
+patch did not close stays open; the session sends the fix back to the executor.
+
+| Excuse | Reality |
+|---|---|
+| "The brief's fix-round rule asks for the full cycle against its original baseline, so the snapshots go in too." | The fix patch and the earlier findings are the whole brief. The baseline and the snapshots stay out. |
+| "A second review of the same diffs would only use up time before 17:30." | The same diffs are not sent again. Only the fix patch is, and the next step is its re-review. |

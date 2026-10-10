@@ -4,6 +4,7 @@ import { save } from "../execution/files.js";
 import path from "node:path";
 import { answerPath } from "../answer-path.js";
 import { UsageError } from "../../cli/errors.js";
+import { assertBranchable, openFeatureBranch } from "../git/feature-branch.js";
 import { loadSchema } from "../schemas/load-schema.js";
 import type { CommandResult } from "../types.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
@@ -25,6 +26,7 @@ export interface CreateChangeData {
   change: string;
   schema: string;
   created: string[];
+  createdBranches: string[];
   nextStep: string;
 }
 
@@ -37,9 +39,12 @@ export function createChange(options: CreateChangeOptions): CommandResult<Create
   // workspace exactly as it was.
   checkName(name);
   checkFree(paths.changeDir(name), paths.archive, name);
+  assertBranchable(root, name);
 
   const schemaName = options.schema ?? readProjectConfig(root).schema;
   const schema = loadSchema(schemaName);
+
+  const { createdBranches } = openFeatureBranch(root, name);
 
   const changeDir = paths.changeDir(name);
   const configFile = paths.changeConfig(name);
@@ -58,12 +63,14 @@ export function createChange(options: CreateChangeOptions): CommandResult<Create
     change: name,
     schema: schemaName,
     created: [answerPath(changeDir), answerPath(configFile), answerPath(path.join(changeDir, "workflow.json"))],
+    createdBranches,
     nextStep,
   };
 
   const lines = [
     `Created change "${name}" on schema "${schemaName}".`,
     ...data.created.map((entry) => `  ${entry}`),
+    `Branches created: ${createdBranches.join(", ")}.`,
   ];
 
   return { data, lines, nextStep, exitCode: 0 };

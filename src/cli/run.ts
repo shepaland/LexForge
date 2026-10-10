@@ -12,6 +12,7 @@ import {
 import { registerArchive } from "./commands/archive.js";
 import { registerCheck } from "./commands/check.js";
 import { registerDefect } from "./commands/defect.js";
+import { registerStyles } from "./commands/styles.js";
 import { registerDoctor } from "./commands/doctor.js";
 import { registerEvidence } from "./commands/evidence.js";
 import { registerInit } from "./commands/init.js";
@@ -102,6 +103,7 @@ export function createProgram(context: CliContext): Command {
   registerEvidence(program, context);
   registerContext(program, context);
   registerDefect(program, context);
+  registerStyles(program, context);
   registerVerify(program, context);
   registerArchive(program, context);
 

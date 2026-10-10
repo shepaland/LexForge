@@ -27,6 +27,25 @@ const ENTRY_HEAD = 3;
  * would make every run stale the moment it finished.
  */
 export function worktreeDigest(root: string, exclude: string[] = []): string {
+  const entries = worktreeEntries(root, exclude);
+  const digest = createHash("sha256");
+
+  for (const relative of Object.keys(entries).sort()) {
+    digest.update(relative);
+    digest.update("\0");
+    digest.update(entries[relative]!);
+    digest.update("\n");
+  }
+
+  return PREFIX + digest.digest("hex");
+}
+
+/**
+ * The changed and untracked paths of the working tree, each mapped to the
+ * hash of its content. `worktreeDigest` hashes this same record, so a refusal
+ * can name the paths that moved while the digest stays the single comparison.
+ */
+export function worktreeEntries(root: string, exclude: string[] = []): Record<string, string> {
   const top = readGit(root, ["rev-parse", "--show-toplevel"]);
   const raw = readGit(root, [
     "status",
@@ -39,16 +58,14 @@ export function worktreeDigest(root: string, exclude: string[] = []): string {
     ...exclude.map(file => `:(exclude,literal)${file}`),
   ]);
 
-  const digest = createHash("sha256");
+  // No prototype, so a path named `__proto__` is kept as an ordinary key.
+  const entries: Record<string, string> = Object.create(null);
 
   for (const relative of changedPaths(raw)) {
-    digest.update(relative);
-    digest.update("\0");
-    digest.update(fileDigest(path.join(top, relative)));
-    digest.update("\n");
+    entries[relative] = fileDigest(path.join(top, relative));
   }
 
-  return PREFIX + digest.digest("hex");
+  return entries;
 }
 
 /**

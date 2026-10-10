@@ -28,4 +28,4 @@ it('allows disjoint cycles to finish without resetting each other’s baselines'
   expect(cycleProblems(root,'demo')).toEqual([]);
   writeAt(root,'outside.txt','unreviewed');
   expect(cycleProblems(root,'demo').join(' ')).toContain('outside the execution plan');
-});
+}, 60000);

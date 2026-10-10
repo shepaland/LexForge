@@ -54,8 +54,7 @@ MINOR. No report here? Name `lexforge-verify` next and stop. CRITICAL or IMPORTA
 Give the work back to it. MINOR leaves the merge to run.
 
 A report is not a green suite, a fresh stamp, ticked boxes, per-task reviews, a compacted
-session, or the user saying it came out clean. Those are what `lexforge archive` recounts;
-the report is the part no exit code produces.
+session, or the user saying it came out clean. Those are what `lexforge archive` recounts.
 
 ## Running the command
 
@@ -76,8 +75,7 @@ spells it.
 
 Editing a file under `lexforge/specs/` by hand to pass the merge is out. That file is what
 the merge writes; hand-editing it takes live behaviour out of the record and disarms the
-check that caught the mismatch. A release in an hour, a follow-up change already
-drafted, a user who owns the repository - all leave it out. Offering to do it if they
+check that caught the mismatch. Offering to do it if they
 insist is doing it, one message later.
 
 Copying the spec's block into the delta unchanged is the same failure wearing a `0`: the
@@ -87,18 +85,21 @@ Run the command again until it exits `0`.
 
 ## Finishing the branch
 
-After `0`, put three options to the user and wait: merge into the base branch locally;
-push and open a pull request; leave the branch as it is.
+`lexforge archive` merges the change's feature branch into dev itself.
 
-Nothing moves before the answer. Say the base branch out loud and have it confirmed before
-merging - `main` is a guess until the user says it. After a merge, run the checks on the
-merged result: green on the branch says only that the branch was green.
+On a conflict the change stays on its feature branch. The command exits `1` and lists the
+conflicting paths in the findings. Show them to the user. Then follow `nextStep`: check out
+dev, run `git merge feature/<name>`, resolve, commit.
 
-Red after the merge stops the work: branch and worktree stay, and the failure is the next
-thing you say.
+Merge dev into main only on the user's answer to the question `nextStep` names. Ask it,
+name `main` aloud, wait. After a merge, run the checks. Red stops the work: the branch and
+worktree stay, and the failure is the next thing you say.
 
-Deleting a branch, a worktree or a change directory is not one of the options: only a
-direct request, confirmed separately.
+| Excuse | Reality |
+|---|---|
+| "We ship fast here" | Pace is not an answer. Ask. |
+| "Archive is done, nice. Thanks." | Thanks ends the archive, not the question. |
+| "A pull request I open myself" | It starts the release unasked. |
 
 ## Rationalizations
 

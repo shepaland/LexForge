@@ -127,8 +127,11 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
     ...lineLimitFindings(root, base, changed, config.sizeLimit, longFilePath),
   ];
 
-  const nextStep =
-    findings.length === 0
+  const outsideEdits = cycleFindings.some(finding =>
+    finding.message.startsWith("Unreviewed changes outside the execution plan:"));
+  const nextStep = outsideEdits
+    ? `revert these edits, or add a task that owns them, then run lexforge verify --change ${options.change}`
+    : findings.length === 0
       ? "go through the list above by hand: read design.md against the code, " +
         "then judge the requirements yourself"
       : `fix the findings above, then run: lexforge verify --change ${options.change}`;

@@ -15,6 +15,7 @@ import {
   reviewCycle,
   closeCycle,
 } from "../../core/execution/cycles.js";
+import { reviewWave } from "../../core/execution/wave-review.js";
 import { withExecutionLock } from "../../core/execution/lock.js";
 import { refuseWithoutSubcommand } from "../subcommand-group.js";
 export function registerContext(program: Command, ctx: CliContext): void {
@@ -137,15 +138,24 @@ export function registerContext(program: Command, ctx: CliContext): void {
         output(r, o.json, r.exitCode);
       }),
     );
-  cycle("review")
+  common(group.command("review"))
+    .option("--cycle <id>", "cycle ID from execution-plan.json")
+    .option("--wave <section>", "section number of tasks.md reviewed as one wave")
     .requiredOption(
       "--file <path>",
       "independent review JSON, relative to workspace",
     )
     .action((o) =>
-      locked(o, () =>
-        output(reviewCycle(root(), o.change, o.cycle, o.file), o.json),
-      ),
+      locked(o, () => {
+        if ((o.cycle === undefined) === (o.wave === undefined))
+          refuse("Give exactly one of --cycle and --wave");
+        output(
+          o.wave === undefined
+            ? reviewCycle(root(), o.change, o.cycle, o.file)
+            : reviewWave(root(), o.change, o.wave, o.file),
+          o.json,
+        );
+      }),
     );
   cycle("close").action((o) =>
     locked(o, () => {

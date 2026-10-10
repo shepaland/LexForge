@@ -20,7 +20,8 @@ import {
 } from "./proofs.js";
 import { hashFile, local, refuse, save } from "./files.js";
 import { readState } from "./state.js";
-import { checkFinalScope } from "./scope.js";
+import { taskMaterials } from "./context-material.js";
+import { checkFinalScope, currentOutside } from "./scope.js";
 export function context(
   root: string,
   change: string,
@@ -88,6 +89,7 @@ export function context(
     requirements: content.requirements,
     requirement_ids: content.requirements.map((r) => r.id),
     design_decisions: content.design,
+    materials: taskMaterials(root, change, content.tasks.map((t) => t.text).join("\n")),
     allowed_files: c.files,
     test_commands: selected
       ? [c.command]
@@ -192,13 +194,38 @@ export function continuation(root: string, change: string, persist = false) {
     save(local(root, `${changeDir(change)}/continuation.json`), result);
   return result;
 }
+function outsideProblem(paths: string[]): string {
+  return `Unreviewed changes outside the execution plan: ${paths.join(", ")}`;
+}
+/** A migrated change reports the outside edits by path too, once a baseline exists to compare with. */
+function withOutsidePaths(
+  root: string,
+  change: string,
+  cycles: ReturnType<typeof executionPlan>,
+  issues: string[],
+): string[] {
+  const bare = "Unreviewed changes outside the execution plan";
+  if (!issues.includes(bare)) return issues;
+  try {
+    const compared = checkFinalScope(root, change, cycles);
+    const outside = compared.length ? compared : currentOutside(root, cycles);
+    return issues.map((issue) =>
+      issue !== bare || outside.length === 0 ? issue : outsideProblem(outside),
+    );
+  } catch {
+    const outside = currentOutside(root, cycles); // no baseline yet
+    return issues.map((issue) =>
+      issue !== bare || outside.length === 0 ? issue : outsideProblem(outside),
+    );
+  }
+}
 export function cycleProblems(root: string, change: string): string[] {
   if (workflow(root, change).version !== 2) return [];
   try {
     const cycles = executionPlan(root, change, true);
     const completion = effectiveCompletion(root, change, cycles);
     if (completion.ledger) {
-      return [...migrationFreshness(root, change, cycles, completion.ledger),
+      return [...withOutsidePaths(root, change, cycles, migrationFreshness(root, change, cycles, completion.ledger)),
         ...completion.open.map(id => {
           const task = completion.ledger!.tasks.find(t => t.id === id);
           return `Migration task ${id}: ${task?.classification ?? "incomplete"}; ${task?.gaps[0]?.minimumAction ?? "complete native execution and review"}`;
@@ -207,7 +234,8 @@ export function cycleProblems(root: string, change: string): string[] {
       ];
     }
     const issues: string[] = [];
-    checkFinalScope(root, change, cycles);
+    const outside = checkFinalScope(root, change, cycles);
+    if (outside.length > 0) issues.push(outsideProblem(outside));
     const closed = cycles
       .flatMap((c) => {
         const s = readState(root, change, c.id);

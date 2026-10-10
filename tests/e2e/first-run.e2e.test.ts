@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { afterAll, describe, expect, inject, it } from "vitest";
 
-import { git } from "../helpers/git-workspace.js";
+import { commitAll, git } from "../helpers/git-workspace.js";
 import { npmCall, npxCall, runProcess, type ProcessResult } from "../helpers/npm.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
@@ -123,6 +123,9 @@ describe("круг из четырёх вызовов", () => {
         "utf8",
       );
 
+      writeFileSync(path.join(root, ".gitignore"), "node_modules/\n", "utf8");
+      commitAll(root, "init");
+
       const doctor = await lexforge(["doctor"], project);
       expect(doctor.status, doctor.stderr).toBe(0);
 
@@ -171,6 +174,11 @@ describe("пакет потерял шаблон", () => {
 
       const init = await lexforge(["init", "--tools", "claude"], project);
       expect(init.status, init.stderr).toBe(0);
+
+      // `new change` opens a branch and needs a committed tree.
+      git(project.root, "init", "--initial-branch=main", "--quiet");
+      writeFileSync(path.join(project.root, ".gitignore"), "node_modules/\n", "utf8");
+      commitAll(project.root, "init");
 
       const templatePath = path.join(
         project.root,

@@ -38,8 +38,11 @@ const reviewSchema = z
         level: z.enum(["critical", "important", "minor"]),
         message: z.string().min(1),
         resolved: z.boolean(),
+        cycle: z.string().min(1).optional(),
       }),
     ),
+    scope: z.enum(["wave", "fixes"]).optional(),
+    previous: z.string().min(1).optional(),
   })
   .strict();
 export const stateSchema = z
@@ -61,6 +64,10 @@ export const stateSchema = z
         fileHash: z.string(),
       })
       .optional(),
+    reviewBase: z.string().optional(),
+    reviewBaseHashes: stringMap.optional(),
+    reviewFile: z.string().optional(),
+    reviewFileHash: z.string().optional(),
     patch: z.string().optional(),
     patchHash: z.string().optional(),
     closedAt: z.string().optional(),
