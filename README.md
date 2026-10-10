@@ -34,6 +34,7 @@ starts the appropriate workflow. See [First run](#first-run) for setup details.
 
 | Version | What the update gives you |
 | --- | --- |
+| [3.0.0](CHANGELOG.md#300--2026-10-10) | One reviewer checks a whole wave of cycles, and after fixes only their diff is reviewed again. Refusals name the files involved. Specs carry an ASCII sequence diagram with a contract table for interactions and a mockup for UI; the plan and the executor work against them. Each change runs on `feature/<name>` and is merged into `dev` on archive. |
 | [2.2.0](CHANGELOG.md#220--2026-10-03) | Routes and external absolute paths in task descriptions no longer become repository files. An optional `Files:` line gives exact writable scope; existing plans keep working and unsafe explicit paths are rejected. |
 | [2.1.0](CHANGELOG.md#210--2026-10-03) | Before running a command in a terminal, the CLI checks for a newer version. Choose to update through npm or continue with the installed version; scripts and JSON output run without a prompt. |
 | [2.0.0](CHANGELOG.md#200--2026-10-03) | Moving to the new workflow preserves confirmed work so the agent can finish what remains. Tokens are not spent repeating accepted tasks; missing checks run separately. |
@@ -73,7 +74,7 @@ lists other compatibility changes and requirements for older plans.
 | Operating system | Linux, macOS and Windows; the suite runs on all three in CI |
 | Node.js | 20.19.0 or newer, the version from `engines`; CI covers 20.19 and 22 |
 | Agent runtime | `agents`, `claude`, `codex`, `cursor`, `opencode` |
-| git | a repository with at least one commit; without it `evidence record`, `check evidence`, `verify` and `archive` answer `2`. `lexforge init` needs none |
+| git | a repository with at least one commit and a `dev` or `main` branch; without it `new change`, `evidence record`, `check evidence`, `verify` and `archive` answer `2`. `lexforge init` needs none |
 
 Windows supports CRLF line endings and command lookup through `PATHEXT`.
 Paths in responses use `/`. The `lexforge.cmd` wrapper is not counted as a separate installation.
@@ -106,7 +107,7 @@ request: "build X", "add Y", "fix Z"
 skill: lexforge — names the class of work  ──►  spike: answer only, no change
     │  bounded · spec-driven
     ▼
-lexforge new change <name>
+lexforge new change <name>  ──►  branch feature/<name> from dev
     │
     ▼
 PLANNING — project code is not touched. Every skill first calls
@@ -119,8 +120,8 @@ on `blocked` it names what is missing and stops.
     │
     ▼  isPlanningComplete = true
 IMPLEMENTATION — lexforge-apply, behavioural cycles (workflow 2)
-    cycle start ──► RED ──► implementation ──► GREEN ──► review ──► cycle close
-    at the wave boundary: evidence record
+    cycle start ──► RED ──► implementation ──► GREEN ──► cycle close
+    at the wave boundary: one review of the wave, evidence record
     task grew past the spec → stop and ask the user
     │
     ▼
@@ -129,6 +130,7 @@ lexforge-verify · lexforge verify --change <name>
     zero CRITICAL  → lexforge archive <change>
                      delta  → lexforge/specs/<capability>/spec.md
                      change → lexforge/changes/archive/<date>-<name>/
+                     feature/<name> → merged into dev; dev → main only on your answer
 
 off the pipeline: lexforge-debug — failing test, broken build, unexpected
 behaviour; it works without a LexForge workspace too.
@@ -294,7 +296,7 @@ The agent picks a skill by the `description` field in `SKILL.md`. Five skills ha
 | --- | --- | --- |
 | `lexforge` | Building, adding or fixing something no change covers | The class of work named, a change created with the right schema |
 | `lexforge-propose` | A proposal is asked for, or `proposal` is `ready` | `proposal.md`: the reason, the approach, the boundaries |
-| `lexforge-spec` | Requirements are asked for, or `validate` finds a defect | Delta specs per capability with `WHEN`/`THEN` scenarios |
+| `lexforge-spec` | Requirements are asked for, or `validate` finds a defect | Delta specs per capability with `WHEN`/`THEN` scenarios, a sequence diagram and contract table for interactions, a mockup for UI |
 | `lexforge-design` | Decisions are asked for, on the `spec-driven` schema | `design.md`, agreed one section at a time |
 | `lexforge-plan` | A plan is asked for, or `validate` finds a defect in it | `tasks.md`, each task naming a file and a verification command |
 
@@ -304,7 +306,7 @@ Skills wait until required documents are ready before starting implementation.
 | --- | --- | --- |
 | `lexforge-apply` | The artifacts are done, implementation is asked for | Behavioural cycles with RED/GREEN, independent review and evidence; the legacy task loop for workflow 1 |
 | `lexforge-verify` | Implementation is finished, before archiving | Machine checks and review against requirements; open `CRITICAL` and `IMPORTANT` block completion |
-| `lexforge-archive` | The report has no `CRITICAL` findings | The delta in `lexforge/specs/`, the change in the archive, a question about the branch |
+| `lexforge-archive` | The report has no `CRITICAL` findings | The delta in `lexforge/specs/`, the change in the archive, the branch merged into `dev`, a question about `main` |
 | `lexforge-debug` | A test fails, a build breaks, code behaves unexpectedly | The cause named, a failing test for the bug, one edit at that point |
 
 Implementation skills check `isPlanningComplete`. Work starts once each document is prepared
@@ -320,7 +322,7 @@ in `lexforge/config.yaml`; agents receive them through `lexforge instructions`.
 | --- | --- |
 | `init` | Sets up the `lexforge/` workspace and installs the skills; `--tools`, `--scope`, `--language` |
 | `doctor` | Checks whether the local installation is healthy |
-| `new change <name>` | Creates the change directory, `.lexforge.yaml` and `workflow.json`; `--schema` overrides the project default |
+| `new change <name>` | Creates the change directory, `.lexforge.yaml` and `workflow.json` on a new `feature/<name>` branch from `dev`; `--schema` overrides the project default |
 | `status` | Shows the artifact statuses of one change, or lists the active changes |
 | `instructions <artifact> --change <name>` | Serves the template, the context, the rules and the instruction |
 | `validate <change>` | Checks the artifacts and requirements; `--strict` adds completeness checks |
@@ -332,12 +334,14 @@ in `lexforge/config.yaml`; agents receive them through `lexforge instructions`.
 | `workflow migrate --change <name> --to 2` | Previews with `--dry-run`; applies a recoverable migration after authorization |
 | `cycle start --change <name> --cycle <id> --executor <identity>` | Captures the files before edits |
 | `cycle run --change <name> --cycle <id> --phase red\|green` | Runs the cycle's declared command and records evidence |
-| `cycle review --change <name> --cycle <id> --file <path>` | Registers an independent report against current GREEN |
+| `cycle review --change <name> --wave <section> --file <path>` | Registers one independent report for every cycle of a plan section; `--cycle <id>` reviews one cycle |
 | `cycle close --change <name> --cycle <id>` | Checks cycle completion and saves continuation state |
 | `cycle restart --change <name> --cycle <id> --executor <identity>` | Starts a new attempt while retaining history and the original review baseline |
 | `resume --change <name>` | Rebuilds continuation state from primary records |
 | `verify --change <name>` | Checks a change before the work is called finished |
-| `archive <change>` | Merges the delta into the specs and moves the change to the archive |
+| `archive <change>` | Merges the delta and mockups into the specs, moves the change to the archive and merges `feature/<name>` into `dev` |
+| `styles find` | Lists the project's CSS files for mockups |
+| `styles set <paths...>` | Saves the chosen CSS files under `ui.styles` in `lexforge/config.yaml` |
 | `defect record --change <name>` | Records a defect against a change; `--level`, `--file`, `--line`, `--summary` |
 | `defect close <id>` | Marks a recorded defect as fixed |
 | `defect list` | Lists recorded defects; `--change` and `--open` narrow the list |

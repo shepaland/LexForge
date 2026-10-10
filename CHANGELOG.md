@@ -17,6 +17,52 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 3.0.0 — 2026-10-10
+
+Workflow 2 asks for fewer agent round trips: one independent review per wave, a re-review
+of the fix diff only, and refusals that name the files. Specs gain interaction contracts
+and UI mockups, and every change runs on its own feature branch.
+
+### Contract
+
+- `new change` now needs a git repository with `dev` or `main` and a clean working tree.
+  It answers `2` with `not-a-git-repository`, `worktree-dirty`, `feature-branch-exists`
+  or `main-branch-missing` where it answered `0` before. On success it creates
+  `feature/<name>` from `dev` and checks it out; a missing `dev` is created from `main`.
+- `archive` commits the merged delta on `feature/<name>`, merges it into `dev` with
+  `--no-ff` and reports `merged` in its JSON. A conflict aborts the merge, returns to the
+  feature branch and answers `1` with a `merge-conflict` finding per file. The change is
+  archived either way; do not run `archive` again. A change started on another branch is
+  archived without a merge, and `nextStep` says so.
+- `cycle review` takes `--wave <section>` instead of `--cycle <id>` for one report over
+  every cycle of a plan section; exactly one of the two is required. A finding may name
+  its `cycle`, and a report with `"scope": "fixes"` reviews only the fix diff.
+- A write outside the execution plan no longer stops `cycle start` or `cycle run`.
+  `verify` and `archive` refuse it once and list every such path.
+- `validate --strict` checks requirements marked `Interaction:` (an ASCII sequence
+  diagram and a contract table, every arrow matched by a row, a length for every string
+  and array field) and `Mockup:` (the mockup file exists, its classes come from the
+  project CSS or from the list of approved classes).
+- `check plan` refuses a task traced to such a requirement unless it names the diagram
+  anchor or the mockup path. `context --json` returns the named diagrams, contract tables
+  and mockups with their CSS under `materials`.
+- New commands `styles find` and `styles set` list the project's CSS files and save the
+  chosen ones under `ui.styles` in `lexforge/config.yaml`; with `--json` they answer
+  `{outputVersion, styles, nextStep}`.
+
+### Other
+
+- `archive` copies mockups and their CSS into `lexforge/specs/` with the delta.
+- `lexforge-apply` sends one reviewer per wave; a cycle with `controls` keeps its own.
+  Executors receive only the `lexforge context` output, start on the model of their
+  stage, and Codex waits for a subagent with one blocking call instead of polling.
+- `lexforge-spec` offers an HTML and CSS mockup from a visual editor or an ASCII mockup,
+  and asks before a new or changed class enters the spec.
+- `lexforge-archive` asks whether to merge `dev` into `main` and never merges unasked.
+
+Upgrade the skills with the CLI: `npm install -g lexforge@3.0.0`, then
+`lexforge init --tools <list>`. Commit or stash work before `lexforge new change`.
+
 ## 2.2.0 — 2026-10-03
 
 Task plans can distinguish repository files from routes and external paths without
