@@ -25,6 +25,7 @@ import {
 import { equal, hashFile, hashes, local, refuse, save } from "./files.js";
 import {
   codeState,
+  plannedState,
   currentGreen,
   environment,
   assertInputs,
@@ -40,7 +41,7 @@ import {
   type CycleState,
   type CycleRun,
 } from "./state.js";
-function selected(root: string, change: string, id: string): Cycle {
+export function selected(root: string, change: string, id: string): Cycle {
   if (!readChangeState(root, change).state.isPlanningComplete)
     refuse(
       "Planning is incomplete; complete or explicitly skip required artifacts",
@@ -51,7 +52,7 @@ function selected(root: string, change: string, id: string): Cycle {
   if (!c) refuse(`Unknown cycle: ${id}`);
   return c;
 }
-function active(root: string, change: string, c: Cycle): CycleState {
+export function active(root: string, change: string, c: Cycle): CycleState {
   const s = readState(root, change, c.id);
   if (!s) refuse("Start the cycle before edits");
   if (s.closedAt)
@@ -166,9 +167,8 @@ export async function runCycle(
     change,
     c,
     executionPlan(root, change, true),
-    s.outsideDigest,
   );
-  const beforeState = codeState(root);
+  const beforeState = plannedState(root, change);
   const beforeFiles = hashes(
     root,
     c.files.map((f) => f.path),
@@ -217,7 +217,7 @@ export async function runCycle(
     closeSync(fd);
   }
   observe(pending);
-  const state = codeState(root);
+  const state = plannedState(root, change);
   const stable =
     equal(
       beforeFiles,
@@ -278,7 +278,7 @@ export async function runCycle(
           "--no-ext-diff",
           "--no-textconv",
           "--",
-          local(root, s.before),
+          local(root, s.reviewBase ?? s.before),
           local(root, snapshotPath),
         ],
         { cwd: root, stdio: ["ignore", handle, "pipe"] },
@@ -319,6 +319,11 @@ export function reviewCycle(
   const report = parseReview(local(root, file));
   if (report.reviewer === s.executor)
     refuse("Review must be independent of the executor");
+  const foreign = report.findings.find(
+    (f) => f.cycle !== undefined && f.cycle !== id,
+  );
+  if (foreign)
+    refuse(`Finding ${foreign.id} names cycle ${foreign.cycle}, not ${id}`);
   if (c.acceptance.some((a) => !report.acceptance.includes(a.id)))
     refuse("Review must account for every acceptance criterion");
   if (c.controls.some((x) => !report.controls.includes(x)))
@@ -348,7 +353,10 @@ export function closeCycle(root: string, change: string, id: string) {
   if (
     s.review.report.verdict !== "approved" ||
     s.review.report.findings.some(
-      (f) => !f.resolved && (f.level === "critical" || f.level === "important"),
+      (f) =>
+        !f.resolved &&
+        (f.level === "critical" || f.level === "important") &&
+        (f.cycle === undefined || f.cycle === id),
     )
   )
     refuse("Blocking review findings remain open");

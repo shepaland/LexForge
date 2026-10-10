@@ -470,3 +470,26 @@ naming task is not declared `(move)`.
 - **WHEN** `long_files: refactor` is recorded and the first task naming `src/billing.ts` is
   declared `(move)`
 - **THEN** `check plan` reports no finding about the order of work on `src/billing.ts`
+
+### Requirement: A task traced to a diagram or a mockup names it
+
+A task that names a requirement carrying an `Interaction:` or a `Mockup:` line SHALL name,
+in its text, the diagram anchor or the mockup path of that requirement, in the form
+`specs/<capability>/spec.md#<anchor>` or `specs/<capability>/mockups/<file>`.
+
+A task without that reference SHALL be a finding of `lexforge check plan` naming the task
+and the requirement.
+
+`lexforge context` SHALL include the referenced diagram, contract table or mockup in the
+cycle's output.
+
+#### Scenario: A UI task without its mockup
+
+- **WHEN** task 2.1 names the requirement "Login screen", which holds
+  `Mockup: mockups/login.html`, and the task text does not name that path
+- **THEN** `lexforge check plan` reports task 2.1 and "Login screen"
+
+#### Scenario: The executor receives the mockup
+
+- **WHEN** task 2.1 names `specs/web/mockups/login.html`
+- **THEN** `lexforge context --task 2.1` includes that mockup and its CSS file

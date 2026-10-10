@@ -137,7 +137,7 @@ describe("lexforge archive: запись спек и перенос катало
     expect(existsSync(path.join(root, `lexforge/changes/${CHANGE}`))).toBe(true);
   });
 
-  it("ответ --json несёт семь полей, и archivePath называет каталог архива", async () => {
+  it("ответ --json несёт восемь полей, и archivePath называет каталог архива", async () => {
     const root = await cleanWorkspace(changeFiles(CLOSED_PLAN));
 
     const { exitCode, capture } = await call(["archive", CHANGE, "--json"], root);
@@ -148,6 +148,7 @@ describe("lexforge archive: запись спек и перенос катало
       "archivePath",
       "change",
       "findings",
+      "merged",
       "nextStep",
       "outputVersion",
       "summary",
@@ -157,6 +158,7 @@ describe("lexforge archive: запись спек и перенос катало
     expect(answer.workspaceRoot).toBe(answerPath(root));
     expect(answer.change).toBe(CHANGE);
     expect(answer.findings).toEqual([]);
+    expect(answer.merged).toBe(false);
     expect(answer.archivePath).toBe(`lexforge/changes/archive/${today()}-${CHANGE}`);
     expect(answer.nextStep).toContain("branch");
   });

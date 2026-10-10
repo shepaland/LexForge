@@ -2,19 +2,19 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
-import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
+import { createGitWorkspace, type GitWorkspace } from "../helpers/git-workspace.js";
 
-const created: string[] = [];
+const created: GitWorkspace[] = [];
 
 function workspace(): string {
-  const root = makeWorkspace({ "lexforge/config.yaml": "schema: spec-driven\n" });
-  created.push(root);
-  return root;
+  const made = createGitWorkspace({ "lexforge/config.yaml": "schema: spec-driven\n" });
+  created.push(made);
+  return made.root;
 }
 
 afterEach(() => {
   while (created.length > 0) {
-    removeWorkspace(created.pop()!);
+    created.pop()!.remove();
   }
 });
 

@@ -7,13 +7,30 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { readHead } from "../git/repository.js";
-import { worktreeDigest } from "../git/worktree-digest.js";
+import { createHash } from "node:crypto";
+import { worktreeEntries } from "../git/worktree-digest.js";
 import { digest, equal, hashFile, hashes, local, refuse } from "./files.js";
-import { contract, type Cycle } from "./plan.js";
+import { contract, executionPlan, type Cycle } from "./plan.js";
+import { plannedFiles } from "./scope.js";
 import type { CycleRun, CycleState } from "./state.js";
 
-export function codeState(root: string) {
-  return { head: readHead(root), worktreeDigest: worktreeDigest(root) };
+/**
+ * The head and a digest of the working tree. With `planned`, only those
+ * paths are digested, so an edit elsewhere leaves the state as it was.
+ */
+export function codeState(root: string, planned?: string[]) {
+  const entries = worktreeEntries(root);
+  const only = planned && new Set(planned);
+  const hash = createHash("sha256");
+  for (const name of Object.keys(entries).sort()) {
+    if (only && !only.has(name)) continue;
+    hash.update(`${name}\0${entries[name]}\n`);
+  }
+  return { head: readHead(root), worktreeDigest: `sha256:${hash.digest("hex")}` };
+}
+
+export function plannedState(root: string, change: string) {
+  return codeState(root, plannedFiles(executionPlan(root, change, true)));
 }
 
 export function environment(cycle: Cycle): string {
@@ -98,7 +115,7 @@ export function currentGreen(
     equal(green.inputs, hashes(root, cycle.inputs)) &&
     green.environment === environment(cycle) &&
     green.contract === contract(root, change, cycle) &&
-    equal(green.state, codeState(root)) &&
+    equal(green.state, plannedState(root, change)) &&
     equal(
       green.snapshotHashes,
       hashes(

@@ -244,6 +244,528 @@
       "summary": "checkPlan reads .lexforge.yaml twice: once inside readChangeState and once for longFilePath",
       "state": "open",
       "recordedAt": "2026-09-20T07:06:31.223Z"
+    },
+    {
+      "id": "af068983",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/core/git/worktree-entries.test.ts",
+      "line": 40,
+      "summary": "worktreeEntries test checks the a.txt hash by regex only and has no case for a deleted tracked file mapping to <deleted>",
+      "state": "open",
+      "recordedAt": "2026-10-10T17:25:30.559Z"
+    },
+    {
+      "id": "b439b314",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/skills/lean-cycles-scenarios.test.ts",
+      "line": 72,
+      "summary": "the violation check accepts any text containing 'any option but A', an inverted sentence included; anchor on 'Any option but A is a violation'",
+      "state": "open",
+      "recordedAt": "2026-10-10T17:25:58.409Z"
+    },
+    {
+      "id": "02b58954",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/scenarios/lexforge-apply/re-review-the-whole-wave.md",
+      "line": 20,
+      "summary": "Setting line left unwrapped; same at tests/scenarios/lexforge-archive/merge-dev-into-main.md:45",
+      "state": "open",
+      "recordedAt": "2026-10-10T17:27:38.680Z"
+    },
+    {
+      "id": "07dc2553",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/scenarios/lexforge-spec/interaction-without-diagram.md",
+      "line": 52,
+      "summary": "Pressures says 'one request, one answer' while the Setting lists four messages",
+      "state": "open",
+      "recordedAt": "2026-10-10T17:27:38.869Z"
+    },
+    {
+      "id": "2c0b340d",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/git/feature-branch.ts",
+      "line": 37,
+      "summary": "pathspec '.' limits the dirty check to the workspace directory; in a subdirectory workspace an edit elsewhere in the repository is carried onto the feature branch",
+      "state": "open",
+      "recordedAt": "2026-10-10T17:29:53.420Z"
+    },
+    {
+      "id": "13175723",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/git/feature-branch.ts",
+      "line": 118,
+      "summary": "dev is created before checkout -b; a failing checkout (ref collision with a 'feature' branch) leaves dev behind; validate the ref in assertBranchable",
+      "state": "open",
+      "recordedAt": "2026-10-10T17:29:53.599Z"
+    },
+    {
+      "id": "6db7983f",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "lexforge/changes/lean-cycles-and-interaction-specs/tasks/01-edits-outside-the-plan-at-the-end.md",
+      "line": 9,
+      "summary": "c1-digest evidence holds only the narrow command; the wide run of tests/core/git is covered by the wave-boundary evidence record --label tests",
+      "state": "open",
+      "recordedAt": "2026-10-10T17:30:31.020Z"
+    },
+    {
+      "id": "388c586d",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/change/create-change.ts",
+      "line": 42,
+      "summary": "assertBranchable runs twice per new change: here and again inside openFeatureBranch (feature-branch.ts:114)",
+      "state": "open",
+      "recordedAt": "2026-10-10T17:36:52.482Z"
+    },
+    {
+      "id": "70e31479",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/execution/proofs.ts",
+      "line": 29,
+      "summary": "plannedState includes HEAD: committing outside files makes GREEN and review stale; committed outside edits are invisible to checkFinalScope",
+      "state": "open",
+      "recordedAt": "2026-10-10T17:44:14.677Z"
+    },
+    {
+      "id": "a4a84698",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/validation/interaction-contract.ts",
+      "line": 7,
+      "summary": "ARROW_SHAPE /-+>/ misses arrows pointing left: 'web <-- ingest: ok' is neither parsed nor reported",
+      "state": "open",
+      "recordedAt": "2026-10-10T18:13:46.809Z"
+    },
+    {
+      "id": "dba1ea99",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/execution/context.ts",
+      "line": 209,
+      "summary": "On a migrated change an outside edit made between migrate and start is left out of the verify finding while a later outside edit is listed",
+      "state": "open",
+      "recordedAt": "2026-10-10T18:42:40.204Z"
+    },
+    {
+      "id": "88776ce5",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/execution/wave-review.ts",
+      "line": 34,
+      "summary": "A wave finding naming an already closed cycle registers with exit 0 and reaches no cycle",
+      "state": "closed",
+      "recordedAt": "2026-10-10T18:55:33.088Z",
+      "closedAt": "2026-10-10T19:05:02.581Z"
+    },
+    {
+      "id": "adb0a58d",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/execution/wave-review.ts",
+      "line": 49,
+      "summary": "The stale GREEN nextStep is not a runnable command: it lacks lexforge, --change and --cycle",
+      "state": "closed",
+      "recordedAt": "2026-10-10T18:55:33.296Z",
+      "closedAt": "2026-10-10T19:05:02.759Z"
+    },
+    {
+      "id": "8758ead1",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/cli/validate-interaction.test.ts",
+      "line": 62,
+      "summary": "The strict interaction case asserts only the rule id, not the finding's file and line",
+      "state": "open",
+      "recordedAt": "2026-10-10T18:58:40.944Z"
+    },
+    {
+      "id": "2e63b52d",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/git/merge-feature.ts",
+      "line": 31,
+      "summary": "Merge into a missing dev fails with a generic git-failed error that does not name dev",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:05:49.813Z"
+    },
+    {
+      "id": "ebfa6de0",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/git/merge-feature.ts",
+      "line": 39,
+      "summary": "A non-conflict merge failure runs merge --abort, hides the cause and leaves the user on dev",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:05:49.998Z"
+    },
+    {
+      "id": "2155e90f",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/git/merge-feature.ts",
+      "line": 25,
+      "summary": "git add --all commits every untracked non-ignored file into the archive commit",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:05:50.189Z"
+    },
+    {
+      "id": "96265e69",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/core/git/merge-feature.test.ts",
+      "line": 64,
+      "summary": "The first-parent check compares against dev^1 instead of the dev tip captured before the merge",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:05:50.385Z"
+    },
+    {
+      "id": "b9706b32",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/workspace/project-config.ts",
+      "line": 148,
+      "summary": "A non-object ui value fails with path ui and does not name ui.styles",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:09:26.460Z"
+    },
+    {
+      "id": "8d3d2269",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/core/workspace/ui-styles-config.test.ts",
+      "line": 37,
+      "summary": "A styles list holding a non-string is not tested",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:09:26.644Z"
+    },
+    {
+      "id": "354a7732",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/validation/ui-mockup.ts",
+      "line": 78,
+      "summary": "A class missing from the project CSS but marked changed is accepted; the spec requires new",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:37.892Z"
+    },
+    {
+      "id": "af9945fc",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/validation/ui-mockup.ts",
+      "line": 122,
+      "summary": "ui-styles-missing is deduplicated per spec file, not per change",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:38.068Z"
+    },
+    {
+      "id": "6855084a",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/validation/ui-mockup.ts",
+      "line": 140,
+      "summary": "A missing file named in ui.styles reads as empty and every class becomes mockup-class-unagreed",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:38.242Z"
+    },
+    {
+      "id": "11495a59",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/validation/ui-mockup.ts",
+      "line": 56,
+      "summary": "The per-line style check misses style= at line start and flags plain text",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:38.416Z"
+    },
+    {
+      "id": "ff0d410b",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/validation/ui-mockup.ts",
+      "line": 115,
+      "summary": "A backslash Mockup target resolves on Windows but is missing on POSIX",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:38.587Z"
+    },
+    {
+      "id": "482dacf2",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/validation/mockup-classes.ts",
+      "line": 59,
+      "summary": "The class line is off by one when class= starts an unindented line",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:38.756Z"
+    },
+    {
+      "id": "d668e398",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/validation/mockup-classes.ts",
+      "line": 18,
+      "summary": "Nested CSS rules, @scope, escaped names and :not(.x) are parsed wrongly",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:38.927Z"
+    },
+    {
+      "id": "d0066d2c",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/core/validation/ui-mockup.test.ts",
+      "line": 11,
+      "summary": "load() swallows every import error",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:39.104Z"
+    },
+    {
+      "id": "5e022f91",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/core/validation/ui-mockup.test.ts",
+      "line": 120,
+      "summary": "The once in names ui.styles once is never tested",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:39.278Z"
+    },
+    {
+      "id": "b0c89532",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/archive/copy-mockups.ts",
+      "line": 23,
+      "summary": "A mockup deleted in the change stays as an orphan in the main specs",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:39.451Z"
+    },
+    {
+      "id": "12a7a60f",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/core/archive/copy-mockups.test.ts",
+      "line": 19,
+      "summary": "The bare catch turns any import error into copyMockups is missing",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:10:39.623Z"
+    },
+    {
+      "id": "a5c2bda3",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/execution/scope.ts",
+      "line": 128,
+      "summary": "checkRunScope treats a path added to the plan after the first cycle start as changed: it has no baseline entry, so every sibling run is refused until the owning cycle starts",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:22:05.130Z"
+    },
+    {
+      "id": "ccdf86b6",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/cli/validate-mockup.test.ts",
+      "line": 72,
+      "summary": "The red guard combines exit code and missing finding under one fixed message, so the watched red does not show exit 0",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:22:32.459Z"
+    },
+    {
+      "id": "73675daf",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/validation/validate-change.ts",
+      "line": 89,
+      "summary": "Strict validate reads the project config for every change, so an invalid config key aborts a change without mockups",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:22:32.659Z"
+    },
+    {
+      "id": "410c0151",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/cli/validate-mockup.test.ts",
+      "line": 62,
+      "summary": "The mockup wiring test pins rule and message, not the finding's file and line",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:22:32.855Z"
+    },
+    {
+      "id": "d5cd0898",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/cli/archive-fixtures.ts",
+      "line": 112,
+      "summary": "ArchiveDocument lacks the merged field, so archive tests read it untyped or patch the type locally",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:31:58.638Z"
+    },
+    {
+      "id": "601b9ef2",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/git/merge-feature.ts",
+      "line": 31,
+      "summary": "With a feature branch and no dev branch, archive fails with exit 2 after the change is already archived",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:35:33.570Z"
+    },
+    {
+      "id": "80eb0ea4",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/git/merge-feature.ts",
+      "line": 25,
+      "summary": "The feature commit stages everything in the tree with git add --all",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:35:33.752Z"
+    },
+    {
+      "id": "27138c9c",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/gates/plan-check-references.ts",
+      "line": 100,
+      "summary": "The material reference check hardcodes the specs directory and .md instead of the schema glob target",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:35:33.926Z"
+    },
+    {
+      "id": "64294055",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/gates/plan-check.ts",
+      "line": 49,
+      "summary": "task-material-missing is counted under summary.sections although it is a coverage rule",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:35:34.099Z"
+    },
+    {
+      "id": "0e333e26",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/execution/plan.ts",
+      "line": 311,
+      "summary": "Context materials are outside context_digest, so an edited mockup does not stale the cycle contract",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:35:34.273Z"
+    },
+    {
+      "id": "5c8b44cb",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/execution/wave-review.ts",
+      "line": 76,
+      "summary": "A GREEN rerun without an edit counts as a fix round, so a fixes report is accepted against an empty fix patch",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:40:33.366Z"
+    },
+    {
+      "id": "b7fa0c98",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/execution/wave-review.ts",
+      "line": 69,
+      "summary": "A restarted cycle has no reviewFile, and the refusal of a later fixes report names the wrong cause",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:40:33.541Z"
+    },
+    {
+      "id": "a7792100",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/execution/wave-review.ts",
+      "line": 105,
+      "summary": "A full wave report does not reset reviewBase, so its patch can cover only the last fix round",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:40:33.715Z"
+    },
+    {
+      "id": "5c61b386",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/archive/archive-change.ts",
+      "line": 164,
+      "summary": "Copied mockups are named only in the human line, not in the --json data",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:40:33.886Z"
+    },
+    {
+      "id": "c00d8445",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/archive/archive-change.ts",
+      "line": 191,
+      "summary": "Conflicting paths are parsed from the merge-feature error text by regex",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:40:34.061Z"
+    },
+    {
+      "id": "74e8179a",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/gates/plan-check-references.ts",
+      "line": 60,
+      "summary": "Diagram anchors are matched by prefix, so one anchor satisfies a longer sibling anchor",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:40:34.233Z"
+    },
+    {
+      "id": "00a39f28",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/skills/commands.test.ts",
+      "line": 35,
+      "summary": "find and set are asserted as bare command names, not tied to the styles group",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:40:34.407Z"
+    },
+    {
+      "id": "9ed58da6",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/styles/find-styles.ts",
+      "line": 30,
+      "summary": "The .css check is case-sensitive, and find skips symlinked CSS that set accepts",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:45:06.238Z"
+    },
+    {
+      "id": "cb49eefa",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/core/styles/find-styles.ts",
+      "line": 59,
+      "summary": "styles set neither validates the config nor checks YAML errors before writing; a broken or missing config ends as an internal error",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:45:06.413Z"
+    },
+    {
+      "id": "9b76201a",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "tests/cli/styles.test.ts",
+      "line": 68,
+      "summary": "The set test checks ui.styles by substring; comment preservation, the .git exclusion and a nested lexforge/ are untested",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:45:06.589Z"
+    },
+    {
+      "id": "b05bef52",
+      "change": "lean-cycles-and-interaction-specs",
+      "level": "minor",
+      "file": "src/cli/run.ts",
+      "line": 15,
+      "summary": "The registerStyles import breaks the alphabetical order of the import block",
+      "state": "open",
+      "recordedAt": "2026-10-10T19:45:06.768Z"
     }
   ]
 }

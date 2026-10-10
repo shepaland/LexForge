@@ -379,3 +379,32 @@ file.
   lines
 - **THEN** the first task naming `src/billing.ts` is a `(move)` task that splits it, and the
   task adding refunds to billing comes after it
+
+### Requirement: The specs skill agrees mockups and classes with the user
+
+For a requirement that changes a screen, `lexforge-spec` SHALL offer the user two routes,
+a visual editor producing an HTML file with a separate CSS file, or an ASCII mockup, and
+SHALL wait for the choice.
+
+When the change holds an HTML mockup and `ui.styles` is absent, the skill SHALL ask the user
+where the project CSS lies. When the user does not know or asks for a search, the skill
+SHALL run `lexforge styles find`, show the list, let the user exclude or add files, and
+save the result with `lexforge styles set`.
+
+Before a class enters the class list as `new` or `changed`, the skill SHALL ask the user and
+SHALL write the line only after a yes.
+
+For a requirement with two or more participants, the skill SHALL write the `Interaction:`
+line, the diagram and the contract table.
+
+#### Scenario: A new class the user has not seen
+
+- **WHEN** the mockup needs a class the project CSS does not declare
+- **THEN** the skill names the class and its purpose to the user and waits, and the class
+  list stays unchanged until the answer
+
+#### Scenario: The user does not know the CSS path
+
+- **WHEN** the user answers "I don't know" to the question about the project CSS
+- **THEN** the skill runs `lexforge styles find` and shows the list before writing the
+  config

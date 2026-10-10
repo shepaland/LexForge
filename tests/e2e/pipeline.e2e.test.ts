@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { commitAll, git } from "../helpers/git-workspace.js";
 import { runCli } from "../helpers/run-cli.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
@@ -12,6 +13,12 @@ function tempProject(files: Record<string, string> = {}): string {
   const root = makeWorkspace(files);
   created.push(root);
   return root;
+}
+
+/** `new change` opens a branch: after `init` the project becomes a committed repository. */
+function commitProject(root: string): void {
+  git(root, "init", "--initial-branch=main", "--quiet");
+  commitAll(root, "init");
 }
 
 afterEach(() => {
@@ -57,13 +64,18 @@ describe("сквозной проход по конвейеру", () => {
 
       expect(result.code, `${argv.join(" ")} → ${result.stderr}`).toBe(0);
       expect(lastLine(result.stdout)).toMatch(/^Next step: /);
+
+      if (argv[0] === "init") {
+        commitProject(root);
+      }
     }
-  });
+  }, 30_000);
 
   it("при машинном выводе на стандартном выводе лежит только JSON", async () => {
     const root = tempProject();
 
     await runCli(["init"], { cwd: root });
+    commitProject(root);
     await runCli(["new", "change", "add-auth"], { cwd: root });
 
     const result = await runCli(["status", "--change", "add-auth", "--json"], { cwd: root });
@@ -73,7 +85,7 @@ describe("сквозной проход по конвейеру", () => {
     expect(data.outputVersion).toBe(1);
     expect(data.change).toBe("add-auth");
     expect(result.stderr).toContain("proposal");
-  });
+  }, 30_000);
 });
 
 const REQUIREMENT_WITHOUT_SCENARIO = `## Purpose
@@ -97,6 +109,7 @@ describe("коды возврата процесса", () => {
     const root = tempProject();
 
     await runCli(["init"], { cwd: root });
+    commitProject(root);
     await runCli(["new", "change", "add-auth"], { cwd: root });
 
     const specDir = path.join(root, "lexforge", "changes", "add-auth", "specs", "auth");
@@ -108,7 +121,7 @@ describe("коды возврата процесса", () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("requirement-without-scenario");
     expect(result.stdout).toBe("");
-  });
+  }, 30_000);
 
   it("вызов вне рабочего пространства даёт код 2", async () => {
     const result = await runCli(["status"], { cwd: tempProject() });

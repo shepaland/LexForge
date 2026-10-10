@@ -13,6 +13,7 @@ import {
   checkTaskGroupLabels,
 } from "./plan-check-groups.js";
 import { checkIdentifiers } from "./identifier-rules.js";
+import { checkMaterialReferences, readMaterialDelta } from "./plan-check-references.js";
 import { checkLongFiles } from "./plan-check-long-files.js";
 import { checkTaskFileDeclarations } from "./plan-check-task-files.js";
 import { checkPlaceholders } from "./placeholder-rules.js";
@@ -45,6 +46,7 @@ const SECTION_RULES = [
   "section-group-coverage-mismatch",
   "section-group-shared-file",
   "task-file-declaration",
+  "task-material-missing",
 ];
 
 export interface CheckPlanOptions {
@@ -118,6 +120,7 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
     ...checkGroupSharedFiles(sections),
     ...checkTaskFileDeclarations(plan),
     ...checkLongFiles(root, plan, config.sizeLimit, longFilePath),
+    ...checkMaterialReferences(plan, readMaterialDelta(root, options.change)),
   ].sort((left, right) => left.line - right.line);
 
   const command = `lexforge check plan --change ${options.change}`;

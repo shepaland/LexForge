@@ -1,10 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, cpSync, existsSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
+import { commitAll, git } from "../helpers/git-workspace.js";
 import { npmCall, npxCall, runProcess } from "../helpers/npm.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
@@ -215,6 +216,13 @@ describe("установка в чужой проект", () => {
       const results = [];
       for (const argv of calls) {
         results.push(await runProcess(npxCall(argv), { cwd: project }));
+
+        if (argv[1] === "init") {
+          // `new change` opens a branch and needs a committed tree.
+          git(project, "init", "--initial-branch=main", "--quiet");
+          writeFileSync(path.join(project, ".gitignore"), "node_modules/\n", "utf8");
+          commitAll(project, "init");
+        }
       }
 
       for (const [index, result] of results.entries()) {

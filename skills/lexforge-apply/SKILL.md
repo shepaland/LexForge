@@ -103,10 +103,12 @@ parallel-execution.md.
 
 ## Review before the checkbox
 
-After every task, before the checkbox, the reviewer subagent gets the brief in
-[reviewer-prompt.md](reviewer-prompt.md); who sends it and what a dispatched executor
-does instead is in [parallel-execution.md](parallel-execution.md). Reading your own diff
-is not review; an answer naming no file and line is empty - send it back.
+One reviewer per wave. Once every cycle of the section has current GREEN, the session
+sends one brief from [reviewer-prompt.md](reviewer-prompt.md) for the section's cycles
+together. A cycle with controls gets a reviewer of its own. Register each review with
+`lexforge cycle review --wave`; who sends it and what a dispatched executor
+does instead is in [parallel-execution.md](parallel-execution.md). Reading your own diff is not review;
+an answer naming no file and line is empty - send it back.
 
 CRITICAL and IMPORTANT close before the checkbox. MINOR is fixed now or recorded with
 `lexforge defect record`: a finding kept in your head dies at the next

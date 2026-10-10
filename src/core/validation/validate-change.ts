@@ -11,7 +11,10 @@ import type { CommandResult } from "../types.js";
 import { readChangeConfig } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { CHANGE_CONFIG_FILE, workspacePaths } from "../workspace/paths.js";
+import { readProjectConfig } from "../workspace/project-config.js";
 import { makeFinding, type Finding } from "./finding.js";
+import { checkInteractions } from "./interaction-contract.js";
+import { checkMockups } from "./ui-mockup.js";
 import { scanSpec } from "./scan-spec.js";
 import {
   checkArtifactsDone,
@@ -62,6 +65,7 @@ export function validateChange(
   const changeDir = paths.changeDir(options.change);
 
   const findings: Finding[] = [];
+  let styleFiles: { list: string[] | null } | undefined;
 
   for (const definition of schema.artifacts) {
     const target = parseOutputTarget(definition.generates);
@@ -81,6 +85,9 @@ export function validateChange(
         if (strict) {
           findings.push(...checkPurpose(shown, content));
           findings.push(...checkRenamedPairs(shown, content));
+          findings.push(...checkInteractions(shown, content));
+          styleFiles ??= { list: readProjectConfig(root).styleFiles };
+          findings.push(...checkMockups(root, shown, content, styleFiles.list));
         }
       }
 

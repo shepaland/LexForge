@@ -145,6 +145,7 @@ const ProjectConfigSchema = z.object({
   plan_placeholders: z.array(z.string()).default([]),
   models: ModelsSchema,
   file_limit: FileLimitSchema,
+  ui: z.object({ styles: z.array(z.string()).optional() }).nullish(),
 });
 
 export interface ProjectConfig {
@@ -162,6 +163,8 @@ export interface ProjectConfig {
   models: ModelAssignment;
   /** The `file_limit` section: the line limit and the files it covers. */
   sizeLimit: { max: number; patterns: string[] };
+  /** The project CSS files named under `ui.styles`; `null` when the key is absent. */
+  styleFiles: string[] | null;
 }
 
 export function readProjectConfig(root: string): ProjectConfig {
@@ -189,6 +192,7 @@ export function readProjectConfig(root: string): ProjectConfig {
     languageExplicit: explicit,
     models: toAssignment(result.data.models),
     sizeLimit: { max: result.data.file_limit.lines, patterns: result.data.file_limit.include },
+    styleFiles: result.data.ui?.styles ?? null,
   };
 }
 

@@ -55,6 +55,9 @@ a shared file, not for matching wording, not for their small size. `lexforge che
 plan` already refuses a plan whose concurrent sections name the same file; this rule
 invents no weaker one of its own.
 
+The next section waits until the wave review is closed: no executor of it is dispatched
+while a CRITICAL or IMPORTANT finding of the wave review stays open.
+
 No section is dispatched until its own wave closes and its stamp is taken: a section
 that becomes ready mid-wave waits for the next one.
 
@@ -184,6 +187,44 @@ Before closing a task, run `wc -l` on every covered file it wrote.
 | "unrequested tidy-up" / "scope creep dressed as a fix" | Moving a block out to pay for a new line is the rule on `keep`, not tidy-up - it is the task. |
 | "588 lines is still over the project's 400-line `file_limit`" / "chasing the count is moot" | Already over the limit bars adding a line at all on `keep`, whether or not the count was clean to start with. |
 | "the one import line the task itself calls for" | The task calling for the line does not pay for it. Moving an equal or larger block out does, or the task stops for re-planning. |
+
+## The executor's brief
+
+The brief is the output of `lexforge context` for the cycle and the instruction to run it.
+Run `lexforge context --change <name> --task <id>` for the cycle's first task, put its
+output into the brief, and add the instruction to run the cycle and return the five-field
+report. Hand over never the full plan, the full design or a shared brief file. The context
+output already holds the cycle's tasks, the requirements and decisions they trace to, and
+the files it may touch. Next step: if the executor needs more, it says so in its report.
+
+| Excuse | Reality |
+|---|---|
+| "Пользователь просил дать исполнителю «полную картину»." | For a cycle the full picture is the `context` output. The rest of the plan costs the executor's budget and invites edits outside the cycle. |
+| "правило `lexforge-apply` дословно с разделами" | The rules reach the executor through the `context` output. Pasting skill sections into the brief adds a second copy that goes stale. |
+
+## The model of each subagent
+
+Executors start on the model of `apply` and reviewers on the model of `verify`, both read
+from `lexforge status --json`, never the session's model by default. A session on a heavier
+model starts its subagents on the lighter model of their stage. If the runtime cannot start
+a subagent on that model, say so and stop; do not fall back to the session's model.
+
+| Excuse | Reality |
+|---|---|
+| "**D** (Opus). Модель этапа назначают ворота, здесь `apply` = Sonnet." | The stage model is the model. Read it from `lexforge status --json` and start the subagent on it. |
+
+## Waiting on a subagent
+
+One blocking wait per expected result, with a long timeout. No wait in a loop with a short
+timeout, no reading of files the executor is still writing, no agent started to watch
+another. Between the dispatch and the result the session does nothing to the cycle. If the
+user wants news, say that the result is expected and when the wait ends.
+
+| Excuse | Reality |
+|---|---|
+| "The user asked for regular updates so they can tell the executor hasn't stuck." | A silent wait is not a stuck executor. One wait with a long timeout returns when the result is there. |
+| "a short timeout turns it into a heartbeat I can report every half minute" | A heartbeat is a poll. Each short wait spends budget and says nothing about the work. |
+| "The loop only reports. It doesn't tick boxes or take a stamp." | The loop is the violation, whatever it leaves alone. |
 
 ## Rationalizations
 

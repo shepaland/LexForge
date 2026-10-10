@@ -100,3 +100,6 @@ Follow `template` from `lexforge instructions specs --change <name> --tool <your
 per capability at `specs/<capability-path>/spec.md`. Run
 `lexforge validate <name> --strict` until it exits `0`, then run its `nextStep`, saying
 which one it is.
+
+A requirement that changes a screen, names a class or describes an exchange between
+components: follow `mockups-and-contracts.md` before you write it.

@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
-import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
+import { removeWorkspace } from "../helpers/workspace.js";
 
 const created: string[] = [];
 
@@ -35,7 +35,7 @@ The system SHALL read the delta spec of the change.
 `;
 
 function workspace(): string {
-  const root = makeWorkspace({
+  const made = createGitWorkspace({
     "lexforge/config.yaml": "schema: spec-driven\n",
     "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
     "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
@@ -43,8 +43,8 @@ function workspace(): string {
     "lexforge/changes/add-auth/design.md": "## Context\n\nOne service, one database.\n",
     "lexforge/changes/rename-menu/.lexforge.yaml": "schema: bounded\n",
   });
-  created.push(root);
-  return root;
+  created.push(made.root);
+  return made.root;
 }
 
 afterEach(() => {
