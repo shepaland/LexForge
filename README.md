@@ -122,6 +122,7 @@ on `blocked` it names what is missing and stops.
     ▼  isPlanningComplete = true
 IMPLEMENTATION — lexforge-apply, behavioural cycles (workflow 2)
     cycle start ──► RED ──► implementation ──► GREEN ──► cycle close
+    executor and reviewer get the engineering rules for the cycle's files
     at the wave boundary: one review of the wave, evidence record
     task grew past the spec → stop and ask the user
     │
