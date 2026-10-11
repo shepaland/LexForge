@@ -30,7 +30,7 @@ describe("состав ответа changeStatus", () => {
 
     const result = changeStatus({ cwd: root, change: "add-auth" });
 
-    expect(Object.keys(result.data)).toEqual([
+    expect(Object.keys(result.data), "\n\"engineeringStacks\"\n").toEqual([
       "outputVersion",
       "workflow",
       "workspaceRoot",
@@ -39,6 +39,7 @@ describe("состав ответа changeStatus", () => {
       "isPlanningComplete",
       "artifacts",
       "stages",
+      "engineeringStacks",
       "nextStep",
     ]);
     expect(result.data.outputVersion).toBe(1);

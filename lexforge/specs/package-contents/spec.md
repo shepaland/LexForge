@@ -199,3 +199,18 @@ change and SHALL state that installation alone does not authorize migration.
 - **THEN** the guide says the existing change remains on workflow 1 and no migration state is
   written
 
+### Requirement: The archive carries the engineering rules and their guide
+
+The npm archive SHALL carry every shipped rule file under `rules/` and the Russian guide
+to engineering rules.
+
+#### Scenario: Packing the archive
+
+- **WHEN** `npm pack --dry-run` lists the archive
+- **THEN** the list holds the four section files, the twelve stack additions and the guide
+
+#### Scenario: Rules read from an installed package
+
+- **WHEN** LexForge is installed from the archive into an empty directory and
+  `lexforge rules` runs there
+- **THEN** it reads the shipped rules from the installed package

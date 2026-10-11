@@ -146,6 +146,12 @@ const ProjectConfigSchema = z.object({
   models: ModelsSchema,
   file_limit: FileLimitSchema,
   ui: z.object({ styles: z.array(z.string()).optional() }).nullish(),
+  engineering: z
+    .object({
+      stacks: z.array(z.string()).optional(),
+      disabled: z.record(z.string(), z.string()).optional(),
+    })
+    .nullish(),
 });
 
 export interface ProjectConfig {
@@ -165,6 +171,8 @@ export interface ProjectConfig {
   sizeLimit: { max: number; patterns: string[] };
   /** The project CSS files named under `ui.styles`; `null` when the key is absent. */
   styleFiles: string[] | null;
+  /** The `engineering` section: the named stacks (`null` when absent) and the switched-off rules with reasons. */
+  engineering: { stacks: string[] | null; disabled: Record<string, string> };
 }
 
 export function readProjectConfig(root: string): ProjectConfig {
@@ -193,6 +201,10 @@ export function readProjectConfig(root: string): ProjectConfig {
     models: toAssignment(result.data.models),
     sizeLimit: { max: result.data.file_limit.lines, patterns: result.data.file_limit.include },
     styleFiles: result.data.ui?.styles ?? null,
+    engineering: {
+      stacks: result.data.engineering?.stacks ?? null,
+      disabled: result.data.engineering?.disabled ?? {},
+    },
   };
 }
 

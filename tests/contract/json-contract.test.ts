@@ -36,7 +36,7 @@ The system SHALL read the delta spec of the change.
 
 function workspace(): string {
   const made = createGitWorkspace({
-    "lexforge/config.yaml": "schema: spec-driven\n",
+    "lexforge/config.yaml": "schema: spec-driven\nengineering:\n  stacks: []\n",
     "lexforge/changes/add-auth/.lexforge.yaml": "schema: spec-driven\n",
     "lexforge/changes/add-auth/proposal.md": "## Why\n\nPasswords are stored in the open.\n",
     "lexforge/changes/add-auth/specs/auth/spec.md": VALID_SPEC,

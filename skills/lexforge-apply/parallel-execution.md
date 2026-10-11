@@ -114,6 +114,12 @@ neighbour's half-finished edit would make a wider run mean nothing either way, i
 output would cost the budget too, and the wave-boundary `lexforge evidence record` is
 the one full run that counts.
 
+For the reviewer, the dispatcher runs `lexforge rules --change <name>` with `--files`
+once for each of the wave's cycles, over that cycle's files, and puts each output into
+`[ENGINEERING_RULES]` per cycle in the wave brief. On exit 1 with `rules-too-many` or
+`files-too-many` for one cycle, that cycle is too wide for one review: it is split in the
+plan before review, and the brief is not sent until then.
+
 Also part of what it is handed: the line numbers of the places it has to work on, found
 once by the session before the agent starts, so the agent does not spend its own budget
 finding them again. A dispatched agent does not read a large file whole: it finds its

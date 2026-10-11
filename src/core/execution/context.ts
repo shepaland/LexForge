@@ -1,6 +1,8 @@
 import { migrationFreshness } from "./migration-freshness.js";
 import { effectiveCompletion } from "./effective-completion.js";
 import { readProjectConfig } from "../workspace/project-config.js";
+import { loadCatalog } from "../rules/catalog.js";
+import { selectRules } from "../rules/select.js";
 import { readDefectLedger } from "../defects/store.js";
 import { changeBase } from "../git/change-base.js";
 import {
@@ -91,6 +93,10 @@ export function context(
     design_decisions: content.design,
     materials: taskMaterials(root, change, content.tasks.map((t) => t.text).join("\n")),
     allowed_files: c.files,
+    engineering_rules: selectRules(
+      loadCatalog({ root, ...project.engineering }),
+      c.files.map((f) => f.path),
+    ).filter((rule) => rule.audience === "both"),
     test_commands: selected
       ? [c.command]
       : [...task.text.matchAll(/Check:\s*`([^`]+)`/g)].map((m) => m[1]),

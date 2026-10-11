@@ -11,6 +11,30 @@ import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
+/** The marker sits on a line of its own so that a RED run can match the whole line. */
+const EXPECTED = "\nThe archive does not carry the engineering rules\n";
+
+/** The rule files and the guide the archive has to carry. */
+const RULE_FILES = [
+  "rules/backend.md",
+  "rules/frontend.md",
+  "rules/testing.md",
+  "rules/review.md",
+  "rules/node.md",
+  "rules/python.md",
+  "rules/jvm.md",
+  "rules/go.md",
+  "rules/dotnet.md",
+  "rules/php.md",
+  "rules/ruby.md",
+  "rules/rust.md",
+  "rules/react.md",
+  "rules/vue.md",
+  "rules/angular.md",
+  "rules/svelte.md",
+  "docs/engineering-rules.md",
+];
+
 /** Everything the `files` field of package.json promises to ship. */
 const SHIPPED = [
   "bin/lexforge.js",
@@ -24,6 +48,7 @@ const SHIPPED = [
   "schemas/bounded/templates/proposal.md",
   "schemas/bounded/templates/spec.md",
   "schemas/bounded/templates/tasks.md",
+  ...RULE_FILES,
 ];
 
 /** The skills the package installs into a project: five planning, four implementation. */
@@ -46,7 +71,7 @@ const SKILL_FILES = [
 ];
 
 /** Traces of development: the archive is read by a machine that never builds this package. */
-const FORBIDDEN = ["tests", "openspec", "docs", ".claude", "node_modules", "src"];
+const FORBIDDEN = ["tests", "openspec", ".claude", "node_modules", "src"];
 
 const created: string[] = [];
 /** Собран один раз на весь прогон: см. `tests/e2e/pack-tarball.ts`. */
@@ -79,7 +104,7 @@ describe("состав пакета", () => {
     const root = path.join(unpacked, "package");
 
     for (const entry of SHIPPED) {
-      expect(existsSync(path.join(root, entry)), entry).toBe(true);
+      expect(existsSync(path.join(root, entry)), RULE_FILES.includes(entry) ? `${EXPECTED}${entry}` : entry).toBe(true);
     }
 
     const templates = [
@@ -107,7 +132,7 @@ describe("состав пакета", () => {
 
 describe("состав пакета, побайтная сверка с репозиторием", () => {
   /** Каталоги, которые упаковка копирует как есть: собранного кода среди них нет. */
-  const COPIED = ["bin", "schemas", "skills"];
+  const COPIED = ["bin", "schemas", "skills", "rules"];
 
   it("каждый поставленный файл совпадает с файлом репозитория побайтно", () => {
     const root = path.join(unpacked, "package");
@@ -130,6 +155,9 @@ describe("состав пакета, побайтная сверка с репо
     expect(readFileSync(path.join(root, "CHANGELOG.md")), "CHANGELOG.md").toEqual(
       readFileSync(path.join(REPO_ROOT, "CHANGELOG.md")),
     );
+    expect(readFileSync(path.join(root, "docs", "engineering-rules.md")), "docs/engineering-rules.md").toEqual(
+      readFileSync(path.join(REPO_ROOT, "docs", "engineering-rules.md")),
+    );
     expect(differing).toEqual([]);
     expect(compared).toBeGreaterThan(SKILL_NAMES.length);
   });
@@ -148,6 +176,14 @@ describe("состав пакета, следы разработки", () => {
     for (const entry of FORBIDDEN) {
       expect(existsSync(path.join(root, entry)), entry).toBe(false);
     }
+  });
+
+  it("несёт в каталоге docs только руководство по инженерным правилам", () => {
+    const root = path.join(unpacked, "package");
+
+    const docs = path.join(root, "docs");
+
+    expect(existsSync(docs) ? readdirSync(docs) : [], EXPECTED).toEqual(["engineering-rules.md"]);
   });
 
   it("не несёт карт кода и файлов деклараций", () => {
@@ -209,6 +245,7 @@ describe("установка в чужой проект", () => {
 
       const calls = [
         ["lexforge", "init"],
+        ["lexforge", "stacks", "set", "--none"],
         ["lexforge", "new", "change", "smoke"],
         ["lexforge", "status", "--change", "smoke", "--json"],
       ];
@@ -217,7 +254,7 @@ describe("установка в чужой проект", () => {
       for (const argv of calls) {
         results.push(await runProcess(npxCall(argv), { cwd: project }));
 
-        if (argv[1] === "init") {
+        if (argv[1] === "stacks") {
           // `new change` opens a branch and needs a committed tree.
           git(project, "init", "--initial-branch=main", "--quiet");
           writeFileSync(path.join(project, ".gitignore"), "node_modules/\n", "utf8");
@@ -255,6 +292,53 @@ describe("установка в чужой проект", () => {
 
       expect(result.status, result.stderr).toBe(0);
       expect(readdirSync(path.join(project, ".claude", "skills")).sort()).toEqual(SKILL_NAMES);
+    },
+    300_000,
+  );
+
+  it(
+    "поставленный пакет читает правила из своего каталога и отдаёт BE и PY",
+    async () => {
+      const project = tempDir();
+
+      const call = npmCall(["install", tarball, "--no-audit", "--no-fund", "--loglevel", "error"]);
+      const install = await runProcess(call, { cwd: project });
+      expect(install.status).toBe(0);
+
+      const calls = [
+        ["lexforge", "init", "--tools", "claude"],
+        ["lexforge", "stacks", "set", "python"],
+        ["lexforge", "new", "change", "demo"],
+        ["lexforge", "rules", "--change", "demo", "--files", "api/orders.py", "--json"],
+      ];
+
+      const results = [];
+      for (const argv of calls) {
+        results.push(await runProcess(npxCall(argv), { cwd: project }));
+
+        if (argv[1] === "stacks") {
+          // `new change` opens a branch and needs a committed tree.
+          git(project, "init", "--initial-branch=main", "--quiet");
+          writeFileSync(path.join(project, ".gitignore"), "node_modules/\n", "utf8");
+          commitAll(project, "init");
+        }
+      }
+
+      for (const [index, result] of results.entries()) {
+        expect(result.status, `${calls[index]!.join(" ")} → ${result.stderr}`).toBe(0);
+      }
+
+      const data = JSON.parse(results.at(-1)!.stdout) as { rules?: Array<{ id: string }> };
+      const ids = (data.rules ?? []).map((rule) => rule.id);
+
+      expect(
+        ids.some((id) => id.startsWith("BE-")),
+        EXPECTED,
+      ).toBe(true);
+      expect(
+        ids.some((id) => id.startsWith("PY-")),
+        EXPECTED,
+      ).toBe(true);
     },
     300_000,
   );

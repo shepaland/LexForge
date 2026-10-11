@@ -1,6 +1,6 @@
 {
   "name": "lexforge",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Spec-driven pipeline with gates that agents cannot skip",
   "license": "MIT",
   "author": "shepaland <a.shepelkin@mail.ru>",
@@ -28,6 +28,8 @@
     "bin",
     "schemas",
     "skills",
+    "rules",
+    "docs/engineering-rules.md",
     "CHANGELOG.md",
     "README.ru.md"
   ],

@@ -21,8 +21,9 @@ const entries = parseChangelogEntries(readTextFile(path.join(REPO_ROOT, "CHANGEL
 
 describe("журнал изменений", () => {
   it("верхняя запись несёт номер версии, равный полю version пакета", () => {
+    const EXPECTED = "\nThe top changelog entry does not match the package version\n";
     const mismatch = changelogVersionMismatch(packageVersion, entries);
-    expect(mismatch).toBeNull();
+    expect(mismatch, EXPECTED).toBeNull();
   });
 
   it("записи идут от новой к старой, и каждая несёт дату в форме YYYY-MM-DD", () => {

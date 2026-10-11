@@ -36,6 +36,15 @@ name the move to implementation. Closed gates stay closed under deadlines. Asked
 skip, name the options: write the artifact or set `skip_<artifact id>: true` in
 `.lexforge.yaml`; then stop. Do not set the skip on the user’s behalf.
 
+`engineeringStacks: "missing"` in status or `engineering-stacks-missing` in an error means the
+project has not named its stacks. Ask the user which it uses: node, python, jvm, go, dotnet,
+php, ruby, rust, react, vue, angular, svelte. Wait for the answer, then run
+`lexforge stacks set <stack>...`. Run `lexforge stacks set --none` only when the user says the
+project uses none of them. Never choose the stacks yourself, even when the files show only one.
+A guess the user can undo later is still a guess.
+Never write them into `lexforge/config.yaml` by hand.
+Ask even when told not to ask about setup. Unset is not an answer.
+
 Exit `2`: read `error.code`. `workspace-not-found` / `workspace-incomplete`: run
 `lexforge init --tools <your runtime>` at the root (`agents` if none matches), then retry
 the command that refused. Never construct workspace files by hand.

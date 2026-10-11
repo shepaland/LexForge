@@ -18,6 +18,8 @@ const CONFIG = `schema: spec-driven
 verification:
   tests: npm test
   lint: npm run lint
+engineering:
+  stacks: []
 `;
 
 const APP = `export function app(): string {

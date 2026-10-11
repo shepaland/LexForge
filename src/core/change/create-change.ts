@@ -38,6 +38,7 @@ export function createChange(options: CreateChangeOptions): CommandResult<Create
   // Every check runs before the first write: a refused call leaves the
   // workspace exactly as it was.
   checkName(name);
+  checkStacks(root);
   checkFree(paths.changeDir(name), paths.archive, name);
   assertBranchable(root, name);
 
@@ -74,6 +75,18 @@ export function createChange(options: CreateChangeOptions): CommandResult<Create
   ];
 
   return { data, lines, nextStep, exitCode: 0 };
+}
+
+function checkStacks(root: string): void {
+  if (readProjectConfig(root).engineering.stacks !== null) {
+    return;
+  }
+
+  throw new UsageError(
+    "engineering-stacks-missing",
+    "The project has not named its stacks: engineering.stacks is absent from lexforge/config.yaml.",
+    "Ask the user which stacks the project uses, then run lexforge stacks set <stack>... or lexforge stacks set --none",
+  );
 }
 
 function checkName(name: string): void {

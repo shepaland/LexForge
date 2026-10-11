@@ -66,6 +66,7 @@ describe("сквозной проход по конвейеру", () => {
       expect(lastLine(result.stdout)).toMatch(/^Next step: /);
 
       if (argv[0] === "init") {
+        await runCli(["stacks", "set", "--none"], { cwd: root });
         commitProject(root);
       }
     }
@@ -75,6 +76,7 @@ describe("сквозной проход по конвейеру", () => {
     const root = tempProject();
 
     await runCli(["init"], { cwd: root });
+    await runCli(["stacks", "set", "--none"], { cwd: root });
     commitProject(root);
     await runCli(["new", "change", "add-auth"], { cwd: root });
 
@@ -109,6 +111,7 @@ describe("коды возврата процесса", () => {
     const root = tempProject();
 
     await runCli(["init"], { cwd: root });
+    await runCli(["stacks", "set", "--none"], { cwd: root });
     commitProject(root);
     await runCli(["new", "change", "add-auth"], { cwd: root });
 
