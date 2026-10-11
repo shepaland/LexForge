@@ -408,3 +408,22 @@ line, the diagram and the contract table.
 - **WHEN** the user answers "I don't know" to the question about the project CSS
 - **THEN** the skill runs `lexforge styles find` and shows the list before writing the
   config
+
+### Requirement: The plan skill writes explicit file scope when inference is ambiguous
+
+Skill `lexforge-plan` SHALL name touched files as canonical workspace-root-relative paths and SHALL use one `Files:` continuation line with comma-separated backtick paths when a task's other prose contains a backtick value that could be confused with a repository file. The skill SHALL NOT abbreviate a repository file and resolve it through a filesystem search. It MAY omit `Files:` when the task's repository files are already unambiguous under safe legacy inference.
+
+#### Scenario: A task names a route and a repository file
+
+- **WHEN** the task changes `src/http/routes.ts` and its prose must mention `/api/auth`
+- **THEN** the skill writes a `Files:` line naming `src/http/routes.ts` from the workspace root, leaving `/api/auth` free to remain accurate task prose
+
+#### Scenario: A short file name has a known repository location
+
+- **WHEN** the task touches `src/config/nginx.conf`
+- **THEN** the skill names `src/config/nginx.conf` rather than abbreviating it as `nginx.conf` and asking the parser to search the workspace
+
+#### Scenario: An unambiguous legacy-shaped task
+
+- **WHEN** a task names only canonical root-relative repository paths in backticks and contains no competing path-shaped value
+- **THEN** the skill may keep the existing task style without a `Files:` line

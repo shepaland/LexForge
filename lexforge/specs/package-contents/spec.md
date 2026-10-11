@@ -179,3 +179,23 @@ their skills name.
 - **WHEN** a runtime cannot start a subagent on a chosen model
 - **THEN** the README names it and says to leave that runtime without an entry in the
   `models` section
+
+### Requirement: User documentation explains safe workflow migration
+
+The README documentation and execution guide SHALL explain preview, apply, historical trust
+requirements, gap resolution, mixed-cycle behavior, input-change refusal, interruption recovery,
+idempotent reruns, and safe continuation. They SHALL include a compact example report for a mixed
+change and SHALL state that installation alone does not authorize migration.
+
+#### Scenario: Reader has a partly completed change
+
+- **WHEN** a reader follows the migration guide with confirmed, uncertain, and open tasks
+- **THEN** they can preview the classifications, locate detailed reasons, resolve only required
+  gaps, apply under the lock, and resume the remaining work
+
+#### Scenario: Reader only upgrades the package
+
+- **WHEN** a reader installs the release but does not request migration
+- **THEN** the guide says the existing change remains on workflow 1 and no migration state is
+  written
+

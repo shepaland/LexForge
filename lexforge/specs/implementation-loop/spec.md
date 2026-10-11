@@ -621,3 +621,34 @@ call per expected result and SHALL NOT call the wait in a loop with a short time
 - **THEN** it waits with one `wait_agent` call with a long timeout instead of repeated short
   waits
 
+### Requirement: Continuation combines historical tasks with native cycle state
+
+`status`, task context, `resume`, and cycle dependency checks SHALL read the migration ledger and
+native workflow 2 cycle state as distinct sources. A historically confirmed task SHALL be shown
+as completed with origin `historical` and SHALL NOT return to the execution queue solely because
+the change migrated. A task classified as incomplete, conflicting, or needing verification SHALL
+remain open and SHALL NOT satisfy a dependency.
+
+A cycle dependency SHALL be satisfied only when every task represented by the predecessor is
+historically confirmed or the predecessor has a valid native workflow 2 closure. A mixed cycle
+SHALL execute and review its remaining work through workflow 2 while exposing the confirmed task
+context and acceptance mapping to the executor; the migration itself SHALL NOT close that cycle.
+
+#### Scenario: Dependency on confirmed legacy work
+
+- **WHEN** every task in predecessor cycle `parse-plan` is historically confirmed
+- **THEN** dependent cycle `apply-plan` may start and the predecessor tasks do not re-enter the
+  queue
+
+#### Scenario: Dependency on a mixed cycle
+
+- **WHEN** a predecessor cycle contains one confirmed task and one task needing verification
+- **THEN** its dependent cycle remains blocked until the open task is completed and the mixed
+  cycle receives a valid workflow 2 closure
+
+#### Scenario: Resume after migration
+
+- **WHEN** a migrated change has 80 confirmed tasks and 20 incomplete tasks
+- **THEN** `resume` reports the 80 with historical origin, queues only eligible work among the
+  remaining 20, and links to migration gaps without emitting the full plan
+

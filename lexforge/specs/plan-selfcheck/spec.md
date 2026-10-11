@@ -493,3 +493,65 @@ cycle's output.
 
 - **WHEN** task 2.1 names `specs/web/mockups/login.html`
 - **THEN** `lexforge context --task 2.1` includes that mockup and its CSS file
+
+### Requirement: A task may declare its exact writable file scope
+
+The plan parser SHALL accept at most one `Files:` continuation line on a task, containing one or more comma-separated backtick spans, and SHALL use those spans as the task's exact `files` value instead of inferring writable files from the rest of that task. Every declared value SHALL be a canonical path relative to the workspace root: it is non-empty, uses forward slashes, is not absolute, has no URL scheme or colon, and has no empty, `.` or `..` segment. `lexforge check plan --change <name>` SHALL report a finding at the task when the field is repeated, empty, malformed, or contains an unsafe value; it SHALL NOT silently omit an invalid declaration.
+
+#### Scenario: Explicit scope wins over path-shaped prose
+
+- **WHEN** a task declares `Files: `src/http/routes.ts`` and its other prose mentions `/api/auth` and `/etc/nginx/conf.d` in backticks
+- **THEN** the task's `files` contains only `src/http/routes.ts`, and the external route and server path do not enter writable file scope
+
+#### Scenario: Several explicitly declared repository files
+
+- **WHEN** a task carries `Files: `src/http/routes.ts`, `tests/http/routes.test.ts``
+- **THEN** the task's `files` contains those two root-relative paths in declaration order
+
+#### Scenario: An unsafe explicit path is not ignored
+
+- **WHEN** a task declares `Files: `/etc/nginx/conf.d`` or `Files: `../outside.ts``
+- **THEN** `lexforge check plan --change <name>` reports an unsafe explicit file finding on that task and exits with code `1`
+
+#### Scenario: A malformed or repeated declaration is rejected
+
+- **WHEN** a task has an empty `Files:` line, text outside the comma-separated backtick spans, or a second `Files:` line
+- **THEN** `lexforge check plan --change <name>` reports a file declaration finding on that task and exits with code `1`
+
+### Requirement: Tasks without Files keep safe legacy inference
+
+When a task has no `Files:` field, the plan parser SHALL continue to infer `files` from single-token backtick spans with a slash or a recognised file extension, preserving their order and removing duplicates. It SHALL exclude any inferred candidate that cannot be a canonical workspace-relative path under the same lexical rules used for explicit declarations. Excluded inferred values SHALL not produce a finding because incidental routes, URLs, and external paths are ordinary task prose.
+
+#### Scenario: A legacy repository path remains a file
+
+- **WHEN** a task without `Files:` names `src/http/routes.ts` and `README.md` in backticks
+- **THEN** its inferred `files` contains `src/http/routes.ts` and `README.md` as before
+
+#### Scenario: Absolute external values are excluded
+
+- **WHEN** a task without `Files:` mentions `/api/auth`, `/etc/nginx/conf.d`, and `https://example.test/health` in backticks
+- **THEN** none of those values enters `files` or causes an unsafe project-path failure while an independently named root-relative repository file still does
+
+#### Scenario: Traversal and noncanonical values are excluded from inference
+
+- **WHEN** a task without `Files:` mentions `../outside.ts`, `src//routes.ts`, `src/./routes.ts`, a backslash path, or a colon-bearing path in backticks
+- **THEN** none of those values enters the task's inferred `files`
+
+### Requirement: Check command operands stay separate from writable scope
+
+The parser SHALL continue to expose canonical root-relative file operands of `Check:` commands through `namedFiles` for shared-file and long-file checks, while those command operands SHALL NOT enter the task's writable `files` merely because the command names them. When `Files:` is present, `namedFiles` SHALL include both its declared files and valid file operands from `Check:` commands. Unsafe or external command operands SHALL be excluded from `namedFiles`; the execution-plan path boundary SHALL continue to reject any unsafe value declared directly in cycle `files`, `testFiles`, `inputs`, or design paths.
+
+#### Scenario: A check names the test without enlarging writable scope
+
+- **WHEN** a task declares `Files: `src/http/routes.ts`` and checks it with `npx vitest run tests/http/routes.test.ts`
+- **THEN** `files` contains only `src/http/routes.ts`, while `namedFiles` contains both `src/http/routes.ts` and `tests/http/routes.test.ts`
+
+#### Scenario: Shared-file collision still sees command operands
+
+- **WHEN** two groups in one section each name `tests/http/routes.test.ts` only through their `Check:` commands
+- **THEN** the plan check reports the existing shared-file finding for those groups
+
+#### Scenario: Cycle file validation remains strict
+
+- **WHEN** an execution plan declares `/etc/nginx/conf.d`, `../outside.ts`, or another unsafe value in a cycle path field
+- **THEN** execution-plan validation rejects that value as an unsafe project path exactly as before

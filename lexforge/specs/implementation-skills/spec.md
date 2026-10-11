@@ -183,3 +183,23 @@ calling runtime, and `lexforge-archive` SHALL demand no model, because archival 
 
 - **WHEN** `lexforge-archive` starts in the same project
 - **THEN** it demands no model and merges the delta on whichever model is at work
+
+### Requirement: Skills distinguish installation from migration authorization
+
+The apply, verify, and archive skills SHALL state that installing a LexForge version capable of
+workflow 2 migration does not authorize migration of an existing change. When the user requests
+migration, the skills SHALL run preview first, summarize blockers and minimum additional checks,
+and SHALL NOT stop active agents, apply migration, publish a package, or update a global
+installation unless the corresponding action is separately in scope.
+
+#### Scenario: Upgrade without migration request
+
+- **WHEN** a project installs the new LexForge version and resumes a workflow 1 change
+- **THEN** the skills keep workflow 1 behavior and do not run migration automatically
+
+#### Scenario: Incomplete history
+
+- **WHEN** preview reports missing review provenance for completed-looking tasks
+- **THEN** the skill names the gap and the minimum review action without marking those tasks
+  confirmed or disabling a gate
+

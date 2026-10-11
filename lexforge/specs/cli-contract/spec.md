@@ -110,3 +110,23 @@ remain.
   `skipped`
 - **THEN** the output reports that planning is complete and names the move to
   implementation
+
+### Requirement: Migration output is compact and actionable
+
+Migration preview and apply SHALL follow the three-exit-code contract and SHALL expose one stable
+JSON document with the change, source and target workflow, input digest, per-class counts,
+blocker summaries, planned or completed writes, detail paths, and a next step. Human output SHALL
+show the same decision in compact form and SHALL NOT print all task text or full logs by default.
+
+#### Scenario: Preview has blockers
+
+- **WHEN** preview finds missing mappings and incomplete review provenance
+- **THEN** it exits with the finding code, prints concise counts and reasons, and points to the
+  detailed report and the action required for each blocker class
+
+#### Scenario: Apply succeeds
+
+- **WHEN** apply commits a valid migration
+- **THEN** its JSON identifies written state, the analyzed input digest, class counts, and the
+  command for resuming the change
+

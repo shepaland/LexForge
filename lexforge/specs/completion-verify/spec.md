@@ -304,3 +304,39 @@ splitting the file.
   the start and 612 now, although no task named it
 - **THEN** `verify` reports a finding naming `src/billing.ts`, and the finding names
   `long_files` and splitting the file as the two ways out
+
+### Requirement: Final verification validates migrated state
+
+For a migrated change, `lexforge verify` SHALL report every incomplete task, unresolved
+historical-evidence gap, contradiction, invalid dependency, and partially completed cycle. It
+SHALL accept a historically confirmed task as completed for queue purposes without requiring a
+fabricated workflow 2 red record, and SHALL independently require fresh evidence for the current
+code and final scope.
+
+The migration ledger, its input digest, and referenced evidence SHALL be readable and internally
+consistent. Missing or modified migration details SHALL be a finding or a refusal rather than a
+fallback that treats every checkbox as valid.
+
+#### Scenario: Confirmed history with fresh current checks
+
+- **WHEN** all tasks are historically confirmed or natively closed and current evidence covers
+  the present code
+- **THEN** migration state adds no finding to final verification
+
+#### Scenario: Confirmed history with stale current checks
+
+- **WHEN** all tasks are historically confirmed but code changed after their recorded state
+- **THEN** final verification reports stale or uncovered current evidence while preserving the
+  historical completion report
+
+#### Scenario: Damaged migration detail
+
+- **WHEN** a referenced legacy log or durable migration detail has changed since apply
+- **THEN** final verification refuses or reports the integrity failure and does not silently
+  reopen or confirm the affected tasks
+
+#### Scenario: Workflow version compatibility
+
+- **WHEN** the suite verifies an unmigrated workflow 1 change and a native workflow 2 change
+- **THEN** each keeps its existing gate semantics without requiring a migration ledger
+

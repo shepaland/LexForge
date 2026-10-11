@@ -164,3 +164,21 @@ stops.
 - **THEN** the skill does not call the archive command and sends the work back to that
   finding
 
+### Requirement: Archive requires a complete and current migrated change
+
+`lexforge archive` SHALL recompute final verification before writes and SHALL refuse a migrated
+change with open tasks, migration gaps or conflicts, invalid migration integrity, unresolved
+cycle dependencies, partial cycles, or stale current evidence. A successful archive SHALL move
+the historical ledger and its detailed report with the rest of the change.
+
+#### Scenario: Historical tasks are complete but checks are stale
+
+- **WHEN** every task is historically confirmed and a later code change has no fresh evidence
+- **THEN** archive writes no spec, moves no change directory, and reports the freshness blocker
+
+#### Scenario: Complete migrated change is archived
+
+- **WHEN** migrated task state, native cycle state, current evidence, and all existing archive
+  checks pass
+- **THEN** archive proceeds and the archived change retains the migration audit record
+
