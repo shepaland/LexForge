@@ -33,10 +33,11 @@ describe("workspaceStatus", () => {
     const result = workspaceStatus({ cwd: root });
 
     expect(result.exitCode).toBe(0);
-    expect(Object.keys(result.data)).toEqual([
+    expect(Object.keys(result.data), "\n\"engineeringStacks\"\n").toEqual([
       "outputVersion",
       "workspaceRoot",
       "changes",
+      "engineeringStacks",
       "nextStep",
     ]);
     expect(result.data).not.toHaveProperty("artifacts");

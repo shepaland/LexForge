@@ -99,3 +99,20 @@ An edit to a path outside the files of the execution plan SHALL NOT refuse `cycl
 
 - **WHEN** that edit is still in the tree at `lexforge verify`
 - **THEN** verify refuses and lists the path
+
+### Requirement: A started cycle owns the files it shares with an unstarted one
+
+`cycle run` SHALL NOT refuse a changed path of an unstarted cycle when a started cycle also
+lists that path. A changed path that only unstarted cycles list SHALL still refuse the run,
+listing the path.
+
+#### Scenario: A shared file edited by a started cycle
+
+- **WHEN** cycles A and B are started in one wave, unstarted cycle C lists `tests/pack.cjs`,
+  A lists and edits it, and B runs GREEN
+- **THEN** the run goes ahead, and the wave review of A and B registers
+
+#### Scenario: A file of an unstarted cycle alone
+
+- **WHEN** unstarted cycle C alone lists `tests/pack.cjs` and the file changed
+- **THEN** `cycle run` of B refuses and lists `tests/pack.cjs`

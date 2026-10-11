@@ -126,3 +126,39 @@ text explaining what to fix.
 
 - **WHEN** the check finds violations in two delta specs
 - **THEN** findings print grouped by file, each with its own line number
+
+### Requirement: Validate checks project rules and engineering settings
+
+`lexforge validate <change> --strict` SHALL report a finding with file and line for each of:
+a project rule file that breaks the rule format; an ID that appears twice across project
+rule files; an `engineering.disabled` entry without a reason or with a reason over 200
+characters; an `engineering.disabled` entry or a non-`P` project rule whose ID matches no
+shipped rule; and an `engineering.stacks` entry outside the twelve shipped stacks.
+
+#### Scenario: A switched-off rule without a reason
+
+- **WHEN** `engineering.disabled` holds `BE-05: ""`
+- **THEN** `validate --strict` exits `1` with a finding naming `BE-05` and the line in
+  `lexforge/config.yaml`
+
+#### Scenario: An override of a rule that does not exist
+
+- **WHEN** `lexforge/rules/backend.md` holds `### BE-99`
+- **THEN** `validate --strict` exits `1` with a finding naming `BE-99` as matching no
+  shipped rule
+
+#### Scenario: A duplicate project ID
+
+- **WHEN** `lexforge/rules/a.md` and `lexforge/rules/b.md` both hold `### P-01`
+- **THEN** `validate --strict` reports a finding naming `P-01` and both files
+
+#### Scenario: An unknown stack
+
+- **WHEN** `engineering.stacks` is `[python, elixir]`
+- **THEN** `validate --strict` reports a finding naming `elixir` and the twelve known stacks
+
+#### Scenario: Clean settings
+
+- **WHEN** the project rule files read cleanly and every disabled entry names a shipped
+  ID and a reason
+- **THEN** these checks raise no finding

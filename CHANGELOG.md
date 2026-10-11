@@ -17,6 +17,41 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 4.0.0 — 2026-10-11
+
+Engineering rules: a catalogue of backend, frontend, testing and review rules that the
+executor and the reviewer receive for the files of a cycle. A project names its technology
+stacks once, and the stack additions apply from then on.
+
+### Contract
+
+- `status --json` gains `engineeringStacks`. It is `"missing"` until `engineering.stacks`
+  is set in `lexforge/config.yaml`.
+- `new change` answers `2` with `engineering-stacks-missing` while the stacks are unset.
+  `lexforge stacks set <stack>...` saves the stacks, and `lexforge stacks set --none`
+  saves an empty list.
+- `context --json` gains `engineering_rules`: the executor's rules for the files of the
+  cycle, each with `id`, `rule`, `sign` and `audience`. Review rules are not in it;
+  `lexforge rules` gives them.
+- A finding in a review report may carry `rule_id`, the ID of the rule it breaks.
+
+### Other
+
+- Shipped rules: backend, frontend, testing and review, plus twelve stack additions.
+- `lexforge rules --change <name> --files <paths...>` lists the rules that apply to the
+  given files.
+- `lexforge stacks set` writes `engineering.stacks` into `lexforge/config.yaml`.
+- `validate --strict` checks the project's own rules and the `engineering` section of
+  `lexforge/config.yaml`: malformed rule files, duplicate IDs, project rules or disabled
+  entries that match no shipped rule, disabled rules without a reason of 1 to 200
+  characters, and unknown names in `engineering.stacks`.
+- The reviewer and executor briefs carry the rules of the cycle.
+- The guide `docs/engineering-rules.md` describes the catalogue and how a project adds,
+  overrides or disables a rule.
+
+After `npm install lexforge@4.0.0` run `lexforge init --tools <list>`, which rewrites the
+installed skills in place. Then run `lexforge stacks set <stack>...` once per project.
+
 ## 3.0.0 — 2026-10-10
 
 Workflow 2 asks for fewer agent round trips: one independent review per wave, a re-review

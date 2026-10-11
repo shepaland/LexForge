@@ -766,6 +766,348 @@
       "summary": "The registerStyles import breaks the alphabetical order of the import block",
       "state": "open",
       "recordedAt": "2026-10-10T19:45:06.768Z"
+    },
+    {
+      "id": "5e9d69d5",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/rules/parse.ts",
+      "line": 60,
+      "summary": "MAX_ID_LENGTH never decides: the ID pattern caps an ID at 9 chars, the 17-char test ID is rejected by the pattern, not the limit",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:21:24.490Z"
+    },
+    {
+      "id": "d990cb0b",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/rules/parse.ts",
+      "line": 115,
+      "summary": "Non-field lines inside a rule are ignored silently, so a Sign wrapped onto a second line is cut with no error",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:21:24.672Z"
+    },
+    {
+      "id": "09369a18",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/rules/parse.ts",
+      "line": 124,
+      "summary": "A duplicate field overwrites the first value with no error",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:21:24.851Z"
+    },
+    {
+      "id": "6511e60c",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/rules/parse.ts",
+      "line": 51,
+      "summary": "Untested comma-split fallback for globs without backticks; a mixed value drops the bare glob silently",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:21:25.034Z"
+    },
+    {
+      "id": "20143bca",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/workspace/project-config.ts",
+      "line": 151,
+      "summary": "An empty stacks: or disabled: key parses as null and throws project-config-invalid, while an empty engineering: is accepted",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:21:25.207Z"
+    },
+    {
+      "id": "46efca4d",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/rules/catalog.ts",
+      "line": 70,
+      "summary": "A project file holding a stack-prefixed ID (PY-01) whose stack is not named is appended as a new rule, so a stack rule applies without its stack",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:29:36.909Z"
+    },
+    {
+      "id": "2be1b095",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/core/rules/catalog.test.ts",
+      "line": 112,
+      "summary": "Override test checks only rule and file; shared Sign, Applies to and Source in the fixture let a field-by-field merge pass",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:32:27.868Z"
+    },
+    {
+      "id": "cc2cc482",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/core/rules/select.test.ts",
+      "line": 60,
+      "summary": "Output-shape test checks key names only; nothing asserts that rule and sign carry the Rule and Sign texts",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:32:28.042Z"
+    },
+    {
+      "id": "ba164ccf",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "rules/backend.md",
+      "line": 9,
+      "summary": "The BE glob also matches frontend .ts and .js, Angular component.ts and test files, so BE rules are selected for browser code",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:37:54.429Z"
+    },
+    {
+      "id": "dea6488d",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/core/rules/shipped-general.test.ts",
+      "line": 73,
+      "summary": "The Source check reduces to source !== LexForge and does not pin which rules carry '-'; LexForge. or '-' on a rule with a real source stays green",
+      "state": "open",
+      "recordedAt": "2026-10-11T14:40:06.041Z"
+    },
+    {
+      "id": "3676149a",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/cli/commands/rules.ts",
+      "line": 73,
+      "summary": "For an empty path the nextStep 'Give the path relative to the project root.' does not fit; say 'Give each path relative to the project root, 1 to 1024 characters long.'",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:03:50.532Z"
+    },
+    {
+      "id": "ffb54834",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/validation/engineering-rules.ts",
+      "line": 17,
+      "summary": "shippedIds skips a missing shipped file and drops its parse errors, so a broken install reports every override as matching no shipped rule",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:06:56.031Z"
+    },
+    {
+      "id": "02469d04",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/validation/engineering-rules.ts",
+      "line": 41,
+      "summary": "A duplicate ID inside one file reads 'defined in a.md and in a.md'; name both lines when the files are the same",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:06:56.208Z"
+    },
+    {
+      "id": "969cca4a",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/validation/engineering-rules.ts",
+      "line": 73,
+      "summary": "The disabled-reason message is the same for an empty and an over-long reason; give the length when it is over 200",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:06:56.389Z"
+    },
+    {
+      "id": "5156ff62",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/core/validation/engineering-rules.test.ts",
+      "line": 59,
+      "summary": "The duplicate and BE-99 tests assert only the message, not the file and line the requirement demands",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:06:56.566Z"
+    },
+    {
+      "id": "5cc5b773",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/cli/context-engineering-rules.test.ts",
+      "line": 73,
+      "summary": "The empty-array test uses tests/check.txt instead of the unchanged fixture of task 9.1, because the BE glob catches tests/check.cjs",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:09:59.277Z"
+    },
+    {
+      "id": "91c4abd6",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/execution/context.ts",
+      "line": 96,
+      "summary": "engineering_rules in context applies neither MAX_SELECTED_RULES nor MAX_FILES, so a wide cycle hands the executor more than 60 rules",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:09:59.453Z"
+    },
+    {
+      "id": "009ad2f2",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/cli/context-engineering-rules.test.ts",
+      "line": 57,
+      "summary": "The test does not pin the entry keys to id, rule, sign and audience, so a leak of source or appliesTo would pass",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:09:59.643Z"
+    },
+    {
+      "id": "98d0c1f9",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/cli/cycle-review-rule-id.test.ts",
+      "line": 70,
+      "summary": "Only a 17-character rule_id is tested, not the accepted 16, so max(15) would pass the suite",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:09:59.822Z"
+    },
+    {
+      "id": "6d289622",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/skills/engineering-rules-scenarios.test.ts",
+      "line": 14,
+      "summary": "Nothing asserts that each FRONTEND_STACKS name is in KNOWN_STACKS or that the split is 8 backend and 4 frontend, so a renamed stack drops out of frontend coverage",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:10:54.032Z"
+    },
+    {
+      "id": "13733ddd",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/skills/engineering-rules-scenarios.test.ts",
+      "line": 14,
+      "summary": "FRONTEND_STACKS is hard-coded and nothing asserts each name is in KNOWN_STACKS",
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:14:38.168Z",
+      "closedAt": "2026-10-11T15:16:32.545Z"
+    },
+    {
+      "id": "74636157",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "lexforge/changes/engineering-rules/pressure-runs.md",
+      "line": 105,
+      "summary": "Conclusion generalises from three single runs and states the missing-slot gap as a result, not an inference",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:16:39.688Z"
+    },
+    {
+      "id": "f6965783",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/scenarios/lexforge-apply/engineering-rules-testing.md",
+      "line": 95,
+      "summary": "Shared array listed as a TS-03 sign though it matches only the rule text; :82 says five findings, A gives six",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:16:39.879Z"
+    },
+    {
+      "id": "34f9f9f9",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/scenarios/lexforge-apply/engineering-rules-backend.md",
+      "line": 101,
+      "summary": "B described as splitting rules by how alarming they sound; it splits general from stack rules",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:16:40.084Z"
+    },
+    {
+      "id": "ffb780a4",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/scenarios/lexforge-apply/engineering-rules-testing.md",
+      "line": 65,
+      "summary": "Unclear 'fixed in the main', 'on the ground of', binary contrasts at backend:107 frontend:96 testing:75,87",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:16:40.280Z"
+    },
+    {
+      "id": "3788107e",
+      "change": "engineering-rules",
+      "level": "important",
+      "file": "src/core/execution/scope.ts",
+      "line": 123,
+      "summary": "checkRunScope counts a file shared by a started cycle and an unstarted one as an unreviewed edit: a test-only sibling cycle of the same wave can never take a GREEN that matches the planned state, so the wave review cannot be registered (c7-keys with tests/e2e/package.e2e.test.ts owned by c7-stacks and c14-pack)",
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:34:15.807Z",
+      "closedAt": "2026-10-11T15:50:27.410Z"
+    },
+    {
+      "id": "c4205e91",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/rules/set-stacks.ts",
+      "line": 26,
+      "summary": "nextStep on an unknown stack is a sentence, not a runnable command; name lexforge stacks set <stack>... with the known list",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:42:41.465Z"
+    },
+    {
+      "id": "e4bf648f",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/e2e/pipeline.e2e.test.ts",
+      "line": 69,
+      "summary": "the inserted stacks set --none calls (also :79, :114) are not asserted; assert exit code 0",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:42:41.649Z"
+    },
+    {
+      "id": "f73e92b2",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/e2e/first-run.e2e.test.ts",
+      "line": 123,
+      "summary": "the case named for four calls now also runs stacks set --none; the test name no longer describes it",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:42:41.833Z"
+    },
+    {
+      "id": "db997607",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "src/core/rules/set-stacks.ts",
+      "line": 39,
+      "summary": "duplicate stack names are written as given (stacks set python python -> [python, python])",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:42:42.006Z"
+    },
+    {
+      "id": "66e71b20",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/core/status/change-status.test.ts",
+      "line": 33,
+      "summary": "assertion message is a RED marker, not a description (also workspace-status.test.ts:36)",
+      "state": "open",
+      "recordedAt": "2026-10-11T15:42:42.181Z"
+    },
+    {
+      "id": "8c737b0a",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "skills/lexforge-apply/reviewer-prompt.md",
+      "line": 135,
+      "summary": "The sample JSON finding in the answer form has no cycle field; a reviewer copying it sends a finding that blocks every cycle of the wave",
+      "state": "open",
+      "recordedAt": "2026-10-11T16:02:31.933Z"
+    },
+    {
+      "id": "9a1980cc",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "tests/e2e/package.e2e.test.ts",
+      "line": 158,
+      "summary": "Byte comparison of docs/engineering-rules.md reads the shipped file unguarded; a missing guide throws ENOENT without the RED marker",
+      "state": "open",
+      "recordedAt": "2026-10-11T16:19:15.895Z"
+    },
+    {
+      "id": "edd97014",
+      "change": "engineering-rules",
+      "level": "minor",
+      "file": "README.md",
+      "line": 37,
+      "summary": "No test checks the version-table rows of README.md and README.ru.md; the top row may lag the package version unnoticed",
+      "state": "open",
+      "recordedAt": "2026-10-11T16:23:38.491Z"
     }
   ]
 }

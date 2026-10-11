@@ -7,7 +7,7 @@ import { createGitWorkspace, type GitWorkspace } from "../helpers/git-workspace.
 const created: GitWorkspace[] = [];
 
 function workspace(): string {
-  const made = createGitWorkspace({ "lexforge/config.yaml": "schema: spec-driven\n" });
+  const made = createGitWorkspace({ "lexforge/config.yaml": "schema: spec-driven\nengineering:\n  stacks: []\n" });
   created.push(made);
   return made.root;
 }

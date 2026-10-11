@@ -25,6 +25,7 @@ comes from this text: the subagent starts with no history of your session.
 | `[COMMAND]` | exact command, exit code and summary of its last run |
 | `[LOG]` | full log path, with relevant error excerpts supplied below |
 | `[PROJECT_RULES]` | `context` and `rules` from `lexforge/config.yaml` |
+| `[ENGINEERING_RULES]` | the output of `lexforge rules` over the files of the cycle: rule ID, rule and sign for each |
 
 The cycle starts from the actual file contents before its first edit, including earlier
 uncommitted work. `[CYCLE_PATCH]` contains only this cycle's changes to `[FILES]`, including
@@ -88,6 +89,15 @@ Full log: [LOG]
 
 [PROJECT_RULES]
 
+## Engineering rules
+
+[ENGINEERING_RULES]
+
+Every rule whose sign appears in the patch is a finding that names the rule ID, the file
+and the line, and the failure the sign points to. It is CRITICAL or IMPORTANT, never
+MINOR, and the wave stays open until a fix closes it. A rule that is not listed above is
+not yours to raise.
+
 ## How you work
 
 Read only. Do not edit the working tree, do not stage anything, do not move `HEAD` or
@@ -119,7 +129,12 @@ costs as much as a nitpick called CRITICAL.
 ## Answer in this form
 
 Every finding names its cycle, for example `c3-coupon`, so the session can tie it to one
-cycle of the wave.
+cycle of the wave. A finding on an engineering rule carries `rule_id` in the JSON report,
+next to `id`, `level` and `message`:
+
+`{"id": "F1", "level": "critical", "rule_id": "BE-02", "message": "api/orders.py:58 - ...", "resolved": false}`
+
+Do not put the rule ID into `message` instead.
 
 ### Strengths
 What the diff does well. Be specific; name files and lines.

@@ -6,7 +6,6 @@ schema: spec-driven
 # The language the artifacts of this project are written in.
 language: en
 
-
 # context: what this project is. Every artifact instruction is given this text.
 # context: |
 #   A command line tool that keeps the pipeline honest.
@@ -35,3 +34,6 @@ rules:
 #   lint: npm run lint
 verification:
   tests: npm run test:all
+engineering:
+  stacks:
+    - node

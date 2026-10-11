@@ -117,13 +117,24 @@ export function checkRunScope(
   const baseline = baselineSchema.parse(json(file));
   const expected = accountedFiles(root, change, all, baseline.files);
   const found: string[] = [];
+  const started: Cycle[] = [];
+  const unstarted: Cycle[] = [];
   for (const other of all) {
     if (other.id === cycle.id) continue;
-    const state = readState(root, change, other.id);
-    if (state) continue; // its captured baseline and independent review own these paths
+    // a started cycle's captured baseline and independent review own its paths
+    (readState(root, change, other.id) ? started : unstarted).push(other);
+  }
+  const startedPaths = new Set(
+    started.flatMap((other) => other.files.map((file) => file.path)),
+  );
+  for (const other of unstarted) {
     const paths = other.files
       .map((file) => file.path)
-      .filter((file) => !cycle.files.some((own) => own.path === file));
+      .filter(
+        (file) =>
+          !startedPaths.has(file) &&
+          !cycle.files.some((own) => own.path === file),
+      ); // a started cycle owns the paths it shares with an unstarted one
     const current = hashes(root, paths);
     const changed = paths.filter((path) => current[path] !== expected[path]);
     if (changed.length > 0) found.push(`${other.id}: ${changed.join(", ")}`);
