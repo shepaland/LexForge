@@ -203,3 +203,48 @@ installation unless the corresponding action is separately in scope.
 - **THEN** the skill names the gap and the minimum review action without marking those tasks
   confirmed or disabling a gate
 
+### Requirement: The reviewer brief carries the selected engineering rules
+
+The reviewer brief in `skills/lexforge-apply/reviewer-prompt.md` SHALL have a slot
+`[ENGINEERING_RULES]`, filled with the output of `lexforge rules` over the files of the
+cycle. A finding on an engineering rule SHALL name the rule ID, the file and the line,
+and the failure the sign points to. Such a finding SHALL block the wave until a fix closes
+it. There SHALL be no warning level for an engineering rule.
+
+Interaction: dispatcher -> cli, cli -> dispatcher, dispatcher -> reviewer, reviewer -> dispatcher
+
+```sequence
+dispatcher -> cli: select
+cli -> dispatcher: selection
+dispatcher -> reviewer: review_brief
+reviewer -> dispatcher: review_report
+```
+
+| Message | From | To | Field | Type | Required | Length | Response | Errors |
+|---|---|---|---|---|---|---|---|---|
+| select | dispatcher | cli | files | array | yes | 1..200 | selection | files-too-many, rules-too-many |
+| selection | cli | dispatcher | rules | array | yes | <=60 | - | - |
+| review_brief | dispatcher | reviewer | engineering_rules | array | yes | <=60 | review_report | - |
+| review_report | reviewer | dispatcher | rule_id | string | no | 1..16 | - | - |
+
+#### Scenario: A rule broken in the cycle
+
+- **WHEN** the cycle patch builds an SQL query by string concatenation and the brief
+  carries `BE-02`
+- **THEN** the reviewer reports a finding naming `BE-02`, the file and the line, and the
+  wave is not marked done
+
+#### Scenario: A switched-off rule
+
+- **WHEN** `BE-02` is switched off in `lexforge/config.yaml`
+- **THEN** the brief does not carry `BE-02` and the reviewer reports no finding on it
+
+### Requirement: The executor gets the rules before it writes code
+
+`lexforge context` for a task SHALL include the engineering rules selected for the files
+the task names, without the rules whose audience is `reviewer`.
+
+#### Scenario: Context for a backend task
+
+- **WHEN** a task names `api/orders.py` in a project with `engineering.stacks: [python]`
+- **THEN** `lexforge context` holds the matching `BE` and `PY` rules and no `RV` rule

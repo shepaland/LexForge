@@ -123,6 +123,9 @@ describe("круг из четырёх вызовов", () => {
         "utf8",
       );
 
+      const stacks = await lexforge(["stacks", "set", "--none"], project);
+      expect(stacks.status, stacks.stderr).toBe(0);
+
       writeFileSync(path.join(root, ".gitignore"), "node_modules/\n", "utf8");
       commitAll(root, "init");
 
@@ -174,6 +177,9 @@ describe("пакет потерял шаблон", () => {
 
       const init = await lexforge(["init", "--tools", "claude"], project);
       expect(init.status, init.stderr).toBe(0);
+
+      const stacks = await lexforge(["stacks", "set", "--none"], project);
+      expect(stacks.status, stacks.stderr).toBe(0);
 
       // `new change` opens a branch and needs a committed tree.
       git(project.root, "init", "--initial-branch=main", "--quiet");

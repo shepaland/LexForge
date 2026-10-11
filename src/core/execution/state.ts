@@ -39,6 +39,7 @@ const reviewSchema = z
         message: z.string().min(1),
         resolved: z.boolean(),
         cycle: z.string().min(1).optional(),
+        rule_id: z.string().min(1).max(16).optional(),
       }),
     ),
     scope: z.enum(["wave", "fixes"]).optional(),

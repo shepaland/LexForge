@@ -52,6 +52,7 @@ exports[`контракт машинного вывода > status по всем
 exports[`контракт машинного вывода > status по всему рабочему пространству > status: ключи data 1`] = `
 [
   "changes",
+  "engineeringStacks",
   "nextStep",
   "outputVersion",
   "workspaceRoot",
@@ -75,6 +76,7 @@ exports[`контракт машинного вывода > status по одно
 [
   "artifacts",
   "change",
+  "engineeringStacks",
   "isPlanningComplete",
   "nextStep",
   "outputVersion",

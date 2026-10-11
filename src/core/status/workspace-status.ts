@@ -3,6 +3,7 @@ import { NEW_CHANGE_STEP, nextStepForChange } from "../next-step.js";
 import type { CommandResult } from "../types.js";
 import { listActiveChanges } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
+import { readProjectConfig } from "../workspace/project-config.js";
 import { readChangeState } from "./change-status.js";
 
 export interface WorkspaceStatusOptions {
@@ -23,6 +24,8 @@ export interface WorkspaceStatusData {
   outputVersion: 1;
   workspaceRoot: string;
   changes: ChangeSummary[];
+  /** The stacks the project named, or `missing` while the config has no `engineering.stacks`. */
+  engineeringStacks: string[] | "missing";
   nextStep: string;
 }
 
@@ -57,6 +60,7 @@ export function workspaceStatus(
     outputVersion: 1,
     workspaceRoot: answerPath(root),
     changes,
+    engineeringStacks: readProjectConfig(root).engineering.stacks ?? "missing",
     nextStep: nextStep === "" ? NEW_CHANGE_STEP : nextStep,
   };
 

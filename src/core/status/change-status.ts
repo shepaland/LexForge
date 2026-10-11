@@ -50,6 +50,8 @@ export interface ChangeStatusData {
    * artifact included: a skill that owns no artifact reads its own model here.
    */
   stages: StageAssignment[];
+  /** The stacks the project named, or `missing` while the config has no `engineering.stacks`. */
+  engineeringStacks: string[] | "missing";
   nextStep: string;
 }
 
@@ -84,7 +86,8 @@ export function readChangeState(root: string, change: string): ReadChangeState {
 export function changeStatus(options: ChangeStatusOptions): CommandResult<ChangeStatusData> {
   const root = findWorkspaceRoot(options.cwd);
   const { schema, state } = readChangeState(root, options.change);
-  const models = readProjectConfig(root).models;
+  const projectConfig = readProjectConfig(root);
+  const models = projectConfig.models;
 
   const tool = options.tool ?? "";
 
@@ -110,6 +113,7 @@ export function changeStatus(options: ChangeStatusOptions): CommandResult<Change
       };
     }),
     stages: resolveStages(models, tool),
+    engineeringStacks: projectConfig.engineering.stacks ?? "missing",
     nextStep,
   };
 
