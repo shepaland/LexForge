@@ -19,12 +19,18 @@ Then `verify` returns `0`. The example files are in [`examples/notes`](examples/
 LexForge takes its requirements documents and their workflow from OpenSpec.
 Its testing and review rules come from superpowers.
 
+The executor and the reviewer also get engineering rules for the files they work on: backend,
+frontend, testing and review, plus additions for twelve stacks. A finding of the reviewer names
+the rule it breaks. A project can add its own rules, override the shipped ones or switch one
+off with a reason. See the [engineering rules guide](docs/engineering-rules.md) (in Russian).
+
 ## Quick start
 
 ```bash
 npm install -g lexforge       # skills need this command on PATH
 lexforge init --tools claude  # agents · claude · codex · cursor · opencode
 lexforge doctor               # check the installation
+lexforge stacks set node      # the project's stacks; --none if it uses none of the twelve
 ```
 
 Ask the agent to “add X” or “fix Y”. The `lexforge` skill identifies the type of task and
@@ -383,6 +389,7 @@ including stale evidence or unmet cycle prerequisites.
 | `lexforge/specs/` | Repository: the specs describe the shipped behaviour |
 | `lexforge/changes/<name>/` with `evidence.json` | Repository: a stamp is tied to a commit, and review shows what it was taken on |
 | `lexforge/changes/archive/` | Repository: closed changes with their artifacts and stamps |
+| `lexforge/rules/` | Repository: the project's own engineering rules and overrides apply to everyone on the team |
 | `lexforge/defects.json` | Repository: an entry outlives the change it was found in, and review needs to see what still stands |
 | The runtime skill directories and `lexforge-install.json` | Locally: `lexforge init` brings them back on another machine |
 
