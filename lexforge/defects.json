@@ -1108,6 +1108,630 @@
       "summary": "No test checks the version-table rows of README.md and README.ru.md; the top row may lag the package version unnoticed",
       "state": "open",
       "recordedAt": "2026-10-11T16:23:38.491Z"
+    },
+    {
+      "id": "1bfab9cd",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/helpers/setup-unit.ts",
+      "line": 17,
+      "summary": "afterEach restores every mock and global stub of the test file, not only the homedir spy and the fetch stub it set",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:07:16.117Z"
+    },
+    {
+      "id": "9d0587c1",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/init/installations.ts",
+      "line": 19,
+      "summary": "Installation.manifestFile is read by no caller",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:23:29.380Z"
+    },
+    {
+      "id": "6685f4c8",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/core/init/installations.test.ts",
+      "line": 18,
+      "summary": "load() turns every import failure into undefined, hiding syntax errors as a missing module",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:23:29.580Z"
+    },
+    {
+      "id": "2e8a8ac4",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/init/installations.ts",
+      "line": 68,
+      "summary": "a manifest that does not parse counts as absent, with no test",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:23:29.775Z"
+    },
+    {
+      "id": "62ba7281",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/workspace/project-config.ts",
+      "line": 151,
+      "summary": "a bare data_stores: line (null) throws project-config-invalid; ui takes nullish",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:23:29.980Z"
+    },
+    {
+      "id": "033c6f69",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/workspace/project-config.ts",
+      "line": 210,
+      "summary": "map over data_stores repeats what z.object already strips",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:23:30.172Z"
+    },
+    {
+      "id": "4739482b",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/dialects.ts",
+      "line": 21,
+      "summary": "storeFormat is case-sensitive; validate must reject a dialect that is not lower-case",
+      "state": "closed",
+      "recordedAt": "2026-10-11T20:23:30.398Z",
+      "closedAt": "2026-10-12T06:09:36.690Z"
+    },
+    {
+      "id": "69b8930e",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/cli/process-isolation.test.ts",
+      "line": 48,
+      "summary": "the stub guard is text-based: a comment satisfies it and the regex stops at the first closing parenthesis",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:25:15.938Z"
+    },
+    {
+      "id": "c255d9d6",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "lexforge/changes/agent-gates-and-data-docs/tasks/08-the-schema-model.md",
+      "line": 5,
+      "summary": "task 8.1 does not name the missing-field and extra-field kinds and carries no requirement reference",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:25:16.470Z"
+    },
+    {
+      "id": "f3684de8",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/schema-model.ts",
+      "line": 156,
+      "summary": "a key named on one side and unnamed on the other gives a missing and an extra difference",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:25:16.781Z"
+    },
+    {
+      "id": "89265a69",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/schema-model.ts",
+      "line": 166,
+      "summary": "an absent default is the string none, equal to a default literally written as none",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:25:17.189Z"
+    },
+    {
+      "id": "b73ecab6",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "lexforge/changes/agent-gates-and-data-docs/tasks/08-the-schema-model.md",
+      "line": 5,
+      "summary": "Task 8.1 does not name the four problem cases added in review: create of an existing table, change of a missing field, drop of a missing key by name and by kind and fields.",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:37:41.062Z"
+    },
+    {
+      "id": "a955f75b",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/schema-model.ts",
+      "line": 153,
+      "summary": "No test builds a foreign key with references.store, so two foreign keys differing only in the referenced store are never shown to differ.",
+      "state": "open",
+      "recordedAt": "2026-10-11T20:37:41.291Z"
+    },
+    {
+      "id": "e08e9949",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-markdown.ts",
+      "line": 109,
+      "summary": "Markdown foreign key reference is not validated: '-> users' gives an empty table and column counts may differ; composite foreign keys cannot be written.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:01:20.779Z"
+    },
+    {
+      "id": "549089b7",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-markdown.ts",
+      "line": 31,
+      "summary": "Heading detection ignores code fences: a '# comment' line inside a Data migration section cuts the section short without an error.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:01:20.965Z"
+    },
+    {
+      "id": "8c88f55b",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-markdown.ts",
+      "line": 189,
+      "summary": "A mistyped heading such as '## Table user_events' (no colon) and an alter table with Action but neither Field nor Key are dropped without an error.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:01:21.146Z"
+    },
+    {
+      "id": "299ca870",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-markdown.ts",
+      "line": 171,
+      "summary": "A primary key drop row ignores the fields written in it and always gives setPrimaryKey([]).",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:01:21.326Z"
+    },
+    {
+      "id": "459c7378",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/core/data/read-markdown.test.ts",
+      "line": 17,
+      "summary": "The import guard reports any import failure as 'does not exist', a syntax error in the module included (same pattern as 6685f4c8).",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:01:21.520Z"
+    },
+    {
+      "id": "aa2a6986",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/cli/run.ts",
+      "line": 184,
+      "summary": "The skill gate rethrows any non-UsageError (e.g. EACCES from readdirSync on an unreadable skills directory) as an unhandled rejection with a stack trace on every non-exempt command; no test reaches it.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:03:19.824Z"
+    },
+    {
+      "id": "1564d23e",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/cli/skill-gate.test.ts",
+      "line": 151,
+      "summary": "The gate exemptions for the help command, -h, -V and empty argv have no test.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:03:20.013Z"
+    },
+    {
+      "id": "47e2ec9e",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/skill-gate.ts",
+      "line": 50,
+      "summary": "The skills-outdated message names the absolute skills directory and can pass the 400-character error.message limit on a deep path.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:03:20.198Z"
+    },
+    {
+      "id": "55454eee",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "lexforge/changes/agent-gates-and-data-docs/tasks/10-reading-markdown-schemas.md",
+      "line": 5,
+      "summary": "Task 10.1 says add, change and drop give matching operations in both tables, but change on a key row is an error by design; only the test name says so.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:05:45.319Z"
+    },
+    {
+      "id": "f14bc3da",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 139,
+      "summary": "The unmapped ALTER action error tells the user to write the step in Markdown, which an SQL store cannot do; DROP CONSTRAINT is not mapped.",
+      "state": "closed",
+      "recordedAt": "2026-10-11T21:06:25.122Z",
+      "closedAt": "2026-10-12T06:09:36.180Z"
+    },
+    {
+      "id": "79ae635e",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "lexforge/changes/agent-gates-and-data-docs/tasks/09-reading-sql.md",
+      "line": 5,
+      "summary": "Task 9.1 text uses int for every dialect, but BigQuery rejects int (int64 needed) and postgresql cannot parse RENAME COLUMN; the test deviates from the task text.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:06:25.298Z"
+    },
+    {
+      "id": "b1989150",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 159,
+      "summary": "The catch-all turns programming errors in the reader into user-facing parse errors.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:06:25.475Z"
+    },
+    {
+      "id": "bd1d6cb3",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 27,
+      "summary": "tableName drops the schema qualifier, so s.t and t count as the same table.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:06:25.660Z"
+    },
+    {
+      "id": "7fc195bb",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/cli/new-change-update.test.ts",
+      "line": 79,
+      "summary": "The four change-created cases reuse the EXPECTED red message, so a wrong gate fails them with a misleading line that red matching would accept.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:10:57.549Z"
+    },
+    {
+      "id": "debd500c",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/update-check.ts",
+      "line": 88,
+      "summary": "No test covers latestRelease with an older npm version (task 5.3).",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:10:57.727Z"
+    },
+    {
+      "id": "7e8395a4",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/cli/run.ts",
+      "line": 205,
+      "summary": "new change --help without a terminal still asks npm and can be refused with update-available; the update gate has no help exemption.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:10:57.908Z"
+    },
+    {
+      "id": "43f291b1",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/cli/new-change-update.test.ts",
+      "line": 111,
+      "summary": "Fake timers are restored only in finally; a test that hits the 10 s limit leaves the rest of the file on fake timers. Restore in afterEach.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:13:58.983Z"
+    },
+    {
+      "id": "f4833534",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/cli/new-change-update.test.ts",
+      "line": 167,
+      "summary": "The outputVersion 1 check does not tell the status report from an error, since renderUsageError writes outputVersion 1 too; check a status-only field.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:13:59.165Z"
+    },
+    {
+      "id": "ef894734",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 181,
+      "summary": "transactsql parses invalid ALTER ... MODIFY COLUMN ... SET DATA TYPE as variable assignments with no type; readStatement skips them silently and the migration step is lost. Return an error for a tree without type.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:21:55.282Z"
+    },
+    {
+      "id": "840a0e3c",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 60,
+      "summary": "Literals print by type name only: hex and bit strings read as plain strings, DATE/TIMESTAMP literals lose the keyword and quotes, COLLATE is dropped. Send such literals through render.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:21:55.470Z"
+    },
+    {
+      "id": "8ae457cc",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/cli/stores-add.test.ts",
+      "line": 11,
+      "summary": "Every assertion passes EXPECTED as its message, so any failure prints the red line and RED matching accepts it.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:25:56.848Z"
+    },
+    {
+      "id": "6a5528e2",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/cli/commands/stores.ts",
+      "line": 14,
+      "summary": "A bare stores refusal gets nextStep 'lexforge stores add --change <name>' from noSubcommand, which is not a valid stores add invocation; the test does not check nextStep.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:25:57.048Z"
+    },
+    {
+      "id": "81a94393",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/add-store.ts",
+      "line": 44,
+      "summary": "The dialect is trimmed, which the task does not ask for; no test covers a whitespace-only --dialect.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:25:57.258Z"
+    },
+    {
+      "id": "b362470b",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/validation/check-data-model.ts",
+      "line": 127,
+      "summary": "data-migration-empty, no-primary-key and SQL reader errors report line 1: read-sql drops the parser location, read-markdown does not expose section.line, applyOperations problems carry no line.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:34:14.736Z"
+    },
+    {
+      "id": "484a0c55",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/skills/version-gate.test.ts",
+      "line": 62,
+      "summary": "The update-available clause slice starts at the word update-available, so the exit 2 check matches the skills-outdated paragraph; dropping Exit 2 from the update-available sentence still passes.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:37:04.404Z"
+    },
+    {
+      "id": "47b85f48",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/check-migration.ts",
+      "line": 52,
+      "summary": "Problems from building the project schema are dropped, so a duplicate CREATE TABLE in lexforge/data/<store>/schema gives no finding.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:44:00.867Z"
+    },
+    {
+      "id": "fa5bb470",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/cli/validate-data-migration.test.ts",
+      "line": 103,
+      "summary": "Six tests besides the target pass EXPECTED as the message of their exit-code assertion, so any of them failing prints the accepted red line.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:47:59.199Z"
+    },
+    {
+      "id": "596fec2e",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/validation/check-services.ts",
+      "line": 152,
+      "summary": "No test writes a schema.md, so dropping schema.md from the store schema lookup passes every test.",
+      "state": "open",
+      "recordedAt": "2026-10-11T21:56:06.054Z"
+    },
+    {
+      "id": "8966d238",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/validation/check-services.ts",
+      "line": 52,
+      "summary": "Every Service: line in a delta spec counts as a marker, including one above the first requirement or under REMOVED Requirements.",
+      "state": "closed",
+      "recordedAt": "2026-10-11T21:56:06.238Z",
+      "closedAt": "2026-10-12T06:18:27.089Z"
+    },
+    {
+      "id": "f62d00a1",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/skills/spec-data-services.test.ts",
+      "line": 91,
+      "summary": "The Markdown-format test has no recorded inversion in execution/c17-spec/inversion.log.",
+      "state": "open",
+      "recordedAt": "2026-10-11T22:07:30.111Z"
+    },
+    {
+      "id": "b611be53",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "CHANGELOG.md",
+      "line": 65,
+      "summary": "The 5.0.0 upgrade note says every workspace command answers skills-outdated; the gate refuses every call except the exempt ones, outside a workspace too.",
+      "state": "open",
+      "recordedAt": "2026-10-11T22:24:41.740Z"
+    },
+    {
+      "id": "7f67eb0f",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/skill-gate.ts",
+      "line": 45,
+      "summary": "The repair command and the version comparison are built here and again in src/core/doctor/checks-skills.ts:30; one helper should serve both",
+      "state": "open",
+      "recordedAt": "2026-10-12T05:54:19.085Z"
+    },
+    {
+      "id": "b1fe7b33",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/update-check.ts",
+      "line": 88,
+      "summary": "latestRelease repeats the registry query and version comparison of checkForCliUpdate in the same file",
+      "state": "open",
+      "recordedAt": "2026-10-12T05:54:19.313Z"
+    },
+    {
+      "id": "aa7c3a59",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 21,
+      "summary": "render is a module-level mutable function set on each readSql call; two readers in flight with different dialects would render with the wrong one",
+      "state": "open",
+      "recordedAt": "2026-10-12T05:54:19.576Z"
+    },
+    {
+      "id": "f46cfd3a",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 81,
+      "summary": "An inline PRIMARY KEY makes the column not null, a table-level PRIMARY KEY (line 118) leaves it nullable; the two spellings of one schema read differently",
+      "state": "open",
+      "recordedAt": "2026-10-12T05:54:19.836Z"
+    },
+    {
+      "id": "426863a4",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "lexforge/changes/agent-gates-and-data-docs/proposal.md",
+      "line": 133,
+      "summary": "The Impact list names the config schema under schemas/, which the change never touched",
+      "state": "open",
+      "recordedAt": "2026-10-12T05:54:20.180Z"
+    },
+    {
+      "id": "7abaceca",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/execution/scope.ts",
+      "line": 129,
+      "summary": "A cycle added to the plan after the baseline was taken, naming a file that does not exist yet, has no baseline entry; checkRunScope then reports that absent file as changed and refuses every other cycle's run",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:05:44.292Z"
+    },
+    {
+      "id": "ea56f6fd",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/validation/check-data-model.ts",
+      "line": 200,
+      "summary": "A store whose dialect is not lower-case skips every file check (existence, parse, primary key, migration), wider than the format check task 20.3 names; the code carries no comment saying why",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:08:20.365Z"
+    },
+    {
+      "id": "da156e51",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/core/data/read-sql.test.ts",
+      "line": 329,
+      "summary": "No test checks that the unmapped-action message lists DROP CONSTRAINT and DROP PRIMARY KEY; only the absence of Markdown is asserted",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:09:29.644Z"
+    },
+    {
+      "id": "0cbcc5ab",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 184,
+      "summary": "The unmapped-action message lists fewer changes than the reader maps (SET/DROP NOT NULL, SET/DROP DEFAULT, CHANGE COLUMN) and marks DROP PRIMARY KEY as mysql only, though mariadb and sqlite map it too",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:09:30.368Z"
+    },
+    {
+      "id": "eb097a66",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/core/data/read-sql.test.ts",
+      "line": 331,
+      "summary": "The RENAME COLUMN test reuses EXPECTED_DROP as its assertion message, so its failure prints the DROP CONSTRAINT red line",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:09:30.871Z"
+    },
+    {
+      "id": "40260e70",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 178,
+      "summary": "On postgresql a primary key or an unnamed constraint added by up.sql cannot be rolled back: the model keeps no name for the primary key or a server-named constraint, so DROP CONSTRAINT <name> finds no key",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:09:31.416Z"
+    },
+    {
+      "id": "ad0a8eb9",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/validation/spec-markers.ts",
+      "line": 52,
+      "summary": "No test covers a marker placed between a live section heading and its first requirement, the case the empty-requirement guard handles",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:16:16.720Z"
+    },
+    {
+      "id": "ec676dbe",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/cli/context-cycles.test.ts",
+      "line": 40,
+      "summary": "Four CLI end-to-end tests (context-cycles, workflow-migration-gates, workflow-migration-review-fixes) hit the default 5000 ms timeout in a full-suite run under load and pass alone",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:20:51.863Z"
+    },
+    {
+      "id": "f172408c",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 181,
+      "summary": "On mysql, ALTER TABLE ... DROP FOREIGN KEY, DROP INDEX and ADD INDEX are refused as unmapped though they are the native spellings",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:26:16.883Z"
+    },
+    {
+      "id": "6373e180",
+      "change": "agent-gates-and-data-docs",
+      "level": "important",
+      "file": "src/core/data/read-sql.ts",
+      "line": 77,
+      "summary": "A foreign key written inline on a column (REFERENCES in CREATE TABLE or ADD COLUMN) is dropped from the schema model, so foreign keys are not compared",
+      "state": "closed",
+      "recordedAt": "2026-10-12T06:26:17.074Z",
+      "closedAt": "2026-10-12T06:32:09.292Z"
+    },
+    {
+      "id": "945367ab",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 106,
+      "summary": "inlineKeys is tested only on postgresql with a column list: no test for REFERENCES without columns, and mysql/mariadb parse but do not enforce an inline REFERENCES, so the model may hold a foreign key the database never creates",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:32:08.869Z"
+    },
+    {
+      "id": "62de3073",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "tests/cli/validate-data-migration.test.ts",
+      "line": 205,
+      "summary": "The inline-REFERENCES CLI case passed in the red run, since the old reader made no key on either side; it guards the change only afterwards",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:32:09.084Z"
+    },
+    {
+      "id": "6097bb8f",
+      "change": "agent-gates-and-data-docs",
+      "level": "minor",
+      "file": "src/core/data/read-sql.ts",
+      "line": 107,
+      "summary": "inlineKeys drops the constraint name of 'col int CONSTRAINT name REFERENCES t (c)', so DROP CONSTRAINT name in down and ADD CONSTRAINT name in up give false findings against the named inline spelling",
+      "state": "open",
+      "recordedAt": "2026-10-12T06:35:17.386Z"
     }
   ]
 }

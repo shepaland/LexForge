@@ -1,6 +1,6 @@
 {
   "name": "lexforge",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "Spec-driven pipeline with gates that agents cannot skip",
   "license": "MIT",
   "author": "shepaland <a.shepelkin@mail.ru>",
@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "commander": "^14.0.2",
+    "node-sql-parser": "5.4.0",
     "picomatch": "^4.0.7",
     "yaml": "^2.8.1",
     "zod": "^4.1.12"

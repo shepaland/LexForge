@@ -4,9 +4,11 @@ import { registerContext } from "./commands/context.js";
 import { Command, CommanderError } from "commander";
 
 import { packageVersion } from "../core/package-info.js";
+import { checkSkillVersions } from "../core/skill-gate.js";
 import type { CommandResult, OutputStream } from "../core/types.js";
 import {
   checkForCliUpdate,
+  latestRelease,
   type UpdateOutcome,
 } from "../core/update-check.js";
 import { registerArchive } from "./commands/archive.js";
@@ -14,6 +16,7 @@ import { registerCheck } from "./commands/check.js";
 import { registerDefect } from "./commands/defect.js";
 import { registerRules } from "./commands/rules.js";
 import { registerStacks } from "./commands/stacks.js";
+import { registerStores } from "./commands/stores.js";
 import { registerStyles } from "./commands/styles.js";
 import { registerDoctor } from "./commands/doctor.js";
 import { registerEvidence } from "./commands/evidence.js";
@@ -38,6 +41,8 @@ export interface RunOptions {
   stderr?: OutputStream;
   /** Overrides the update decision for embedded and test callers. */
   checkForUpdate?: () => Promise<UpdateOutcome>;
+  /** Overrides the npm `latest` lookup of a non-interactive `new change`. */
+  fetchLatestVersion?: () => Promise<string>;
 }
 
 /**
@@ -108,6 +113,7 @@ export function createProgram(context: CliContext): Command {
   registerStyles(program, context);
   registerRules(program, context);
   registerStacks(program, context);
+  registerStores(program, context);
   registerVerify(program, context);
   registerArchive(program, context);
 
@@ -166,13 +172,55 @@ function wantsJson(argv: string[]): boolean {
   return argv.includes("--json");
 }
 
+const GATE_EXEMPT_COMMANDS = ["init", "doctor", "help"];
+const GATE_EXEMPT_FLAGS = ["--help", "-h", "--version", "-V"];
+
+/** Whether the skill version gate looks at this call. */
+function needsSkillGate(argv: string[]): boolean {
+  return (
+    argv.length > 0 &&
+    !GATE_EXEMPT_COMMANDS.includes(argv[0]!) &&
+    !argv.some((word) => GATE_EXEMPT_FLAGS.includes(word))
+  );
+}
+
 export async function run(argv: string[], options: RunOptions): Promise<number> {
   const context = createCliContext(options);
+  if (needsSkillGate(argv)) {
+    try {
+      checkSkillVersions({ cwd: context.cwd, home: context.home, version: packageVersion() });
+    } catch (error) {
+      if (!(error instanceof UsageError)) throw error;
+      renderUsageError(error, {
+        json: wantsJson(argv),
+        stdout: context.stdout,
+        stderr: context.stderr,
+      });
+      return 2;
+    }
+  }
   const output = options.stdout ?? process.stdout;
   const interactive =
     process.stdin.isTTY === true &&
     (output as OutputStream & { isTTY?: boolean }).isTTY === true &&
     !wantsJson(argv);
+  if (!interactive && argv[0] === "new" && argv[1] === "change") {
+    const current = packageVersion();
+    const latest = await latestRelease({
+      currentVersion: current,
+      fetchLatestVersion: options.fetchLatestVersion,
+    });
+    if (latest !== null) {
+      renderUsageError(
+        new UsageError(
+          "update-available",
+          `LexForge ${latest} is on npm and ${current} is installed. Ask the owner to run \`npm install -g lexforge@latest\`, then run this command again.`,
+        ),
+        { json: wantsJson(argv), stdout: context.stdout, stderr: context.stderr },
+      );
+      return 2;
+    }
+  }
   if (argv.length > 0 && interactive) {
     let outcome: UpdateOutcome = { kind: "continue", updateAvailable: false };
     try {

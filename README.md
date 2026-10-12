@@ -40,6 +40,7 @@ starts the appropriate workflow. See [First run](#first-run) for setup details.
 
 | Version | What the update gives you |
 | --- | --- |
+| [5.0.0](CHANGELOG.md#500--2026-10-12) | Commands refuse to run on skills left by an older release until `lexforge init` is repeated, and `new change` run by an agent refuses while npm holds a newer release. A project lists its data stores with `lexforge stores add`; a requirement with a `Data:` line brings a schema and a migration in SQL or Markdown, and a requirement with a `Service:` line brings a service document. `archive` moves them into `lexforge/data/` and `lexforge/services/`. |
 | [4.0.0](CHANGELOG.md#400--2026-10-11) | The executor and the reviewer receive engineering rules for the files of each cycle: backend, frontend, testing and review, with stack additions. A project names its stacks with `lexforge stacks set`, and `new change` refuses until it does. A review finding can name the rule it breaks. |
 | [3.0.0](CHANGELOG.md#300--2026-10-10) | One reviewer checks a whole wave of cycles, and after fixes only their diff is reviewed again. Refusals name the files involved. Specs carry an ASCII sequence diagram with a contract table for interactions and a mockup for UI; the plan and the executor work against them. Each change runs on `feature/<name>` and is merged into `dev` on archive. |
 | [2.2.0](CHANGELOG.md#220--2026-10-03) | Routes and external absolute paths in task descriptions no longer become repository files. An optional `Files:` line gives exact writable scope; existing plans keep working and unsafe explicit paths are rejected. |
@@ -363,6 +364,7 @@ in `lexforge/config.yaml`; agents receive them through `lexforge instructions`.
 | `styles find` | Lists the project's CSS files for mockups |
 | `styles set <paths...>` | Saves the chosen CSS files under `ui.styles` in `lexforge/config.yaml` |
 | `stacks set <stacks...>` | Saves the project's stacks under `engineering.stacks`; `--none` saves an empty list |
+| `stores add <name> --dialect <dialect>` | Appends a data store to `data_stores` in `lexforge/config.yaml` |
 | `rules --change <name> --files <paths...>` | Prints the engineering rules that apply to the files of a cycle |
 | `defect record --change <name>` | Records a defect against a change; `--level`, `--file`, `--line`, `--summary` |
 | `defect close <id>` | Marks a recorded defect as fixed |
@@ -389,6 +391,8 @@ including stale evidence or unmet cycle prerequisites.
 | `lexforge/specs/` | Repository: the specs describe the shipped behaviour |
 | `lexforge/changes/<name>/` with `evidence.json` | Repository: a stamp is tied to a commit, and review shows what it was taken on |
 | `lexforge/changes/archive/` | Repository: closed changes with their artifacts and stamps |
+| `lexforge/data/` | Repository: the schemas and migrations of the project's data stores are shipped behaviour |
+| `lexforge/services/` | Repository: the service documents describe the services the specs name |
 | `lexforge/rules/` | Repository: the project's own engineering rules and overrides apply to everyone on the team |
 | `lexforge/defects.json` | Repository: an entry outlives the change it was found in, and review needs to see what still stands |
 | The runtime skill directories and `lexforge-install.json` | Locally: `lexforge init` brings them back on another machine |
