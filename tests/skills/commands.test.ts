@@ -19,6 +19,7 @@ function fixture(dir: string): SkillFile {
 describe("список команд читается из программы CLI", () => {
   it("несёт команды и подкоманды, зарегистрированные в run.ts", () => {
     expect(knownCommandNames().slice().sort()).toEqual([
+      "add",
       "archive",
       "change",
       "check",
@@ -52,6 +53,7 @@ describe("список команд читается из программы CLI
       "stacks",
       "start",
       "status",
+      "stores",
       "styles",
       "validate",
       "verify",

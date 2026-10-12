@@ -8,7 +8,14 @@ import {
   QUEUE_RULE_IMPLEMENTATION_SKILLS,
   readQueueRule,
 } from "./checks.js";
-import { MODEL_GATE_END, MODEL_GATE_START, readModelGate } from "./model-checks.js";
+import {
+  MODEL_GATE_END,
+  MODEL_GATE_START,
+  VERSION_GATE_END,
+  VERSION_GATE_START,
+  readModelGate,
+  readVersionGate,
+} from "./model-checks.js";
 import { SKILLS } from "./helpers.js";
 
 describe("общий блок правила очереди", () => {
@@ -48,19 +55,22 @@ describe("общий блок правила очереди", () => {
     expect(sharedText(QUEUE_RULE_IMPLEMENTATION_SKILLS)).not.toBe(sharedText(PLANNING_SKILLS));
   });
 
-  it("блок скилла отладки — это один модельный гейт: он работает и без рабочего пространства", () => {
+  it("блок скилла отладки — это версионный и модельный гейты и ничего больше: он работает и без рабочего пространства", () => {
     const skills = readSkills(SKILLS).filter((skill) => GATE_ONLY_SKILLS.includes(skill.dir));
 
     expect(skills).toHaveLength(GATE_ONLY_SKILLS.length);
     for (const skill of skills) {
       const block = readQueueRule(skill);
       const gate = readModelGate(skill);
+      const versionGate = readVersionGate(skill);
 
       expect(block, `у скилла ${skill.dir} нет блока`).not.toBeNull();
       expect(gate, `у скилла ${skill.dir} нет гейта`).not.toBeNull();
+      expect(versionGate, `у скилла ${skill.dir} нет версионного гейта`).not.toBeNull();
       const withMarkers = `${MODEL_GATE_START}${gate!}${MODEL_GATE_END}`;
+      const versionWithMarkers = `${VERSION_GATE_START}${versionGate!}${VERSION_GATE_END}`;
 
-      expect(block!.replace(withMarkers, "").trim()).toBe("");
+      expect(block!.replace(versionWithMarkers, "").replace(withMarkers, "").trim()).toBe("");
       expect(block).not.toContain("workspace-not-found");
     }
   });

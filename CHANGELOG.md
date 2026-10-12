@@ -17,6 +17,53 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 5.0.0 — 2026-10-12
+
+Two gates for agents and two new kinds of documents. A command no longer runs on skills left
+behind by an older release, and `new change` run by an agent no longer starts on an old CLI.
+Specs can now describe the data stores and the services a requirement touches, and `validate`
+checks that the migration really leads from the old schema to the new one.
+
+### Contract
+
+- Every call answers `2` with `skills-outdated` when a skill installation in the project or
+  in the home directory was written by another version than the running CLI, or has no
+  manifest. `init`, `doctor`, `help`, any call with `--help`, `-h`, `--version` or `-V`, and
+  a call with no arguments are exempt. The message names the directory and the repair,
+  `lexforge init --tools <tool>`, with `--scope user` for the home directory. The check
+  reads local files only.
+- `new change` run without a terminal or with `--json` answers `2` with `update-available`
+  when npm holds a newer `lexforge` and creates nothing. The message names both versions
+  and `npm install -g lexforge@latest`. An unreachable registry does not block the command. The
+  prompt for a person at a terminal is unchanged.
+- `lexforge/config.yaml` gains the key `data_stores`: a list of entries with a kebab-case
+  `name` and a `dialect`.
+- `lexforge stores add <name> --dialect <dialect>` appends a store to `data_stores`.
+- A requirement may carry the line `Data: <store>[, <store>...]`. Its change then carries the
+  full new schema of each store and one migration with a forward and a backward step.
+- A requirement may carry the line `Service: <name>`. Its change then carries `service.md`
+  with three yes-or-no answers and the sections of the service type.
+- `validate --strict` applies the forward step to the project schema and requires the new
+  schema, then applies the backward step and requires the old one. A missing file, an
+  unknown store or a mismatch is a finding.
+
+### Other
+
+- The queue rule of all nine skills handles both refusals. On `update-available` the agent
+  shows the owner both versions and the update command and waits. On `skills-outdated` it
+  runs the `lexforge init` the refusal names and retries.
+- Schemas and migrations are `schema.sql`, `up.sql` and `down.sql` for the SQL dialects
+  postgresql, mysql, mariadb, sqlite, transactsql, bigquery, snowflake, redshift, db2, hive,
+  trino, athena and flinksql, and `schema.md`, `up.md` and `down.md` for every other store.
+- `archive` moves the new schema into `lexforge/data/<store>/` and the migration into
+  `lexforge/data/<store>/<date>-<change>/`. A service document goes to
+  `lexforge/services/<name>/service.md`.
+- The `lexforge-spec` skill looks for the stores in the repository, asks for the dialect when
+  it finds none, and asks the three service questions one at a time.
+
+After `npm install lexforge@5.0.0` run `lexforge init --tools <list>`, which rewrites the
+installed skills in place. Until then every workspace command answers `skills-outdated`.
+
 ## 4.0.0 — 2026-10-11
 
 Engineering rules: a catalogue of backend, frontend, testing and review rules that the

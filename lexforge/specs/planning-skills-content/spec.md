@@ -427,3 +427,56 @@ Skill `lexforge-plan` SHALL name touched files as canonical workspace-root-relat
 
 - **WHEN** a task names only canonical root-relative repository paths in backticks and contains no competing path-shaped value
 - **THEN** the skill may keep the existing task style without a `Files:` line
+
+### Requirement: The specs skill settles the data stores with the owner
+
+Before writing a data requirement in a project without `data_stores`, `lexforge-spec` SHALL
+look for evidence of databases in the repository: images in compose files, driver dependencies,
+ORM providers, connection strings in example configs and migration folders. It SHALL show the
+owner each store it found with its dialect and the file and line it came from, and SHALL wait
+for confirmation. With no evidence it SHALL ask the owner for the stores and their dialects. It
+SHALL save each confirmed store with `lexforge stores add` and SHALL NOT write `data_stores`
+into `lexforge/config.yaml` by hand.
+
+#### Scenario: A compose file with Postgres
+
+- **WHEN** `docker-compose.yml` runs the image `postgres:16` and `package.json` depends on `pg`
+- **THEN** the skill names `postgresql` with both files, waits for the owner, and runs
+  `lexforge stores add` only after the answer
+
+#### Scenario: A new project with no evidence
+
+- **WHEN** the repository holds no compose file, driver or migration folder
+- **THEN** the skill asks the owner which stores the project uses and with which dialect
+
+### Requirement: The specs skill marks every requirement that changes a store
+
+For a requirement that creates, changes or removes a table, a field, a key or an index, or moves
+stored data, `lexforge-spec` SHALL write the `Data:` line naming the affected stores and SHALL
+write the schema and the migration of each store before running `validate`.
+
+#### Scenario: Adding a table
+
+- **WHEN** the owner asks for a returns table in the orders service of a Postgres project
+- **THEN** the requirement carries `Data: main` and the change holds `data/main/schema.sql`,
+  `up.sql` and `down.sql`
+
+### Requirement: The specs skill asks the three service questions one at a time
+
+For a requirement that introduces a service, `lexforge-spec` SHALL ask the owner the three
+classification questions one per message, in order, and SHALL wait for each answer. It SHALL
+NOT answer a question for the owner. On "I don't know" it SHALL work through the question with
+the owner until the answer is yes or no. It SHALL write the `Service:` line and `service.md`
+with the answers, the type that follows, and the sections of that type.
+
+#### Scenario: A new notification service
+
+- **WHEN** the owner asks for a new notification service
+- **THEN** the skill sends the first question alone and waits before sending the second
+
+#### Scenario: The owner does not know
+
+- **WHEN** the owner answers "I don't know" to whether another instance must resume interrupted
+  work
+- **THEN** the skill asks what happens to an unfinished send when an instance stops, and writes
+  no answer until the owner says yes or no

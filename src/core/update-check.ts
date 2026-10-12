@@ -74,6 +74,31 @@ export async function checkForCliUpdate(
   return { kind: "updated", updateAvailable: true };
 }
 
+export interface LatestReleaseOptions {
+  currentVersion: string;
+  timeoutMs?: number;
+  fetchLatestVersion?: () => Promise<string>;
+}
+
+/**
+ * The npm `latest` version when it is newer than the running one. An older or
+ * equal version, a timeout, an error and an answer without a version all give
+ * `null`: the registry never blocks a command by being unreachable.
+ */
+export async function latestRelease(options: LatestReleaseOptions): Promise<string | null> {
+  const timeoutMs = options.timeoutMs ?? 3_000;
+  try {
+    const latest = await withTimeout(
+      options.fetchLatestVersion?.() ?? fetchLatestVersion(timeoutMs, 64 * 1024),
+      timeoutMs,
+    );
+    if (typeof latest !== "string") return null;
+    return isNewerVersion(latest, options.currentVersion) ? latest : null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchLatestVersion(
   timeoutMs: number,
   maxResponseBytes: number,

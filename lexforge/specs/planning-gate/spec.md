@@ -227,3 +227,33 @@ open the gate.
 - **WHEN** the answer carries an empty provider and an empty model, and the model block of
   the skill names no line for the provider at work
 - **THEN** the skill demands no model and writes the artifact
+
+### Requirement: Skills stop on update-available and repair on skills-outdated
+
+At exit code `2` with `error.code` set to `update-available`, the skill SHALL show the owner
+`error.message` and stop until the owner answers. It SHALL NOT run `npm install` itself.
+
+At exit code `2` with `error.code` set to `skills-outdated`, the skill SHALL run the
+`lexforge init` command that `error.message` names and then repeat the command that refused.
+When the repeated command refuses with `skills-outdated` again, the skill SHALL show
+`error.message` and stop.
+
+#### Scenario: A newer release on npm
+
+- **WHEN** `lexforge new change add-auth --json` exits with code `2` and `error.code` is
+  `update-available`
+- **THEN** the skill shows the owner the message with both versions and
+  `npm install -g lexforge@latest`, does not run it, and waits
+
+#### Scenario: Outdated project skills
+
+- **WHEN** `lexforge status --change add-auth --json` exits with code `2`, `error.code` is
+  `skills-outdated`, and the message names `lexforge init --tools claude`
+- **THEN** the skill runs `lexforge init --tools claude` and runs the same `lexforge status`
+  again
+
+#### Scenario: The repair does not take
+
+- **WHEN** the command repeated after `lexforge init` refuses with `skills-outdated` again
+- **THEN** the skill shows `error.message` and stops without running `lexforge init` a second
+  time

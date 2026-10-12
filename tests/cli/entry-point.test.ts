@@ -7,12 +7,13 @@ import { afterEach, describe, expect, it } from "vitest";
 
 // @ts-expect-error the entry point ships as plain JavaScript: it runs before the build exists.
 import { nodeVersionFinding } from "../../bin/runtime-check.js";
-import { BIN_PATH } from "../helpers/run-cli.js";
+import { BIN_PATH, STUB_PRELOAD } from "../helpers/run-cli.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 /** Makes this process report an old Node, so the check sees what a user on Node 18 sees. */
 const OLD_NODE = 'Object.defineProperty(process.versions, "node", { value: "18.20.0" });\n';
 
+// Every spawn loads the registry-stub preload, so the CLI never reaches the network.
 const PACKAGE_ROOT = path.dirname(path.dirname(BIN_PATH));
 
 const created: string[] = [];
@@ -64,7 +65,7 @@ describe("точка входа на неподходящем рантайме",
     const dir = tempDir({ "old-node.mjs": OLD_NODE });
     const preload = pathToFileURL(path.join(dir, "old-node.mjs")).href;
 
-    const result = spawnSync(process.execPath, [`--import=${preload}`, BIN_PATH], {
+    const result = spawnSync(process.execPath, [`--import=${STUB_PRELOAD}`, `--import=${preload}`, BIN_PATH], {
       cwd: dir,
       encoding: "utf8",
     });
@@ -81,7 +82,7 @@ describe("точка входа без сборки", () => {
   it("печатает одну строку с командой сборки и даёт код 2", () => {
     const dir = packageWithoutBuild();
 
-    const result = spawnSync(process.execPath, [path.join(dir, "bin", "lexforge.js")], {
+    const result = spawnSync(process.execPath, [`--import=${STUB_PRELOAD}`, path.join(dir, "bin", "lexforge.js")], {
       cwd: dir,
       encoding: "utf8",
     });
@@ -97,7 +98,7 @@ describe("требуемая версия рантайма", () => {
   it("читается из package.json, а не задана вторым значением в коде", () => {
     const dir = packageWithoutBuild(">=99.0.0");
 
-    const result = spawnSync(process.execPath, [path.join(dir, "bin", "lexforge.js")], {
+    const result = spawnSync(process.execPath, [`--import=${STUB_PRELOAD}`, path.join(dir, "bin", "lexforge.js")], {
       cwd: dir,
       encoding: "utf8",
     });

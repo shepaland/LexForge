@@ -14,7 +14,9 @@ import { CHANGE_CONFIG_FILE, workspacePaths } from "../workspace/paths.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { makeFinding, type Finding } from "./finding.js";
 import { shippedRulesDir } from "../rules/catalog.js";
+import { checkDataModel } from "./check-data-model.js";
 import { checkEngineeringRules } from "./engineering-rules.js";
+import { checkServices } from "./check-services.js";
 import { checkInteractions } from "./interaction-contract.js";
 import { checkMockups } from "./ui-mockup.js";
 import { scanSpec } from "./scan-spec.js";
@@ -114,6 +116,9 @@ export function validateChange(
   }
 
   if (strict) {
+    const projectConfig = readProjectConfig(root);
+    findings.push(...checkDataModel(root, options.change, projectConfig));
+    findings.push(...checkServices(root, options.change, projectConfig));
     findings.push(...checkEngineeringRules(root, shippedRulesDir()));
     findings.push(
       ...checkArtifactsDone(

@@ -182,3 +182,28 @@ the historical ledger and its detailed report with the rest of the change.
   checks pass
 - **THEN** archive proceeds and the archived change retains the migration audit record
 
+### Requirement: Archival moves schemas, migrations and service documents into the project
+
+After a successful check, `lexforge archive <change>` SHALL, for every store under `data/` of
+the change, replace `lexforge/data/<store>/schema.*` with the change schema and move the
+forward and backward steps into `lexforge/data/<store>/YYYY-MM-DD-<change>/`, with the same date
+as the archive directory. For every service under `services/` of the change it SHALL replace
+`lexforge/services/<service>/service.md` with the change document. An existing migration directory
+with that name SHALL end the command with exit code `2` before any file is written.
+
+#### Scenario: A change that adds a column
+
+- **WHEN** `add-returns` holding `data/main/schema.sql`, `up.sql` and `down.sql` is archived on
+  2026-10-20
+- **THEN** `lexforge/data/main/schema.sql` equals the change schema and
+  `lexforge/data/main/2026-10-20-add-returns/` holds `up.sql` and `down.sql`
+
+#### Scenario: A taken migration directory
+
+- **WHEN** `lexforge/data/main/2026-10-20-add-returns/` already exists
+- **THEN** the command exits `2`, names the path, and no spec, schema or service file is written
+
+#### Scenario: A new service
+
+- **WHEN** a change holding `services/notifications/service.md` is archived
+- **THEN** `lexforge/services/notifications/service.md` equals that document
