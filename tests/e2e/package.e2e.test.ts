@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
 import { commitAll, git } from "../helpers/git-workspace.js";
 import { npmCall, npxCall, runProcess } from "../helpers/npm.js";
+import { STUB_PRELOAD } from "../helpers/run-cli.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -68,6 +69,7 @@ const SKILL_NAMES = [
 const SKILL_FILES = [
   "lexforge-apply/reviewer-prompt.md",
   "lexforge-apply/parallel-execution.md",
+  "lexforge-spec/data-and-services.md",
 ];
 
 /** Traces of development: the archive is read by a machine that never builds this package. */
@@ -82,6 +84,15 @@ function tempDir(): string {
   const dir = makeWorkspace();
   created.push(dir);
   return dir;
+}
+
+/**
+ * The environment of one lexforge call: the registry-stub preload and a throwaway home.
+ * `npm install` calls keep the plain environment, or the stub would break the download.
+ */
+function lexforgeEnv(): NodeJS.ProcessEnv {
+  const home = tempDir();
+  return { ...process.env, NODE_OPTIONS: `--import=${STUB_PRELOAD}`, HOME: home, USERPROFILE: home };
 }
 
 beforeAll(() => {
@@ -252,7 +263,7 @@ describe("установка в чужой проект", () => {
 
       const results = [];
       for (const argv of calls) {
-        results.push(await runProcess(npxCall(argv), { cwd: project }));
+        results.push(await runProcess(npxCall(argv), { cwd: project, env: lexforgeEnv() }));
 
         if (argv[1] === "stacks") {
           // `new change` opens a branch and needs a committed tree.
@@ -288,6 +299,7 @@ describe("установка в чужой проект", () => {
 
       const result = await runProcess(npxCall(["lexforge", "init", "--tools", "claude"]), {
         cwd: project,
+        env: lexforgeEnv(),
       });
 
       expect(result.status, result.stderr).toBe(0);
@@ -314,7 +326,7 @@ describe("установка в чужой проект", () => {
 
       const results = [];
       for (const argv of calls) {
-        results.push(await runProcess(npxCall(argv), { cwd: project }));
+        results.push(await runProcess(npxCall(argv), { cwd: project, env: lexforgeEnv() }));
 
         if (argv[1] === "stacks") {
           // `new change` opens a branch and needs a committed tree.

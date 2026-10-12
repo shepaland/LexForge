@@ -135,6 +135,9 @@ const FileLimitSchema = z
   // both fields itself rather than relying on the field-level defaults above.
   .default({ lines: DEFAULT_FILE_LIMIT_LINES, include: DEFAULT_FILE_LIMIT_INCLUDE });
 
+/** One data store of the project. Name and dialect are kept as written; `validate` judges them. */
+const DataStoreSchema = z.object({ name: z.string(), dialect: z.string() });
+
 /** Unknown top-level sections are dropped, not rejected: config.yaml grows over time. */
 const ProjectConfigSchema = z.object({
   schema: z.string().default(DEFAULT_SCHEMA),
@@ -145,6 +148,7 @@ const ProjectConfigSchema = z.object({
   plan_placeholders: z.array(z.string()).default([]),
   models: ModelsSchema,
   file_limit: FileLimitSchema,
+  data_stores: z.array(DataStoreSchema).optional(),
   ui: z.object({ styles: z.array(z.string()).optional() }).nullish(),
   engineering: z
     .object({
@@ -171,6 +175,8 @@ export interface ProjectConfig {
   sizeLimit: { max: number; patterns: string[] };
   /** The project CSS files named under `ui.styles`; `null` when the key is absent. */
   styleFiles: string[] | null;
+  /** The `data_stores` list in the written order; empty when the key is absent. */
+  stores: { name: string; dialect: string }[];
   /** The `engineering` section: the named stacks (`null` when absent) and the switched-off rules with reasons. */
   engineering: { stacks: string[] | null; disabled: Record<string, string> };
 }
@@ -201,6 +207,7 @@ export function readProjectConfig(root: string): ProjectConfig {
     models: toAssignment(result.data.models),
     sizeLimit: { max: result.data.file_limit.lines, patterns: result.data.file_limit.include },
     styleFiles: result.data.ui?.styles ?? null,
+    stores: (result.data.data_stores ?? []).map(({ name, dialect }) => ({ name, dialect })),
     engineering: {
       stacks: result.data.engineering?.stacks ?? null,
       disabled: result.data.engineering?.disabled ?? {},

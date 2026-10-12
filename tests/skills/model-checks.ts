@@ -12,6 +12,14 @@ export const MODEL_GATE_START = "<!-- model-gate:start -->";
 export const MODEL_GATE_END = "<!-- model-gate:end -->";
 
 /**
+ * The version gate sits inside the queue rule of every skill, right before the
+ * model gate, marked off on its own for the same reason: the nine copies are
+ * compared without the three different queue rules around them.
+ */
+export const VERSION_GATE_START = "<!-- version-gate:start -->";
+export const VERSION_GATE_END = "<!-- version-gate:end -->";
+
+/**
  * The model block a skill opens with: the model it runs on, one line per
  * provider of the shipped catalogue. It is read only where the project names
  * no model of its own, and it stands ahead of the queue rule, so an agent has
@@ -60,6 +68,18 @@ export function readModelGate(skill: SkillFile): string | null {
   }
 
   return skill.body.slice(start + MODEL_GATE_START.length, end);
+}
+
+/** The version gate of one skill, or null when the skill carries none. */
+export function readVersionGate(skill: SkillFile): string | null {
+  const start = skill.body.indexOf(VERSION_GATE_START);
+  const end = skill.body.indexOf(VERSION_GATE_END);
+
+  if (start === -1 || end === -1 || end < start) {
+    return null;
+  }
+
+  return skill.body.slice(start + VERSION_GATE_START.length, end);
 }
 
 /**

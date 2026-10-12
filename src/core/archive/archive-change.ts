@@ -21,6 +21,7 @@ import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { workspacePaths } from "../workspace/paths.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { copyMockups } from "./copy-mockups.js";
+import { assertDataFree, moveDataAndServices } from "./move-data-and-services.js";
 import { applyChange, type CapabilityMerge, type MergedSpec } from "./apply-plan.js";
 import { renderLines, summarise } from "./archive-change-report.js";
 
@@ -89,8 +90,10 @@ export function archiveChange(options: ArchiveChangeOptions): CommandResult<Arch
   const { state } = readChangeState(root, options.change);
   assertPlanningComplete(options.change, state);
 
-  const target = archiveTarget(root, options.change, options.now ?? new Date());
+  const now = options.now ?? new Date();
+  const target = archiveTarget(root, options.change, now);
   assertArchiveFree(root, target);
+  assertDataFree(root, options.change, localDate(now));
 
   // The delta is read before anything is measured: a change whose declaration
   // and whose files disagree is refused, not merged one way or the other.
@@ -127,6 +130,7 @@ export function archiveChange(options: ArchiveChangeOptions): CommandResult<Arch
     // hand.
     written = writeSpecs(root, merge.specs);
     mockups = copyMockups(root, options.change);
+    moveDataAndServices(root, options.change, localDate(now));
     archivePath = moveToArchive(root, options.change, target);
 
     try {

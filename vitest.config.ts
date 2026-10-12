@@ -28,6 +28,7 @@ export default defineConfig({
           name: "unit",
           ...limits,
           sequence: { groupOrder: 0 },
+          setupFiles: ["tests/helpers/setup-unit.ts"],
           include: ["tests/**/*.test.ts"],
           exclude: ["**/node_modules/**", "tests/e2e/**"],
         },

@@ -21,7 +21,7 @@ const entries = parseChangelogEntries(readTextFile(path.join(REPO_ROOT, "CHANGEL
 
 describe("журнал изменений", () => {
   it("верхняя запись несёт номер версии, равный полю version пакета", () => {
-    const EXPECTED = "\nThe top changelog entry does not match the package version\n";
+    const EXPECTED = `\nthe top entry of CHANGELOG.md is ${entries[0]?.version ?? "missing"}\n`;
     const mismatch = changelogVersionMismatch(packageVersion, entries);
     expect(mismatch, EXPECTED).toBeNull();
   });

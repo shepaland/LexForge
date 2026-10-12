@@ -20,6 +20,14 @@ A provider outside the table names nothing, so work on the model at work.
 <!-- model-block:end -->
 <!-- queue-rule:start -->
 
+<!-- version-gate:start -->
+## Version gate
+
+Exit `2` with `error.code` `update-available`: show `error.message` to the user and wait for the user's answer. Never run `npm install` yourself.
+
+Exit `2` with `error.code` `skills-outdated`: run the `lexforge init` command that `error.message` names. Then run the command that refused again. If it refuses with `skills-outdated` a second time, show `error.message` and stop.
+<!-- version-gate:end -->
+
 <!-- model-gate:start -->
 ## Model gate
 

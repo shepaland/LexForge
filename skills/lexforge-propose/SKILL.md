@@ -55,6 +55,14 @@ Write only in the change directory and `lexforge/config.yaml`; implementation wa
 Write artifacts in `language` from instructions. If `languageExplicit: false`, ask the artifact
 language and save `language:` in config; with `true`, ask nothing.
 
+<!-- version-gate:start -->
+## Version gate
+
+Exit `2` with `error.code` `update-available`: show `error.message` to the user and wait for the user's answer. Never run `npm install` yourself.
+
+Exit `2` with `error.code` `skills-outdated`: run the `lexforge init` command that `error.message` names. Then run the command that refused again. If it refuses with `skills-outdated` a second time, show `error.message` and stop.
+<!-- version-gate:end -->
+
 <!-- model-gate:start -->
 ## Model gate
 

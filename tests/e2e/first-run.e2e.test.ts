@@ -5,6 +5,7 @@ import { afterAll, describe, expect, inject, it } from "vitest";
 
 import { commitAll, git } from "../helpers/git-workspace.js";
 import { npmCall, npxCall, runProcess, type ProcessResult } from "../helpers/npm.js";
+import { STUB_PRELOAD } from "../helpers/run-cli.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
 /** The nine skills the package installs: five planning, four implementation. */
@@ -63,7 +64,13 @@ async function installProject(): Promise<Project> {
 function lexforge(argv: string[], project: Project): Promise<ProcessResult> {
   return runProcess(npxCall(["lexforge", ...argv]), {
     cwd: project.root,
-    env: { ...process.env, HOME: project.home, USERPROFILE: project.home },
+    // The registry-stub preload reaches the CLI only; `npm install` keeps the plain environment.
+    env: {
+      ...process.env,
+      NODE_OPTIONS: `--import=${STUB_PRELOAD}`,
+      HOME: project.home,
+      USERPROFILE: project.home,
+    },
   });
 }
 
