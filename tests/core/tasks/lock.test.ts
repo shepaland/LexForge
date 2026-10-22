@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -57,10 +57,7 @@ describe("change lock", () => {
   });
   it("treats an unreadable lock file as stale", () => {
     mkdirSync(dirname(lockPath(root, "demo")), { recursive: true });
-    writeLock(root, "demo", { pid: 1, startedAt: now, command: "x" });
-    rmSync(lockPath(root, "demo"));
-    // an empty file is not a lock record
-    spawnSync(process.execPath, ["-e", `require("fs").writeFileSync(${JSON.stringify(lockPath(root, "demo"))}, "")`]);
+    writeFileSync(lockPath(root, "demo"), "");
     expect(() => withChangeLock(root, "demo", "x", () => 1)).toThrowError(
       expect.objectContaining({ code: "stale-lock" }),
     );
@@ -74,6 +71,20 @@ describe("change lock", () => {
     expect(existsSync(lockPath(root, "demo"))).toBe(false);
     withChangeLock(root, "demo", "x", () => 1);
     expect(existsSync(lockPath(root, "demo"))).toBe(false);
+  });
+  it("does not remove a lock that another process took over", () => {
+    withChangeLock(root, "demo", "x", () => {
+      rmSync(lockPath(root, "demo"));
+      writeLock(root, "demo", { pid: process.pid + 1, startedAt: now, command: "other" });
+    });
+    expect(JSON.parse(readFileSync(lockPath(root, "demo"), "utf8")).command).toBe("other");
+  });
+  it("never shows a half-written lock to a concurrent reader", () => {
+    withChangeLock(root, "demo", "x", () => {
+      const text = readFileSync(lockPath(root, "demo"), "utf8");
+      expect(JSON.parse(text)).toMatchObject({ pid: process.pid, command: "x" });
+      expect(readdirSync(dirname(lockPath(root, "demo")))).toEqual(["change.lock"]);
+    });
   });
   it("unlock refuses a live holder and removes a dead one", () => {
     writeLock(root, "demo", { pid: process.pid, startedAt: now, command: "x" });

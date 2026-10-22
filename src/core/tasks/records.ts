@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { UsageError } from "../../cli/errors.js";
 import { readJson, save } from "./files.js";
 import { taskRecordPath } from "./paths.js";
 
@@ -81,6 +82,16 @@ export function listTaskRecords(root: string, change: string): TaskRecord[] {
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((name) => name.endsWith(".json"))
-    .map((name) => readTaskRecord(root, change, name.slice(0, -".json".length))!)
+    .map((name) => {
+      const id = name.slice(0, -".json".length);
+      const found = readTaskRecord(root, change, id)!;
+      if (found.id !== id)
+        throw new UsageError(
+          CODE,
+          `${taskRecordPath(root, change, id)} holds the record of task ${found.id}, not ${id}.`,
+          `lexforge resume --change ${change}`,
+        );
+      return found;
+    })
     .sort((a, b) => compareIds(a.id, b.id));
 }

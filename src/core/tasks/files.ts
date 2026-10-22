@@ -14,9 +14,15 @@ export function save(file: string, data: unknown): void {
 
 /** Reads a JSON state file. Broken JSON and a foreign schema both refuse with `code`. */
 export function readJson<T>(file: string, schema: z.ZodType<T>, code: string): T {
+  let text: string;
+  try {
+    text = readFileSync(file, "utf8");
+  } catch (error) {
+    throw unreadable(file, code, `it cannot be read (${(error as NodeJS.ErrnoException).code ?? "read error"})`);
+  }
   let raw: unknown;
   try {
-    raw = JSON.parse(readFileSync(file, "utf8"));
+    raw = JSON.parse(text);
   } catch {
     throw unreadable(file, code, "it is not valid JSON");
   }

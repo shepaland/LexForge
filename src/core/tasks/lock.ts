@@ -1,4 +1,5 @@
-import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, writeSync } from "node:fs";
+import { linkSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
 import { UsageError } from "../../cli/errors.js";
@@ -39,9 +40,12 @@ function staleLock(change: string, held: LockContent | null): UsageError {
 export function withChangeLock<T>(root: string, change: string, command: string, work: () => T): T {
   const file = lockPath(root, change);
   mkdirSync(path.dirname(file), { recursive: true });
-  let fd: number;
+  const content: LockContent = { pid: process.pid, startedAt: new Date().toISOString(), command };
+  // Written whole under a temporary name, then linked into place: the lock file never exists half-written.
+  const tmp = `${file}.${randomUUID()}.tmp`;
+  writeFileSync(tmp, JSON.stringify(content), { flag: "wx" });
   try {
-    fd = openSync(file, "wx");
+    linkSync(tmp, file);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
     const held = readLock(file);
@@ -51,19 +55,19 @@ export function withChangeLock<T>(root: string, change: string, command: string,
       `the change ${change} is locked by process ${held.pid}, running "${held.command}" since ${held.startedAt}.`,
       "wait for that command to finish, then run this command again",
     );
+  } finally {
+    unlinkSync(tmp);
   }
   try {
-    const content: LockContent = { pid: process.pid, startedAt: new Date().toISOString(), command };
-    writeSync(fd, JSON.stringify(content));
-    closeSync(fd);
-    fd = -1;
     return work();
   } finally {
-    if (fd >= 0) closeSync(fd);
-    try {
-      unlinkSync(file);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    // Remove only our own lock: `unlock` may have taken it and another process may hold a new one.
+    if (readLock(file)?.pid === process.pid) {
+      try {
+        unlinkSync(file);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
     }
   }
 }
