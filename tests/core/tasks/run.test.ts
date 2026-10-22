@@ -68,6 +68,34 @@ describe("classifyRed", () => {
     expect(classifyRed(runOf(2, out), { ...ctx, declaredFiles: ["src/search.js"] }).kind).toBe("red");
   });
 
+  it("vitest naming a declared new module without extension, relative to its importer, is red", () => {
+    const out = [
+      "Error: Cannot find module '../src/search' imported from '/w/tests/search.test.ts'",
+      "Caused by: Error: Failed to load url ../src/search (resolved id: ../src/search) in /w/tests/search.test.ts. Does the file exist?",
+    ].join("\n");
+    expect(classifyRed(runOf(1, out), { ...ctx, declaredFiles: ["src/search.ts", "tests/search.test.ts"] })).toEqual({
+      kind: "red",
+    });
+  });
+
+  it("TS2307 naming a declared .ts module by its .js specifier is red", () => {
+    const out = "test/search.test.ts(1,24): error TS2307: Cannot find module '../src/search.js'";
+    expect(classifyRed(runOf(2, out), { ...ctx, declaredFiles: ["src/search.ts"] })).toEqual({ kind: "red" });
+  });
+
+  it("a relative specifier resolves against its importer, so a module next to another file stays broken", () => {
+    const out = "Error: Cannot find module './search.js' imported from '/w/tests/search.test.ts'";
+    expect(classifyRed(runOf(1, out), { ...ctx, declaredFiles: ["src/search.ts"] }).kind).toBe("broken");
+  });
+
+  it("a declared module that exists at the base stays broken once resolved", () => {
+    const out = "Error: Cannot find module './app.js' imported from '/w/src/index.js'";
+    expect(classifyRed(runOf(1, out), { ...ctx, declaredFiles: ["src/app.js"] }).kind).toBe("broken");
+    expect(classifyRed(runOf(1, out.replace("app", "fresh")), { ...ctx, declaredFiles: ["src/fresh.ts"] }).kind).toBe(
+      "red",
+    );
+  });
+
   it("no test files found is broken", () =>
     expect(classifyRed(runOf(1, "No test files found"), ctx).kind).toBe("broken"));
 });
