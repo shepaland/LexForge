@@ -37,6 +37,7 @@ const PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 

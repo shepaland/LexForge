@@ -27,6 +27,7 @@ const COVERED_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -59,6 +60,7 @@ const ALL_THREE = [
   "",
   "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -141,8 +143,11 @@ const TWO_OPEN_ONE_TRACED = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "- [ ] 2.1 Написать проверку пароля при входе в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "- [ ] 2.2 Написать журнал неудачных входов в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 

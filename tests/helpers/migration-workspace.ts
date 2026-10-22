@@ -72,8 +72,9 @@ function taskPlan(tasks: MigrationTaskFixture[]): string {
     .map(([section, entries]) => {
       const lines = entries.map(
         ({ id, checked, words = `Implement behavior ${id}` }) =>
-          `- [${checked ? "x" : " "}] ${id} [A] ${words} in \`src/app.ts\`. Check: \`node tests/check.cjs\`\n` +
-          "  -> demo#Migration behavior",
+          `- [${checked ? "x" : " "}] ${id} ${words} in \`src/app.ts\`. Check: \`node tests/check.cjs\`\n` +
+          "  -> demo#Migration behavior\n" +
+          "  Files: `src/app.ts`",
       );
       return (
         `## ${section}. Migration ${section}\n\n` +

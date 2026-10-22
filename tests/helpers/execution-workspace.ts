@@ -37,7 +37,7 @@ export function fixture() {
     [`${dir}/specs/greet/spec.md`]:
       "## ADDED Requirements\n\n### Requirement: Hello\nMust return hello.\n\n#### Scenario: Read\n- **WHEN** read\n- **THEN** hello\n\n### Requirement: Other\nUnrelated requirement.\n",
     [`${dir}/tasks.md`]:
-      "## 1. Greeting\n\nDepends on: none\n\n- [ ] 1.1 [A] Write `tests/check.cjs`. Check: `node tests/check.cjs`\n  -> greet#Hello\n- [ ] 1.2 [A] Implement `src/message.txt`. Check: `node tests/check.cjs`\n  -> greet#Hello\n",
+      "## 1. Greeting\n\nDepends on: none\n\n- [ ] 1.1 Write `tests/check.cjs`. Check: `node tests/check.cjs`\n  -> greet#Hello\n  Files: `tests/check.cjs`\n- [ ] 1.2 Implement `src/message.txt`. Check: `node tests/check.cjs`\n  -> greet#Hello\n  Files: `src/message.txt`\n",
     [`${dir}/execution-plan.json`]: JSON.stringify({
       version: 1,
       cycles: [cycle],

@@ -30,7 +30,7 @@ const INDEX_PLAN = [
 const INDEX_FIRST_SECTION = [
   "Depends on: none",
   "",
-  "- [ ] 1.1 [A] Написать срок жизни сессии и оставить TODO на продление",
+  "- [ ] 1.1 Написать срок жизни сессии и оставить TODO на продление",
   "",
 ].join("\n");
 
@@ -39,7 +39,7 @@ const INDEX_SECOND_SECTION = [
   "Depends on: section 1",
   "Depends on: section 1",
   "",
-  "- [ ] 2.1 [A] Написать срок жизни сессии в `src/two.ts`",
+  "- [ ] 2.1 Написать срок жизни сессии в `src/two.ts`",
   "",
 ].join("\n");
 
@@ -47,7 +47,7 @@ const INDEX_SECOND_SECTION = [
 const INDEX_THIRD_SECTION = [
   "Depends on: section 99",
   "",
-  "- [ ] 3.1 [A] Написать запись входа в журнал в `src/three.ts`",
+  "- [ ] 3.1 Написать запись входа в журнал в `src/three.ts`",
   "",
 ].join("\n");
 
@@ -55,7 +55,7 @@ const INDEX_THIRD_SECTION = [
 const INDEX_FOURTH_SECTION = [
   "Depends on: section 5",
   "",
-  "- [ ] 4.1 [A] Написать шаг A в `src/four.ts`",
+  "- [ ] 4.1 Написать шаг A в `src/four.ts`",
   "",
 ].join("\n");
 
@@ -63,7 +63,7 @@ const INDEX_FOURTH_SECTION = [
 const INDEX_FIFTH_SECTION = [
   "Depends on: section 4",
   "",
-  "- [ ] 5.1 [A] Написать шаг B в `src/five.ts`",
+  "- [ ] 5.1 Написать шаг B в `src/five.ts`",
   "",
 ].join("\n");
 

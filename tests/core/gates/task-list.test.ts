@@ -101,7 +101,7 @@ describe("parseTaskList: имена файлов", () => {
   it("явный Files задаёт точный writable scope, а Check остаётся только в namedFiles", () => {
     const tasks = parseTaskList(
       [
-        "- [ ] 1.1 [api] Изменить маршрут `/api/auth` и не считать `/etc/nginx/conf.d` файлом",
+        "- [ ] 1.1 Изменить маршрут `/api/auth` и не считать `/etc/nginx/conf.d` файлом",
         "      Files: `src/http/routes.ts`, `tests/http/routes fixture.test.ts`",
         "      Check: `npx vitest run tests/http/routes.test.ts`",
       ].join("\n"),
@@ -124,19 +124,16 @@ describe("parseTaskList: имена файлов", () => {
     ]);
   });
 
-  it("legacy inference сохраняет repo paths и отбрасывает неканонические значения", () => {
+  it("без Files пути из текста остаются в namedFiles, а в files не попадают; неканонические значения отброшены", () => {
     const tasks = parseTaskList(
       [
-        "- [ ] 1.1 [api] Изменить `src/http/routes.ts` и `README.md`, упомянув `/api/auth`,",
+        "- [ ] 1.1 Изменить `src/http/routes.ts` и `README.md`, упомянув `/api/auth`,",
         "      `/etc/nginx/conf.d`, `https://example.test/health`, `../outside.ts`,",
         "      `src//routes.ts`, `src/./routes.ts`, `src\\routes.ts` и `C:/temp/routes.ts`",
       ].join("\n"),
     );
 
-    expect(tasks[0]!.files, "TASK_FILE_SCOPE_NOT_DISTINGUISHED").toEqual([
-      "src/http/routes.ts",
-      "README.md",
-    ]);
+    expect(tasks[0]!.files, "TASK_FILE_SCOPE_NOT_DISTINGUISHED").toEqual([]);
     expect(tasks[0]!.namedFiles, "TASK_FILE_SCOPE_NOT_DISTINGUISHED").toEqual([
       "src/http/routes.ts",
       "README.md",
@@ -151,7 +148,7 @@ describe("parseTaskList: имена файлов", () => {
       ].join("\n"),
     );
 
-    expect(tasks[0]!.files).toEqual(["src/core/gates/task-list.ts", "README.md"]);
+    expect(tasks[0]!.namedFiles).toEqual(["src/core/gates/task-list.ts", "README.md"]);
   });
 
   it("поле в обратных кавычках без слэша путём не считается", () => {
@@ -162,7 +159,7 @@ describe("parseTaskList: имена файлов", () => {
       ].join("\n"),
     );
 
-    expect(tasks[0]!.files).toEqual(["src/core/gates/plan-check.ts"]);
+    expect(tasks[0]!.namedFiles).toEqual(["src/core/gates/plan-check.ts"]);
   });
 
   it("расширение из допустимого списка без слэша всё ещё считается путём", () => {
@@ -170,7 +167,7 @@ describe("parseTaskList: имена файлов", () => {
       "- [ ] 1.1 Написать правило в `coverage-rules.ts` и обновить `tasks.md`\n",
     );
 
-    expect(tasks[0]!.files).toEqual(["coverage-rules.ts", "tasks.md"]);
+    expect(tasks[0]!.namedFiles).toEqual(["coverage-rules.ts", "tasks.md"]);
   });
 
   it("расширения других языков и экосистем тоже считаются путём без слэша", () => {
@@ -183,7 +180,7 @@ describe("parseTaskList: имена файлов", () => {
       ].join("\n"),
     );
 
-    expect(tasks[0]!.files).toEqual([
+    expect(tasks[0]!.namedFiles).toEqual([
       "setup.py",
       "main.go",
       "lib.rs",
@@ -216,7 +213,7 @@ describe("parseTaskList: имена файлов", () => {
       ].join("\n"),
     );
 
-    expect(tasks[0]!.files).toEqual([
+    expect(tasks[0]!.namedFiles).toEqual([
       "App.jsx",
       "App.vue",
       "main.tf",
@@ -237,7 +234,7 @@ describe("parseTaskList: имена файлов", () => {
   it("расширение без слэша считается путём независимо от регистра", () => {
     const tasks = parseTaskList("- [ ] 1.1 Читай `README.MD` и обнови `Main.JAVA`\n");
 
-    expect(tasks[0]!.files).toEqual(["README.MD", "Main.JAVA"]);
+    expect(tasks[0]!.namedFiles).toEqual(["README.MD", "Main.JAVA"]);
   });
 
   it("расширения, которых не было во втором списке, тоже считаются путём", () => {
@@ -249,7 +246,7 @@ describe("parseTaskList: имена файлов", () => {
       ].join("\n"),
     );
 
-    expect(tasks[0]!.files).toEqual([
+    expect(tasks[0]!.namedFiles).toEqual([
       "styles.less",
       "theme.sass",
       "page.styl",
@@ -339,6 +336,6 @@ describe("parseTaskList: таблица распознавания пути по
   ])("«%s» распознаётся как путь: %s", (span, expected) => {
     const tasks = parseTaskList(`- [ ] 1.1 Правь \`${span}\`\n`);
 
-    expect(tasks[0]!.files.includes(span)).toBe(expected);
+    expect(tasks[0]!.namedFiles.includes(span)).toBe(expected);
   });
 });

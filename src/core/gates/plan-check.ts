@@ -6,13 +6,9 @@ import { type Finding } from "../validation/finding.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { checkCoverage, readDeltaSpecs } from "./coverage-rules.js";
-import {
-  checkGroupCoverage,
-  checkGroupSharedFiles,
-  checkTaskGroupLabels,
-} from "./plan-check-groups.js";
 import { checkIdentifiers } from "./identifier-rules.js";
 import { checkMaterialReferences, readMaterialDelta } from "./plan-check-references.js";
+import { checkTaskFields } from "./plan-check-task-fields.js";
 import { checkTaskFileDeclarations } from "./plan-check-task-files.js";
 import { checkPlaceholders } from "./placeholder-rules.js";
 import { checkSectionDependencies, type PlanSection } from "./plan-check-sections.js";
@@ -35,14 +31,19 @@ const SECTION_RULES = [
   "section-missing-depends-on",
   "section-unknown-dependency",
   "section-dependency-cycle",
-  "section-concurrent-file",
   "section-depends-on-unreadable",
   "section-depends-on-repeated",
   "section-number-repeated",
   "section-tasks-inline",
-  "task-missing-group-label",
-  "section-group-coverage-mismatch",
-  "section-group-shared-file",
+  "task-missing-files",
+  "task-missing-test",
+  "task-missing-command",
+  "task-field-repeated",
+  "task-field-malformed",
+  "task-control-unknown",
+  "task-depends-on-unknown",
+  "task-depends-on-forward",
+  "shared-file-without-order",
   "task-file-declaration",
   "task-material-missing",
 ];
@@ -112,9 +113,7 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
     ...checkCoverage(plan, readDeltaSpecs(root, options.change)),
     ...checkIdentifiers(plan),
     ...checkSectionDependencies(plan, sections),
-    ...checkTaskGroupLabels(plan),
-    ...checkGroupCoverage(sections),
-    ...checkGroupSharedFiles(sections),
+    ...checkTaskFields(plan, sections),
     ...checkTaskFileDeclarations(plan),
     ...checkMaterialReferences(plan, readMaterialDelta(root, options.change)),
   ].sort((left, right) => left.line - right.line);

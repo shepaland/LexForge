@@ -8,7 +8,7 @@ it('allows disjoint cycles to finish without resetting each other’s baselines'
   const root = fixture();
   const second = { ...cycle, id: 'second', tasks: ['2.1'], files: [{path:'src/second.txt',symbols:[]},{path:'tests/second.cjs',symbols:[]}], testFiles:['tests/second.cjs'], command:'node tests/second.cjs', acceptance:[{id:'AC2',task:'2.1',description:'second returns hello'}] };
   writeAt(root,`${dir}/execution-plan.json`,JSON.stringify({version:1,cycles:[cycle,second]}));
-  writeAt(root,`${dir}/tasks.md`,readFileSync(path.join(root,dir,'tasks.md'),'utf8')+'\n## 2. Independent\n\nDepends on: none\n\n- [ ] 2.1 [B] Write `src/second.txt` and `tests/second.cjs`. Check: `node tests/second.cjs`\n  -> greet#Other\n');
+  writeAt(root,`${dir}/tasks.md`,readFileSync(path.join(root,dir,'tasks.md'),'utf8')+'\n## 2. Independent\n\nDepends on: none\n\n- [ ] 2.1 Write `src/second.txt` and `tests/second.cjs`. Check: `node tests/second.cjs`\n  -> greet#Other\n');
   writeAt(root,'src/second.txt','old');
   writeAt(root,'tests/second.cjs',readFileSync(path.join(root,'tests/check.cjs'),'utf8').replace('src/message.txt','src/second.txt'));
   await start(root);

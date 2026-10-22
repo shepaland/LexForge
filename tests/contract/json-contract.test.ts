@@ -149,6 +149,7 @@ const GATE_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Change carries a delta spec",
+  "      Files: `src/app.ts`",
   "- [ ] 1.2 TODO",
   "",
 ].join("\n");
@@ -249,6 +250,7 @@ const CLEAN_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Change carries a delta spec",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 

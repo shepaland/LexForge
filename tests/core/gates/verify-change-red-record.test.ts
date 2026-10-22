@@ -182,7 +182,7 @@ describe("verifyChange: пятое измерение — красный про�
     const tasks = [
       "## 1. Волна",
       "",
-      "- [x] 1.1 [P] (move) Перенести проверку пароля в `src/core/gates/x.ts`",
+      "- [x] 1.1 (move) Перенести проверку пароля в `src/core/gates/x.ts`",
       "",
     ].join("\n");
     const root = workspace(tasks, {
@@ -196,7 +196,7 @@ describe("verifyChange: пятое измерение — красный про�
     const tasks = [
       "## 1. Волна",
       "",
-      "- [x] 1.1 [P] Перенести проверку пароля в `src/core/gates/x.ts`",
+      "- [x] 1.1 Перенести проверку пароля в `src/core/gates/x.ts`",
       "",
     ].join("\n");
     const root = workspace(tasks, {

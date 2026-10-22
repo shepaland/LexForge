@@ -30,6 +30,7 @@ const ONE_COVERED = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -67,6 +68,7 @@ const UNTOUCHED_FILE = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -76,6 +78,7 @@ const OPEN_TASK = [
   "",
   "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -84,6 +87,7 @@ const NO_LINK = [
   "## 1. Вход",
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -162,6 +166,7 @@ const TWO_TASK_FIRST_SECTION = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -171,6 +176,7 @@ const TWO_TASK_SECOND_SECTION = [
   "",
   "- [ ] 2.1 Написать повторную проверку пароля в `src/other.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/other.ts`",
   "",
 ].join("\n");
 

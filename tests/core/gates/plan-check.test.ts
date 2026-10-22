@@ -59,19 +59,31 @@ const THREE_FAULTS = ["## 1. Вход", "`tasks/01-vhod.md`", ""].join("\n");
 
 /**
  * `THREE_FAULTS`'s own section file: three violations - coverage,
- * placeholder, identifier spelling. Every task carries the label `[A]` so
+ * placeholder, identifier spelling. Every task carries the fields so
  * the unconditional group-label check stays out of a fixture built to test
  * other rules.
  */
 const THREE_FAULTS_SECTION = [
   "Depends on: none",
   "",
-  "- [ ] 1.1 [A] Написать хранение пароля в виде хеша в `src/auth/store.ts`",
+  "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/auth/store.ts`",
   "      -> auth#Password is stored hashed",
-  "- [ ] 1.2 [A] Написать срок жизни сессии и оставить TODO на продление",
+  "      Files: `src/f1.1.ts`",
+  "      Test: `tests/t1.1.test.ts`",
+  "      Command: `npm test`",
+  "- [ ] 1.2 Написать срок жизни сессии и оставить TODO на продление",
   "      -> auth#Session expires",
-  "- [ ] 1.3 [A] Написать поле `resolvedOutputPath` в записи журнала входа",
-  "- [ ] 1.4 [A] Прочитать `resolved_output_path` при выводе журнала входа",
+  "      Files: `src/f1.2.ts`",
+  "      Test: `tests/t1.2.test.ts`",
+  "      Command: `npm test`",
+  "- [ ] 1.3 Написать поле `resolvedOutputPath` в записи журнала входа",
+  "      Files: `src/f1.3.ts`",
+  "      Test: `tests/t1.3.test.ts`",
+  "      Command: `npm test`",
+  "- [ ] 1.4 Прочитать `resolved_output_path` при выводе журнала входа",
+  "      Files: `src/f1.4.ts`",
+  "      Test: `tests/t1.4.test.ts`",
+  "      Command: `npm test`",
   "",
 ].join("\n");
 
@@ -86,12 +98,21 @@ const CLEAN = ["## 1. Вход", "`tasks/01-vhod.md`", ""].join("\n");
 const CLEAN_SECTION = [
   "Depends on: none",
   "",
-  "- [ ] 1.1 [A] Написать хранение пароля в виде хеша в `src/auth/store.ts`",
+  "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/auth/store.ts`",
   "      -> auth#Password is stored hashed",
-  "- [ ] 1.2 [A] Написать срок жизни сессии в `src/auth/session.ts`",
+  "      Files: `src/f1.1.ts`",
+  "      Test: `tests/t1.1.test.ts`",
+  "      Command: `npm test`",
+  "- [ ] 1.2 Написать срок жизни сессии в `src/auth/session.ts`",
   "      -> auth#Session expires",
-  "- [ ] 1.3 [A] Написать запись входа в журнал в `src/audit/log.ts`",
+  "      Files: `src/f1.2.ts`",
+  "      Test: `tests/t1.2.test.ts`",
+  "      Command: `npm test`",
+  "- [ ] 1.3 Написать запись входа в журнал в `src/audit/log.ts`",
   "      -> audit#Sign-in is written to the audit log",
+  "      Files: `src/f1.3.ts`",
+  "      Test: `tests/t1.3.test.ts`",
+  "      Command: `npm test`",
   "",
 ].join("\n");
 
@@ -128,7 +149,7 @@ describe("checkPlan: находки трёх наборов правил", () =>
     const findings = result.data.findings;
 
     expect(findings).toHaveLength(3);
-    expect(findings.map((finding) => finding.line)).toEqual([1, 5, 7]);
+    expect(findings.map((finding) => finding.line)).toEqual([1, 8, 13]);
     expect(findings.map((finding) => finding.rule)).toEqual([
       "requirement-not-planned",
       "task-placeholder",
@@ -199,12 +220,12 @@ describe("checkPlan: раздел с задачами внутри индекс�
         "",
         "Depends on: none",
         "",
-        "- [ ] 2.1 [A] Написать шаг в `src/two.ts`",
+        "- [ ] 2.1 Написать шаг в `src/two.ts`",
         "",
       ].join("\n"),
       {
         "lexforge/changes/inline-section/tasks/01-first.md":
-          "Depends on: none\n\n- [ ] 1.1 [A] Написать шаг в `src/one.ts`\n",
+          "Depends on: none\n\n- [ ] 1.1 Написать шаг в `src/one.ts`\n",
       },
     );
 
@@ -224,7 +245,7 @@ describe("checkPlan: раздел с задачами внутри индекс�
         "",
         "Depends on: none",
         "",
-        "- [ ] 1.1 [A] Написать шаг в `src/only.ts`",
+        "- [ ] 1.1 Написать шаг в `src/only.ts`",
         "",
       ].join("\n"),
     );
@@ -245,12 +266,12 @@ describe("checkPlan: раздел с задачами внутри индекс�
         "",
         "Depends on: none",
         "",
-        "- [ ] 1.99 [A] Задача, оставленная за ссылкой в `src/leftover.ts`",
+        "- [ ] 1.99 Задача, оставленная за ссылкой в `src/leftover.ts`",
         "",
       ].join("\n"),
       {
         "lexforge/changes/hybrid-section/tasks/01-first.md":
-          "Depends on: none\n\n- [ ] 1.1 [A] Написать шаг в `src/one.ts`\n",
+          "Depends on: none\n\n- [ ] 1.1 Написать шаг в `src/one.ts`\n",
       },
     );
 

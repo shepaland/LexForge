@@ -27,8 +27,11 @@ const CLEAN = [
   "",
   "Depends on: none",
   "",
-  "- [ ] 1.1 [A] Написать хранение пароля в виде хеша в `src/auth/store.ts`",
+  "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/auth/store.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/auth/store.ts`",
+  "      Test: `tests/auth/store.test.ts`",
+  "      Command: `npm test`",
   "",
 ].join("\n");
 
@@ -37,8 +40,11 @@ const WITH_FINDING = [
   "",
   "Depends on: none",
   "",
-  "- [ ] 1.1 [A] Написать хранение пароля в виде хеша и оставить TODO на соль",
+  "- [ ] 1.1 Написать хранение пароля в виде хеша и оставить TODO на соль",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/auth/store.ts`",
+  "      Test: `tests/auth/store.test.ts`",
+  "      Command: `npm test`",
   "",
 ].join("\n");
 

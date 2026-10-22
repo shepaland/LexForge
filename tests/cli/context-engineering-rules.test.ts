@@ -9,7 +9,7 @@ function plan(root: string, source: string, test: string) {
   writeAt(
     root,
     `${dir}/tasks.md`,
-    `## 1. Greeting\n\nDepends on: none\n\n- [ ] 1.1 [A] Write \`${test}\`. Check: \`node tests/check.cjs\`\n  -> greet#Hello\n- [ ] 1.2 [A] Implement \`${source}\`. Check: \`node tests/check.cjs\`\n  -> greet#Hello\n`,
+    `## 1. Greeting\n\nDepends on: none\n\n- [ ] 1.1 Write \`${test}\`. Check: \`node tests/check.cjs\`\n  -> greet#Hello\n- [ ] 1.2 Implement \`${source}\`. Check: \`node tests/check.cjs\`\n  -> greet#Hello\n`,
   );
   writeAt(
     root,

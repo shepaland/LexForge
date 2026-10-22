@@ -151,7 +151,7 @@ it("names every unstarted cycle path and a next step when a run is refused", asy
     root,
     `${dir}/tasks.md`,
     readFileSync(path.join(root, dir, "tasks.md"), "utf8") +
-      "\n## 2. Independent\n\nDepends on: none\n\n- [ ] 2.1 [B] Write `src/second.txt` and `tests/second.cjs`. Check: `node tests/second.cjs`\n  -> greet#Other\n",
+      "\n## 2. Independent\n\nDepends on: none\n\n- [ ] 2.1 Write `src/second.txt` and `tests/second.cjs`. Check: `node tests/second.cjs`\n  -> greet#Other\n  Files: `src/second.txt`, `tests/second.cjs`\n",
   );
   writeAt(root, "src/second.txt", "old");
   writeAt(root, "tests/second.cjs", "// second");

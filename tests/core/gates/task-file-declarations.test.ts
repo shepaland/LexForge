@@ -6,7 +6,7 @@ import { checkTaskFileDeclarations } from "../../../src/core/gates/plan-check-ta
 describe("parseTaskList: Files declaration problems", () => {
   it("turns an unsafe explicit declaration into a plan finding", () => {
     const tasks = parseTaskList(
-      "- [ ] 1.1 [api] Изменить маршрут\n      Files: `/etc/nginx/conf.d`\n",
+      "- [ ] 1.1 Изменить маршрут\n      Files: `/etc/nginx/conf.d`\n",
       "tasks/01-api.md",
     );
     const findings = checkTaskFileDeclarations({ file: "tasks.md", tasks });
@@ -29,7 +29,7 @@ describe("parseTaskList: Files declaration problems", () => {
   ])("records %s instead of falling back to prose inference", (_name, declaration) => {
     const task = parseTaskList(
       [
-        "- [ ] 1.1 [api] Изменить `src/fallback.ts`",
+        "- [ ] 1.1 Изменить `src/fallback.ts`",
         ...declaration,
         "      Check: `npx vitest run tests/http/routes.test.ts`",
       ].join("\n"),
@@ -44,7 +44,7 @@ describe("parseTaskList: Files declaration problems", () => {
 
   it("keeps legacy interpreter and command operand handling with canonical filtering", () => {
     const task = parseTaskList(
-      '- [ ] 1.1 [test] Check: `node bin/lexforge.js evidence red --command "npx vitest run tests/a.test.ts /api/auth ../outside.ts"`\n',
+      '- [ ] 1.1 Check: `node bin/lexforge.js evidence red --command "npx vitest run tests/a.test.ts /api/auth ../outside.ts"`\n',
     )[0]!;
 
     expect(task.files, "TASK_FILE_SCOPE_NOT_DISTINGUISHED").toEqual([]);

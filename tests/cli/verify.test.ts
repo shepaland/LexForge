@@ -38,7 +38,9 @@ const OPEN_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "- [ ] 1.2 Написать проверку пароля при входе в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -48,6 +50,7 @@ const CLOSED_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -61,8 +64,11 @@ const TWO_OPEN_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "- [ ] 1.2 Написать проверку пароля при входе в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "- [ ] 1.3 Написать восстановление пароля в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 

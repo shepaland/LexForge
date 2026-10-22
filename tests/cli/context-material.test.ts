@@ -28,7 +28,7 @@ function withTask(root: string, text: string) {
   writeAt(
     root,
     `${dir}/tasks.md`,
-    `## 1. Greeting\n\nDepends on: none\n\n- [ ] 1.1 [A] Write \`tests/check.cjs\`. ${text} Check: \`node tests/check.cjs\`\n  -> greet#Hello\n- [ ] 1.2 [A] Implement \`src/message.txt\`. Check: \`node tests/check.cjs\`\n  -> greet#Hello\n`,
+    `## 1. Greeting\n\nDepends on: none\n\n- [ ] 1.1 Write \`tests/check.cjs\`. ${text} Check: \`node tests/check.cjs\`\n  -> greet#Hello\n- [ ] 1.2 Implement \`src/message.txt\`. Check: \`node tests/check.cjs\`\n  -> greet#Hello\n`,
   );
   writeAt(root, `${dir}/specs/web/spec.md`, SPEC);
   writeAt(root, `${dir}/specs/web/mockups/login.html`, '<link rel="stylesheet" href="login.css"><p class="card">Login</p>');

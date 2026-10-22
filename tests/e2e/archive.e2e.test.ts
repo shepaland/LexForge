@@ -168,12 +168,16 @@ const PLAN = [
   "",
   "- [x] 1.1 Написать сброс пароля с ограничением частоты в `src/auth/reset.ts`",
   "      -> auth#Password reset is rate limited",
+  "      Files: `src/auth/reset.ts`",
   "- [x] 1.2 Переписать хеш пароля на argon2id в `src/auth/password.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/auth/password.ts`",
   "- [x] 1.3 Убрать истечение сессии из `src/auth/session.ts`",
   "      -> auth#Session expires",
+  "      Files: `src/auth/session.ts`",
   "- [x] 1.4 Написать выпуск счёта в `src/billing/invoice.ts`",
   "      -> billing#Invoice is issued per order",
+  "      Files: `src/billing/invoice.ts`",
   "",
 ].join("\n");
 

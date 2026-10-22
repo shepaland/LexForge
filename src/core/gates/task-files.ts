@@ -130,28 +130,9 @@ function unwrapCommandQuotes(tokens: string[]): string[] {
   return result;
 }
 
-/**
- * File paths the task writes. Only what stands in backticks is read, and of
- * that only what looks like a path: it holds a slash or ends in an extension.
- * A whole command is left out, so `npm test` is not taken for a file - this
- * is deliberately narrower than `namedFiles` below.
- */
+/** File paths the task writes: exactly the ones its `Files:` line declares. */
 export function readFiles(lines: string[]): string[] {
-  const declaration = declarations(lines);
-  if (declaration.present) return declaration.values;
-  const files: string[] = [];
-
-  for (const span of inlineCodeSpans(lines)) {
-    if (/\s/.test(span)) {
-      continue;
-    }
-
-    if (isPathShaped(span) && isCanonicalTaskFile(span)) {
-      files.push(span);
-    }
-  }
-
-  return [...new Set(files)];
+  return declarations(lines).values;
 }
 
 /**

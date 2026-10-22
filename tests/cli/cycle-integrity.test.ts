@@ -52,7 +52,7 @@ it("honours section dependencies when mapping cycles", async () => {
   writeAt(
     root,
     `${dir}/tasks.md`,
-    "## 1. Tests\n\nDepends on: none\n\n- [ ] 1.1 [A] Write `tests/check.cjs`. Check: `node tests/check.cjs`\n  -> greet#Hello\n\n## 2. Implementation\n\nDepends on: 1\n\n- [ ] 1.2 [A] Implement `src/message.txt`. Check: `node tests/check.cjs`\n  -> greet#Hello\n",
+    "## 1. Tests\n\nDepends on: none\n\n- [ ] 1.1 Write `tests/check.cjs`. Check: `node tests/check.cjs`\n  -> greet#Hello\n  Files: `tests/check.cjs`\n\n## 2. Implementation\n\nDepends on: 1\n\n- [ ] 1.2 Implement `src/message.txt`. Check: `node tests/check.cjs`\n  -> greet#Hello\n  Files: `src/message.txt`\n",
   );
   expect(
     (await call(root, ["workflow", "migrate", "--to", "2"])).exitCode,
@@ -205,7 +205,7 @@ it("preserves continuity and historical proof across sequential cycles on the sa
     root,
     `${dir}/tasks.md`,
     original +
-      "\n## 2. Farewell\n\nDepends on: 1\n\n- [ ] 2.1 [B] Change `src/message.txt` and `tests/check.cjs`. Check: `node tests/check.cjs`\n  -> greet#Hello\n",
+      "\n## 2. Farewell\n\nDepends on: 1\n\n- [ ] 2.1 Change `src/message.txt` and `tests/check.cjs`. Check: `node tests/check.cjs`\n  -> greet#Hello\n  Files: `src/message.txt`, `tests/check.cjs`\n",
   );
   await start(root);
   await green(root);
@@ -332,7 +332,7 @@ it("preserves the explicit pure-move exemption without waiving GREEN or review",
   const tasks = readFileSync(
     path.join(root, dir, "tasks.md"),
     "utf8",
-  ).replaceAll("[A]", "[A] (move)");
+  ).replace(/(- \[ \] [\d.]+) /g, "$1 (move) ");
   writeAt(root, `${dir}/tasks.md`, tasks);
   writeAt(
     root,
