@@ -277,7 +277,7 @@ function missingTrace(
   if (files.length === 0) {
     return {
       reason:
-        `${listTasks(tasks)} names no file in backticks, so there is nothing to ` +
+        `${listTasks(tasks)} has no Files line, so there is nothing to ` +
         "compare against the base commit of the change",
       anchor: tasks[0],
     };

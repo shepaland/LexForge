@@ -127,7 +127,7 @@ function checkSharedFiles(plan: PlanTasks, sections: PlanSection[], index: Map<s
           "shared-file-without-order",
           `Task ${b.number || b.firstLine} and task ${a.number || a.firstLine} both write ` +
             `${shared.join(", ")} and neither depends on the other. Add "Depends on: ` +
-            `${a.number}" to the later one, or split the file.`,
+            `${a.number || a.firstLine}" to the later one, or split the file.`,
         ),
       );
     }

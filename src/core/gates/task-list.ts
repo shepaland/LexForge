@@ -83,24 +83,19 @@ export interface PlanTask {
   /** Requirement references found in the task. */
   links: RequirementLink[];
   /**
-   * File paths the task WRITES: bare backtick spans only, a whole `Check:`
-   * command left out. `section-concurrent-file` reads this - two sections
-   * running the same test file through `Check:` is not a conflict, only two
-   * sections writing it is. See `namedFiles` below for every file a task
-   * names, its commands included.
+   * File paths the task WRITES: exactly the ones its `Files:` line declares.
+   * Nothing is inferred from the task's text. `shared-file-without-order`
+   * reads this field.
    */
   files: string[];
   /**
-   * Every file the task NAMES, its `Check:` commands included: a file named
-   * only inside a command span - `` Check: `npx vitest run x.test.ts` `` -
-   * reaches this field even though it is left out of `files` above, because
-   * the whole command sits in one backtick span with whitespace in it.
-   * `checkGroupSharedFiles` reads this field, because a TDD triple's three
-   * tasks are tied together precisely by the file their `Check:` commands
-   * run, not by which of them happens to write it in plain prose too.
+   * Every file the task names: the `Files:` line, the `Test:` line, the files
+   * a `Command:` or `Check:` span runs, and bare path-shaped spans when the
+   * task has no `Files:` line. Left out of `files`, because running a file is
+   * not writing it.
    */
   namedFiles: string[];
-  /** Problems in an explicit Files declaration; presence suppresses legacy inference. */
+  /** Problems in the `Files:` line: repeated, malformed or unsafe. */
   fileDeclarationProblems: FileDeclarationProblem[];
   /**
    * File the task's own line lives in: the plan's own artifact file for a

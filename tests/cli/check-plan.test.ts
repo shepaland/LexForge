@@ -256,7 +256,7 @@ describe("lexforge check plan: повторная строка «Depends on:»",
     expect(findingsOf(findings, "section-depends-on-repeated")).toHaveLength(1);
     // Had the second line been dropped, section 4 would look independent of
     // section 9, and sharing `src/shared.ts` would be a false conflict.
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
+    expect(findingsOf(findings, "shared-file-without-order")).toEqual([]);
   });
 });
 

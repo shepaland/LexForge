@@ -22,8 +22,9 @@ export interface TaskFields {
   fieldProblems: FieldProblem[];
 }
 
-const FIELD_LINE = /^(Test|Command|Depends on|Controls):\s*(.+)$/;
+const FIELD_LINE = /^(Test|Command|Depends on|Controls):\s*(.*)$/;
 const TASK_NUMBER = /^\d+(\.\d+)+$/;
+const SPAN_LIST = /^`[^`]+`(?:\s*,\s*`[^`]+`)*$/;
 const ONE_SPAN = /^`([^`]+)`$/;
 
 /** Reads the four field lines out of the lines of one task. The first line of a field wins. */
@@ -51,7 +52,7 @@ export function readTaskFields(lines: string[]): TaskFields {
 
     if (field === "Test") {
       const paths = inlineCodeSpans([value]);
-      if (paths.length === 0 || !paths.every(isCanonicalTaskFile)) {
+      if (!SPAN_LIST.test(value) || !paths.every(isCanonicalTaskFile)) {
         fields.fieldProblems.push({ field, kind: "malformed" });
       } else {
         fields.tests = [...new Set(paths)];

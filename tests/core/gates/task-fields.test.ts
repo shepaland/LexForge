@@ -49,6 +49,22 @@ describe("parseTaskList: task fields", () => {
     ]);
   });
 
+  it("reports prose outside the backtick spans of Test as malformed", () => {
+    const [task] = parseTaskList(
+      "- [ ] 1.1 x\n      Test: `tests/a.test.ts` and also the other one",
+    );
+    expect(task!.fieldProblems).toEqual([{ field: "Test", kind: "malformed" }]);
+    expect(task!.tests).toEqual([]);
+  });
+
+  it("reports an empty field line as malformed, not as absent", () => {
+    const [task] = parseTaskList("- [ ] 1.1 x\n      Test:\n      Controls:");
+    expect(task!.fieldProblems).toEqual([
+      { field: "Test", kind: "malformed" },
+      { field: "Controls", kind: "malformed" },
+    ]);
+  });
+
   it("keeps Test and Command paths out of files but names them", () => {
     const [task] = parseTaskList(
       [
