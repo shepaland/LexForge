@@ -20,6 +20,8 @@ describe("список команд читается из программы CLI
   it("несёт команды и подкоманды, зарегистрированные в run.ts", () => {
     expect(knownCommandNames().slice().sort()).toEqual([
       "add",
+      "amend",
+      "approve",
       "archive",
       "change",
       "check",
@@ -38,6 +40,7 @@ describe("список команд читается из программы CLI
       "migrate",
       "new",
       "plan",
+      "plan",
       "reconcile",
       "reconcile-review",
       "record",
@@ -45,6 +48,7 @@ describe("список команд читается из программы CLI
       "red",
       "restart",
       "resume",
+      "review",
       "review",
       "rules",
       "run",

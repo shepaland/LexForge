@@ -1,7 +1,7 @@
 import { UsageError } from "../../cli/errors.js";
 import { readGit, tryGit } from "./repository.js";
 
-const DEV = "dev";
+export const DEV = "dev";
 const MAIN = "main";
 const CHANGES_DIRECTORY = "lexforge/changes";
 

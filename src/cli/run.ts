@@ -19,6 +19,7 @@ import { registerStacks } from "./commands/stacks.js";
 import { registerStores } from "./commands/stores.js";
 import { registerStyles } from "./commands/styles.js";
 import { registerDoctor } from "./commands/doctor.js";
+import { registerPlan } from "./commands/plan.js";
 import { registerEvidence } from "./commands/evidence.js";
 import { registerInit } from "./commands/init.js";
 import { registerInstructions } from "./commands/instructions.js";
@@ -107,6 +108,7 @@ export function createProgram(context: CliContext): Command {
   registerInstructions(program, context);
   registerValidate(program, context);
   registerCheck(program, context);
+  registerPlan(program, context);
   registerEvidence(program, context);
   registerContext(program, context);
   registerDefect(program, context);
