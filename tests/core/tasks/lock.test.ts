@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { unlockChange, withChangeLock } from "../../../src/core/tasks/lock.js";
 import { lockPath, taskRecordPath } from "../../../src/core/tasks/paths.js";
 import {
@@ -12,6 +12,18 @@ import {
   type TaskRecord,
 } from "../../../src/core/tasks/records.js";
 import { deadPid, writeLock } from "../../helpers/lock.js";
+
+const linkFails = vi.hoisted(() => ({ on: false }));
+vi.mock("node:fs", async (original) => {
+  const real = await original<typeof import("node:fs")>();
+  return {
+    ...real,
+    linkSync: (...args: Parameters<typeof real.linkSync>) => {
+      if (linkFails.on) throw Object.assign(new Error("not supported"), { code: "EPERM" });
+      return real.linkSync(...args);
+    },
+  };
+});
 
 const now = "2026-10-22T10:00:00.000Z";
 
@@ -95,6 +107,24 @@ describe("change lock", () => {
     writeLock(root, "demo", { pid: dead, startedAt: now, command: "x" });
     expect(unlockChange(root, "demo")).toEqual({ removed: true, pid: dead });
     expect(existsSync(lockPath(root, "demo"))).toBe(false);
+  });
+  it("unlock also clears leftover temporary lock files", () => {
+    const dir = dirname(lockPath(root, "demo"));
+    writeLock(root, "demo", { pid: deadPid(), startedAt: now, command: "x" });
+    writeFileSync(`${lockPath(root, "demo")}.abc.tmp`, "{");
+    unlockChange(root, "demo");
+    expect(readdirSync(dir)).toEqual([]);
+  });
+  it("refuses with a next step when the file system cannot link", () => {
+    linkFails.on = true;
+    try {
+      expect(() => withChangeLock(root, "demo", "x", () => 1)).toThrowError(
+        expect.objectContaining({ code: "lock-unsupported", nextStep: expect.stringContaining("hard links") }),
+      );
+      expect(readdirSync(dirname(lockPath(root, "demo")))).toEqual([]);
+    } finally {
+      linkFails.on = false;
+    }
   });
   it("unlock of a change with no lock removes nothing", () => {
     expect(unlockChange(root, "demo")).toEqual({ removed: false, pid: null });

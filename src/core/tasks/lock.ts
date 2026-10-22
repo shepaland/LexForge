@@ -1,4 +1,4 @@
-import { linkSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { linkSync, readdirSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
@@ -47,7 +47,13 @@ export function withChangeLock<T>(root: string, change: string, command: string,
   try {
     linkSync(tmp, file);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    const errno = (error as NodeJS.ErrnoException).code;
+    if (errno !== "EEXIST")
+      throw new UsageError(
+        "lock-unsupported",
+        `the lock of ${change} cannot be taken in ${path.dirname(file)}: ${errno ?? "link failed"}.`,
+        "move the project to a file system that supports hard links, then run this command again",
+      );
     const held = readLock(file);
     if (!held || !alive(held.pid)) throw staleLock(change, held);
     throw new UsageError(
@@ -90,5 +96,9 @@ export function unlockChange(root: string, change: string): { removed: boolean; 
     );
   }
   unlinkSync(file);
+  const dir = path.dirname(file);
+  const leftover = `${path.basename(file)}.`;
+  for (const name of readdirSync(dir))
+    if (name.startsWith(leftover) && name.endsWith(".tmp")) unlinkSync(path.join(dir, name));
   return { removed: true, pid: held ? held.pid : null };
 }

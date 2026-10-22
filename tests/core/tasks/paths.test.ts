@@ -32,6 +32,15 @@ describe("task paths", () => {
     expect(() => taskWorktreePath("/r", "../x", "1.1")).toThrow();
     expect(() => taskBranchName("../x", "1.1")).toThrow();
   });
+  it("puts a task worktree under its change, by literal path", () => {
+    expect(taskWorktreePath("/r", "demo", "1.1")).toBe("/r/.lexforge/worktrees/demo/1.1");
+  });
+  it("names a next step in every refusal", () => {
+    expect(() => changeDir("../x")).toThrowError(expect.objectContaining({ nextStep: "lexforge status" }));
+    expect(() => taskRecordPath("/r", "demo", "../x")).toThrowError(
+      expect.objectContaining({ nextStep: "lexforge status" }),
+    );
+  });
   it("names the final review package", () => {
     expect(finalReviewPackagePath("/r", "demo")).toBe("/r/lexforge/changes/demo/final-review.md");
   });

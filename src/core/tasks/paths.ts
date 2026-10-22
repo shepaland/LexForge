@@ -4,7 +4,7 @@ import { UsageError } from "../../cli/errors.js";
 export type TaskArtifact = "brief.md" | "review.md" | "red.log" | "green.log";
 
 function refuse(message: string): never {
-  throw new UsageError("execution-invalid", message);
+  throw new UsageError("execution-invalid", message, "lexforge status");
 }
 
 function checkId(id: string): string {
@@ -51,7 +51,7 @@ export function lockPath(root: string, change: string): string {
 
 export function taskWorktreePath(root: string, change: string, id: string): string {
   changeDir(change);
-  return path.join(root, ".lexforge", "worktrees", checkId(id));
+  return path.join(root, ".lexforge", "worktrees", change, checkId(id));
 }
 
 export function taskBranchName(change: string, id: string): string {
