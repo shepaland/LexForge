@@ -81,7 +81,7 @@ old evidence but invalidates the previous verdict. Preserve minor findings in th
 ledger. `lexforge cycle close --change <name> --cycle <id>` requires current GREEN,
 complete independent approval and no unresolved critical/important findings. Only then
 may the session tick all mapped task IDs. Run the configured whole-suite evidence at the
-wave boundary and retain all existing verify/archive gates and file limits.
+wave boundary and retain all existing verify/archive gates.
 
 ## Resume or changed contract
 

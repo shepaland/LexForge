@@ -13,12 +13,10 @@ import { assertRepository } from "../git/repository.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
 import { makeFinding, type Finding } from "../validation/finding.js";
-import { readChangeConfig } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { readDeltaSpecs, requirementKey, type DeltaSpecs } from "./coverage-rules.js";
 import { DEFECT_OPEN_RULE, defectFindings } from "./defect-dimension.js";
-import { lineLimitFindings } from "./line-limit-findings.js";
 import { PLAN_ARTIFACT } from "./plan-check.js";
 import { readPlanSource } from "./plan-source.js";
 import type { PlanTask, PlanTasks } from "./task-list.js";
@@ -49,7 +47,6 @@ export const CHECKED_DIMENSIONS = [
   "every delta-spec requirement has a trace in the code",
   "every label described in verification carries a fresh stamp",
   "no critical or important defect naming this change is open",
-  "every covered file the change touched keeps to the line limit of its path",
 ];
 
 export interface VerifyChangeOptions {
@@ -65,7 +62,6 @@ export interface VerifyChangeSummary {
   openDefects: number;
   unrecordedTasks: number;
   unclosedCycles?: number;
-  filesOverLimit: number;
   migration?: {confirmed:number;open:number;freshnessFindings:number};
 }
 
@@ -74,7 +70,7 @@ export interface VerifyChangeData {
   workspaceRoot: string;
   change: string;
   findings: Finding[];
-  /** The six dimensions folded into `findings`; the same list every time. */
+  /** The five dimensions folded into `findings`; the same list every time. */
   dimensions: string[];
   /** What this command leaves to a person; the same list every time. */
   notChecked: string[];
@@ -103,7 +99,6 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
   assertRepository(root);
   const base = changeBase(root, options.change);
   const changed = changedFiles(root, base);
-  const longFilePath = readChangeConfig(root, options.change).longFilePath;
 
   const workflow2 = workflow(root, options.change).version === 2;
   let migrationSummary;
@@ -124,7 +119,6 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
     ...evidenceFindings(root, options.change, labels),
     ...defectFindings(root, options.change),
     ...redRecordFindings(root, options.change, plan),
-    ...lineLimitFindings(root, base, changed, config.sizeLimit, longFilePath),
   ];
 
   const outsideEdits = cycleFindings.some(finding =>
@@ -322,7 +316,6 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
     staleLabels: count("evidence-not-fresh"),
     openDefects: count(DEFECT_OPEN_RULE),
     unrecordedTasks: count("task-no-red-record"),
-    filesOverLimit: count("file-over-line-limit"),
   };
 }
 

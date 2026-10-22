@@ -3,7 +3,6 @@ import { answerPath, workspacePath } from "../answer-path.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
 import { type Finding } from "../validation/finding.js";
-import { readChangeConfig } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { checkCoverage, readDeltaSpecs } from "./coverage-rules.js";
@@ -14,7 +13,6 @@ import {
 } from "./plan-check-groups.js";
 import { checkIdentifiers } from "./identifier-rules.js";
 import { checkMaterialReferences, readMaterialDelta } from "./plan-check-references.js";
-import { checkLongFiles } from "./plan-check-long-files.js";
 import { checkTaskFileDeclarations } from "./plan-check-task-files.js";
 import { checkPlaceholders } from "./placeholder-rules.js";
 import { checkSectionDependencies, type PlanSection } from "./plan-check-sections.js";
@@ -108,7 +106,6 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
   };
 
   const sections = source.sections.map((section) => displaySection(root, section));
-  const longFilePath = readChangeConfig(root, options.change).longFilePath;
 
   const findings = [
     ...checkPlaceholders(plan, config.planPlaceholders),
@@ -119,7 +116,6 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
     ...checkGroupCoverage(sections),
     ...checkGroupSharedFiles(sections),
     ...checkTaskFileDeclarations(plan),
-    ...checkLongFiles(root, plan, config.sizeLimit, longFilePath),
     ...checkMaterialReferences(plan, readMaterialDelta(root, options.change)),
   ].sort((left, right) => left.line - right.line);
 

@@ -400,28 +400,6 @@ including stale evidence or unmet cycle prerequisites.
 `evidence.json` changes on every run, so two people working on the same change in parallel will get
 a merge conflict on it.
 
-## Line limit
-
-The default limit is 400 lines, set by `file_limit.lines` in `lexforge/config.yaml`.
-Lines are counted as in `wc -l`; exactly 400 is allowed. `file_limit.include` selects the
-files to check. Its defaults cover 24 source and test extensions, including `**/*.ts`,
-`**/*.py` and `**/*.vue`. A project's list replaces the defaults. Markdown, JSON, YAML and
-lock files are excluded by default. Use a pattern such as `!src/generated/**` to exclude
-generated or vendored code.
-
-Before writing `tasks.md`, `lexforge-plan` counts lines in the files its tasks will touch.
-For files over the limit, the user chooses `refactor` (split the file) or `keep` (retain it
-without further growth). The choice is stored in the change's `.lexforge.yaml` as
-`long_files: refactor` or `long_files: keep`.
-
-`lexforge check plan` rejects a plan that names a long file without a `long_files` setting.
-For `refactor`, the first task for that file must be marked `(move)`, so code is moved before
-other edits.
-
-`lexforge verify` checks touched files. With `refactor`, they must fit the limit. With `keep`,
-a file already over the limit must not grow; other files must stay within the limit.
-New files must fit the limit in both cases.
-
 ## Limits
 
 `check plan` finds placeholders with regular expressions and may miss a vague task phrased

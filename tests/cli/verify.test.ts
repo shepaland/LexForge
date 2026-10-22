@@ -108,7 +108,6 @@ interface VerifyDocument {
     staleLabels: number;
     openDefects: number;
     unrecordedTasks: number;
-    filesOverLimit: number;
   };
   nextStep: string;
 }
@@ -159,7 +158,6 @@ describe("lexforge verify", () => {
       staleLabels: 0,
       openDefects: 0,
       unrecordedTasks: 0,
-      filesOverLimit: 0,
     });
   });
 
@@ -250,7 +248,6 @@ describe("lexforge verify: четвёртое измерение — журна�
       staleLabels: 1,
       openDefects: 1,
       unrecordedTasks: 0,
-      filesOverLimit: 0,
     });
   });
 

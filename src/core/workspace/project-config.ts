@@ -8,37 +8,6 @@ import { workspacePaths } from "./paths.js";
 export const DEFAULT_SCHEMA = "spec-driven";
 export const DEFAULT_LANGUAGE = "en";
 
-/** The line count a file may reach before `file_limit` in config.yaml sets its own. */
-export const DEFAULT_FILE_LIMIT_LINES = 400;
-
-/** The file extensions and path patterns `file_limit` covers with no `include` of its own. */
-export const DEFAULT_FILE_LIMIT_INCLUDE = [
-  "**/*.ts",
-  "**/*.tsx",
-  "**/*.js",
-  "**/*.jsx",
-  "**/*.mjs",
-  "**/*.cjs",
-  "**/*.py",
-  "**/*.go",
-  "**/*.rs",
-  "**/*.java",
-  "**/*.kt",
-  "**/*.kts",
-  "**/*.swift",
-  "**/*.rb",
-  "**/*.php",
-  "**/*.cs",
-  "**/*.c",
-  "**/*.h",
-  "**/*.cc",
-  "**/*.cpp",
-  "**/*.hpp",
-  "**/*.scala",
-  "**/*.vue",
-  "**/*.svelte",
-];
-
 /**
  * A check label goes into the evidence record and into the command the hints
  * print, so its form is fixed: lowercase words joined by hyphens.
@@ -121,20 +90,6 @@ const ModelsSchema = z
   // requirement forbids refusing.
   .nullish();
 
-/**
- * The `file_limit` section: how many lines a file may reach and which files
- * it covers. `lines` replaces the default number, `include` replaces the
- * default list rather than adding to it.
- */
-const FileLimitSchema = z
-  .object({
-    lines: z.number().int().positive().default(DEFAULT_FILE_LIMIT_LINES),
-    include: z.array(z.string()).min(1).default(DEFAULT_FILE_LIMIT_INCLUDE),
-  })
-  // zod does not re-parse a top-level `.default()` value, so the default names
-  // both fields itself rather than relying on the field-level defaults above.
-  .default({ lines: DEFAULT_FILE_LIMIT_LINES, include: DEFAULT_FILE_LIMIT_INCLUDE });
-
 /** One data store of the project. Name and dialect are kept as written; `validate` judges them. */
 const DataStoreSchema = z.object({ name: z.string(), dialect: z.string() });
 
@@ -147,7 +102,6 @@ const ProjectConfigSchema = z.object({
   verification: VerificationSchema,
   plan_placeholders: z.array(z.string()).default([]),
   models: ModelsSchema,
-  file_limit: FileLimitSchema,
   data_stores: z.array(DataStoreSchema).optional(),
   ui: z.object({ styles: z.array(z.string()).optional() }).nullish(),
   engineering: z
@@ -171,8 +125,6 @@ export interface ProjectConfig {
   languageExplicit: boolean;
   /** The model assignment of this project. Empty in a project without the section. */
   models: ModelAssignment;
-  /** The `file_limit` section: the line limit and the files it covers. */
-  sizeLimit: { max: number; patterns: string[] };
   /** The project CSS files named under `ui.styles`; `null` when the key is absent. */
   styleFiles: string[] | null;
   /** The `data_stores` list in the written order; empty when the key is absent. */
@@ -184,6 +136,14 @@ export interface ProjectConfig {
 export function readProjectConfig(root: string): ProjectConfig {
   const file = workspacePaths(root).config;
   const raw = (parseYaml(readTextFile(file)) ?? {}) as unknown;
+
+  if (typeof raw === "object" && raw !== null && "file_limit" in raw) {
+    throw new UsageError(
+      "file-limit-removed",
+      `${file} still has the "file_limit" key. LexForge no longer limits file length.`,
+      "lexforge migrate",
+    );
+  }
 
   const result = ProjectConfigSchema.safeParse(raw);
   if (!result.success) {
@@ -205,7 +165,6 @@ export function readProjectConfig(root: string): ProjectConfig {
     language: result.data.language ?? DEFAULT_LANGUAGE,
     languageExplicit: explicit,
     models: toAssignment(result.data.models),
-    sizeLimit: { max: result.data.file_limit.lines, patterns: result.data.file_limit.include },
     styleFiles: result.data.ui?.styles ?? null,
     stores: (result.data.data_stores ?? []).map(({ name, dialect }) => ({ name, dialect })),
     engineering: {
