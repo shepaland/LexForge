@@ -89,7 +89,9 @@ export function recordRed(root: string, change: string, taskId: string): RedResu
     throw new UsageError(
       "red-run-broken",
       `the command of task ${taskId} failed before reaching the test: ${verdict.reason}.\n${run.tail}`,
-      `set worktree.setup in lexforge/config.yaml, then run: ${taskCommand("abandon", change, taskId)}`,
+      verdict.cause === "undeclared-module"
+        ? `lexforge plan amend --change ${change} --quote "<owner's words>"`
+        : `set worktree.setup in lexforge/config.yaml, then run: ${taskCommand("abandon", change, taskId)}`,
     );
   }
 

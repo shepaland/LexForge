@@ -9,7 +9,17 @@ export interface CommandRun {
   log: string;
 }
 
-export type RedVerdict = { kind: "red" } | { kind: "passed" } | { kind: "broken"; reason: string };
+/**
+ * Why a run never reached the test: a module the task does not declare in
+ * `Files:` (the plan must change), or the worktree, its tools or its
+ * dependencies (the setup must change).
+ */
+export type BrokenCause = "undeclared-module" | "environment";
+
+export type RedVerdict =
+  | { kind: "red" }
+  | { kind: "passed" }
+  | { kind: "broken"; cause: BrokenCause; reason: string };
 
 export interface RedContext {
   /** A directory inside the repository, for reading the task base. */
@@ -105,12 +115,15 @@ function missingModule(log: string, created: string[], declared: string[]): RedV
   for (const pattern of MISSING) {
     for (const match of log.matchAll(pattern)) {
       const specifier = match[1]!;
-      if (isPackage(specifier)) return { kind: "broken", reason: `the package "${specifier}" is missing: ${SETUP_HINT}` };
+      if (isPackage(specifier)) {
+        return { kind: "broken", cause: "environment", reason: `the package "${specifier}" is missing: ${SETUP_HINT}` };
+      }
       const rest = log.slice(match.index! + match[0].length).split("\n", 1)[0]!;
       const importer = importerOf(rest);
       if (!namesNewFile(specifier, created, importer === undefined ? declared : [importer])) {
         return {
           kind: "broken",
+          cause: "undeclared-module",
           reason: `the module "${specifier}" is missing, and it is not a file the task creates in Files:`,
         };
       }
@@ -128,7 +141,9 @@ function typeErrors(log: string, created: string[], declared: string[]): RedVerd
     const missingNew =
       missing !== undefined && !isPackage(missing) && namesNewFile(missing, created, at === undefined ? declared : [at]);
     if (!inNewFile && !missingNew) {
-      return { kind: "broken", reason: `the compiler fails outside the files the task creates: ${line.trim()}` };
+      const cause = missing !== undefined && !isPackage(missing) ? "undeclared-module" : "environment";
+      const reason = `the compiler fails outside the files the task creates: ${line.trim()}`;
+      return { kind: "broken", cause, reason };
     }
   }
   return null;
@@ -143,10 +158,12 @@ function typeErrors(log: string, created: string[], declared: string[]): RedVerd
 export function classifyRed(run: CommandRun, ctx: RedContext): RedVerdict {
   if (run.exitCode === 0) return { kind: "passed" };
   if (run.exitCode === 126 || run.exitCode === 127) {
-    return { kind: "broken", reason: `the shell could not run the command (exit ${run.exitCode}): ${SETUP_HINT}` };
+    const reason = `the shell could not run the command (exit ${run.exitCode}): ${SETUP_HINT}`;
+    return { kind: "broken", cause: "environment", reason };
   }
   if (run.log.includes("No test files found")) {
-    return { kind: "broken", reason: "the test runner found no test files: check the path in the task's Command:" };
+    const reason = "the test runner found no test files: check the path in the task's Command:";
+    return { kind: "broken", cause: "environment", reason };
   }
   const hasMissing = /Cannot find (?:module|package)|ERR_MODULE_NOT_FOUND|Failed to load url/.test(run.log);
   const hasTs = run.log.includes("error TS");

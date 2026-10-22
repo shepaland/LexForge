@@ -80,6 +80,15 @@ describe("lexforge task red", () => {
     );
   });
 
+  it("sends a missing module the task does not declare to a plan amendment", async () => {
+    await steps.start("1.1");
+    const test = 'import { search } from "../src/undeclared.js";\nsearch();\n';
+    commitIn(steps.wt("1.1"), { "test/notes.test.mjs": test });
+    const result = await steps.red("1.1");
+    expect(result.json.error).toMatchObject({ code: "red-run-broken", message: expect.stringContaining("undeclared.js") });
+    expect(result.json.nextStep).toBe(`lexforge plan amend --change demo --quote "<owner's words>"`);
+  });
+
   it("refuses red on a move task", async () => {
     const result = await steps.red("6.1");
     expect(result.json.error?.code).toBe("move-task-needs-no-red");

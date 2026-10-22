@@ -31,6 +31,7 @@ describe("classifyRed", () => {
   it("a missing package is broken and names worktree.setup", () => {
     expect(classifyRed(runOf(1, "Error: Cannot find module 'vitest'"), ctx)).toEqual({
       kind: "broken",
+      cause: "environment",
       reason: expect.stringContaining("worktree.setup"),
     });
   });
@@ -49,8 +50,13 @@ describe("classifyRed", () => {
     );
   });
 
-  it("a missing module the task does not declare is broken", () => {
-    expect(classifyRed(runOf(1, "Cannot find module '/w/src/search.js'"), ctx).kind).toBe("broken");
+  it("a missing module the task does not declare is broken for an undeclared module", () => {
+    expect(classifyRed(runOf(1, "Cannot find module '/w/src/search.js'"), ctx)).toMatchObject({
+      kind: "broken",
+      cause: "undeclared-module",
+    });
+    const ts = "test/search.test.ts(1,24): error TS2307: Cannot find module '../src/search.js'";
+    expect(classifyRed(runOf(2, ts), ctx)).toMatchObject({ kind: "broken", cause: "undeclared-module" });
   });
 
   it("command not found is broken", () =>
