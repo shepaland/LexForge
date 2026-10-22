@@ -63,4 +63,12 @@ describe("parseReviewReport", () => {
       );
     }
   });
+
+  it("reads a finding level in any letter case", () => {
+    const text = "Reviewer: a\nVerdict: changes-requested\nFindings:\n- CRITICAL: x\n- Important: y\n";
+    expect(parseReviewReport(text, "r.md").findings).toEqual([
+      { id: "F1", level: "critical", message: "x" },
+      { id: "F2", level: "important", message: "y" },
+    ]);
+  });
 });

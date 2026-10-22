@@ -6,7 +6,7 @@ import { currentBranch } from "../git/task-worktree.js";
 import { validateChange } from "../validation/validate-change.js";
 import { withChangeLock } from "./lock.js";
 import { changeDir } from "./paths.js";
-import { pendingAngles } from "./plan-review.js";
+import { missingAngles, openFindingAngles } from "./plan-review.js";
 import { startNextStep } from "./plan-ready.js";
 import {
   amendCommand,
@@ -21,6 +21,14 @@ export interface PlanApproveResult {
   digest: string;
   base: string;
   nextStep: string;
+}
+
+function alreadyApproved(change: string): UsageError {
+  return new UsageError(
+    "plan-already-approved",
+    `the plan of change "${change}" is already approved; a later change goes through an amendment.`,
+    amendCommand(change),
+  );
 }
 
 /** Paths git reports as changed or untracked outside the change directory. */
@@ -72,13 +80,7 @@ export function approvePlan(root: string, change: string, quote: string | undefi
       `git checkout ${branch}`,
     );
   }
-  if (readPlanState(root, change).approval !== null) {
-    throw new UsageError(
-      "plan-already-approved",
-      `the plan of change "${change}" is already approved; a later change goes through an amendment.`,
-      amendCommand(change),
-    );
-  }
+  if (readPlanState(root, change).approval !== null) throw alreadyApproved(change);
   if (checkPlan({ cwd: root, change }).exitCode !== 0) {
     throw new UsageError(
       "plan-check-failing",
@@ -97,12 +99,21 @@ export function approvePlan(root: string, change: string, quote: string | undefi
   return withChangeLock(root, change, "plan approve", () => {
     const state = readPlanState(root, change);
     const digest = planDigest(root, change);
-    const missing = pendingAngles(state, digest);
+    if (state.approval !== null) throw alreadyApproved(change);
+    const missing = missingAngles(state, digest);
     if (missing.length > 0) {
       throw new UsageError(
         "plan-reviews-missing",
         `no clean approving review of the current plan from these angles: ${missing.join(", ")}.`,
         reviewCommand(change, missing[0]!),
+      );
+    }
+    const open = openFindingAngles(state, digest);
+    if (open.length > 0) {
+      throw new UsageError(
+        "plan-findings-open",
+        `an approving review of the current plan still holds a critical or important finding: ${open.join(", ")}.`,
+        `fix the plan, then run: ${reviewCommand(change, open[0]!)}`,
       );
     }
     const dirty = dirtyOutside(root, change);

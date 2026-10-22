@@ -20,7 +20,7 @@ const Run = z
   .strict();
 
 /** A review finding. The validation `Finding` of src/core/validation has another shape (file, line, rule). */
-const FindingSchema = z
+export const FindingSchema = z
   .object({ id: z.string(), level: z.enum(["critical", "important", "minor"]), message: z.string() })
   .strict();
 

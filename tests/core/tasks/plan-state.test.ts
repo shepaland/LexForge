@@ -182,4 +182,36 @@ describe("assertPlanApproved", () => {
       expect.objectContaining({ code: "amendment-not-reviewed" }),
     );
   });
+
+  it("refuses an approving amendment review that holds an important finding", () => {
+    approve();
+    amend();
+    const state = readPlanState(root, CHANGE);
+    state.reviews.push({
+      angle: "amendment",
+      reviewer: "r",
+      verdict: "approved",
+      findings: [{ id: "F1", level: "important", message: "x" }],
+      digest: planDigest(root, CHANGE),
+      file: "x.md",
+      at: now,
+    });
+    writePlanState(root, CHANGE, state);
+    expect(() => assertPlanApproved(root, CHANGE)).toThrowError(
+      expect.objectContaining({ code: "amendment-not-reviewed" }),
+    );
+  });
+
+  it("judges the amendment by its latest report", () => {
+    approve();
+    amend();
+    const state = readPlanState(root, CHANGE);
+    const base = { angle: "amendment" as const, reviewer: "r", digest: planDigest(root, CHANGE), file: "x.md", at: now };
+    state.reviews.push({ ...base, verdict: "approved", findings: [] });
+    state.reviews.push({ ...base, verdict: "changes-requested", findings: [] });
+    writePlanState(root, CHANGE, state);
+    expect(() => assertPlanApproved(root, CHANGE)).toThrowError(
+      expect.objectContaining({ code: "amendment-not-reviewed" }),
+    );
+  });
 });

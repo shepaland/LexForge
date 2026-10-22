@@ -93,7 +93,7 @@ describe("lexforge plan review", () => {
 
   it("refuses the amendment angle while no amendment waits for a review", async () => {
     const result = await review(root, "amendment");
-    expect(result.json.error?.code).toBe("no-pending-amendment");
+    expect(result.json.error?.code).toBe("no-amendment-pending");
     expect(result.json.nextStep).toContain("lexforge plan amend --change demo");
   });
 

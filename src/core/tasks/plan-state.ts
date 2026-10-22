@@ -7,16 +7,12 @@ import { readPlanSource } from "../gates/plan-source.js";
 import { readTextFile, splitTextLines } from "../read-text.js";
 import { readJson, save } from "./files.js";
 import { changeDir, planStatePath } from "./paths.js";
-import type { Finding } from "./records.js";
+import { FindingSchema, type Finding } from "./records.js";
 
 const CODE = "plan-state-unreadable";
 
 export type Angle = "specs" | "code" | "dependencies" | "gaps" | "amendment";
 export const ANGLES: readonly Angle[] = ["specs", "code", "dependencies", "gaps", "amendment"];
-
-const FindingSchema = z
-  .object({ id: z.string(), level: z.enum(["critical", "important", "minor"]), message: z.string() })
-  .strict();
 
 const PlanReviewSchema = z
   .object({
@@ -132,13 +128,17 @@ export function reviewCommand(change: string, angle: Angle): string {
   return `lexforge plan review --change ${change} --angle ${angle} --file <report.md>`;
 }
 
-/** Whether the latest amendment has an approved review of exactly its digest. */
+/** A report clears its angle when it approves and holds no critical or important finding. */
+export function clearsAngle(review: { verdict: string; findings: Finding[] }): boolean {
+  return review.verdict === "approved" && !review.findings.some((f) => f.level !== "minor");
+}
+
+/** Whether the latest amendment is cleared by the latest amendment report of exactly its digest. */
 export function amendmentReviewed(state: PlanState): boolean {
   const last = state.amendments.at(-1);
   if (!last) return true;
-  return state.reviews.some(
-    (review) => review.angle === "amendment" && review.verdict === "approved" && review.digest === last.digest,
-  );
+  const latest = state.reviews.filter((review) => review.angle === "amendment").at(-1);
+  return latest !== undefined && latest.digest === last.digest && clearsAngle(latest);
 }
 
 /** Refuses a task command unless the plan on disk is the plan the owner approved. */

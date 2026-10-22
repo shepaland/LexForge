@@ -55,9 +55,9 @@ export function parseReviewReport(text: string, file: string): ReviewReport {
     if (!inFindings || !line.startsWith("-")) continue;
     const body = line.replace(/^-\s*/, "");
     if (body.toLowerCase() === "none") continue;
-    const finding = /^(critical|important|minor):\s*(\S.*)$/.exec(body);
+    const finding = /^(critical|important|minor):\s*(\S.*)$/i.exec(body);
     if (!finding) throw unreadable(file, `"${line}" is not a finding, and its level is not one of ${LEVELS.join(", ")}`);
-    findings.push({ id: `F${findings.length + 1}`, level: finding[1] as Finding["level"], message: finding[2]! });
+    findings.push({ id: `F${findings.length + 1}`, level: finding[1]!.toLowerCase() as Finding["level"], message: finding[2]! });
   }
 
   if (!reviewer) throw unreadable(file, "it has no `Reviewer:` line");

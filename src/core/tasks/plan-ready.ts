@@ -10,7 +10,9 @@ import { listTaskRecords } from "./records.js";
  */
 export function firstReadyTask(root: string, change: string): string | null {
   const source = readPlanSource(path.join(root, changeDir(change), "tasks.md"));
-  const closed = new Set(listTaskRecords(root, change).filter((r) => r.closed !== null).map((r) => r.id));
+  const records = listTaskRecords(root, change);
+  const closed = new Set(records.filter((r) => r.closed !== null).map((r) => r.id));
+  const started = new Set(records.map((r) => r.id));
   for (const task of source.tasks) if (task.done && task.number !== "") closed.add(task.number);
 
   for (const section of source.sections) {
@@ -23,6 +25,7 @@ export function firstReadyTask(root: string, change: string): string | null {
       (task) =>
         task.number !== "" &&
         !closed.has(task.number) &&
+        !started.has(task.number) &&
         (task.dependsOn ?? []).every((id) => closed.has(id)),
     );
     if (ready) return ready.number;

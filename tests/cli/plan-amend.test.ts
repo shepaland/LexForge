@@ -22,7 +22,15 @@ beforeEach(() => {
 afterEach(() => ws.remove());
 
 function closeTask(id: string): void {
-  const record: TaskRecord = {
+  writeTaskRecord(root, CHANGE, record(id, { merge: "def", at: "2026-10-22T11:00:00.000Z" }));
+}
+
+function startTask(id: string): void {
+  writeTaskRecord(root, CHANGE, record(id, null));
+}
+
+function record(id: string, closed: TaskRecord["closed"]): TaskRecord {
+  return {
     id,
     origin: "native",
     executor: "e",
@@ -33,10 +41,9 @@ function closeTask(id: string): void {
     red: null,
     green: null,
     reviews: [],
-    closed: { merge: "def", at: "2026-10-22T11:00:00.000Z" },
+    closed,
     attempts: 1,
   };
-  writeTaskRecord(root, CHANGE, record);
 }
 
 describe("lexforge plan amend", () => {
@@ -100,6 +107,25 @@ describe("lexforge plan amend", () => {
     expect(result.exitCode).toBe(0);
     expect(result.json.data?.nextStep).toBe("lexforge task start --change demo --task 1.1 --executor <id>");
     expect(() => assertPlanApproved(root, CHANGE)).not.toThrow();
-    expect((await review(root, "amendment")).json.error?.code).toBe("no-pending-amendment");
+    expect((await review(root, "amendment")).json.error?.code).toBe("no-amendment-pending");
+  });
+
+  it("names a new amendment, not a new review, after a changes-requested amendment review", async () => {
+    await approved(root);
+    appendTask(root, "1.3");
+    await amendCall(root);
+    const result = await review(root, "amendment", "changes-requested", "- important: task 1.3 has no test");
+    expect(result.json.data?.nextStep).toBe(
+      "fix the plan, then run: lexforge plan amend --change demo --quote \"<owner's words>\"",
+    );
+  });
+
+  it("does not name a task that already has a record as the next task", async () => {
+    await approved(root);
+    startTask("1.1");
+    appendTask(root, "1.3");
+    await amendCall(root);
+    const result = await review(root, "amendment");
+    expect(result.json.data?.nextStep).not.toContain("--task 1.1 ");
   });
 });

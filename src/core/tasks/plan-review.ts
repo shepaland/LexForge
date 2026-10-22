@@ -10,6 +10,7 @@ import {
   ANGLES,
   amendCommand,
   amendmentReviewed,
+  clearsAngle,
   approveCommand,
   planDigest,
   readPlanState,
@@ -33,16 +34,29 @@ export interface PlanReviewResult {
   nextStep: string;
 }
 
-/** A report clears its angle when it approves and holds no critical or important finding. */
-export function clearsAngle(review: { verdict: string; findings: Finding[] }): boolean {
-  return review.verdict === "approved" && !review.findings.some((f) => f.level !== "minor");
-}
-
 /** The angles whose latest report does not clear the digest. */
 export function pendingAngles(state: PlanState, digest: string): Angle[] {
   return APPROVAL_ANGLES.filter((angle) => {
     const latest = state.reviews.filter((review) => review.angle === angle).at(-1);
     return latest === undefined || latest.digest !== digest || !clearsAngle(latest);
+  });
+}
+
+function latestAt(state: PlanState, angle: Angle, digest: string) {
+  const latest = state.reviews.filter((review) => review.angle === angle).at(-1);
+  return latest !== undefined && latest.digest === digest ? latest : undefined;
+}
+
+/** Angles with no approving report of the current digest. */
+export function missingAngles(state: PlanState, digest: string): Angle[] {
+  return APPROVAL_ANGLES.filter((angle) => latestAt(state, angle, digest)?.verdict !== "approved");
+}
+
+/** Angles whose approving report of the current digest holds a critical or important finding. */
+export function openFindingAngles(state: PlanState, digest: string): Angle[] {
+  return APPROVAL_ANGLES.filter((angle) => {
+    const latest = latestAt(state, angle, digest);
+    return latest?.verdict === "approved" && !clearsAngle(latest);
   });
 }
 
@@ -88,7 +102,7 @@ export function registerPlanReview(root: string, change: string, angle: string, 
     if (asked === "amendment") {
       if (!last || amendmentReviewed(state)) {
         throw new UsageError(
-          "no-pending-amendment",
+          "no-amendment-pending",
           `change "${change}" has no amendment that waits for a review.`,
           amendCommand(change),
         );
@@ -139,7 +153,12 @@ function nextStepAfter(
   pending: Angle[],
   state: PlanState,
 ): string {
-  if (!clear) return `fix the plan, then run: ${reviewCommand(change, angle)}`;
+  if (!clear) {
+    // An amendment review is of one digest; once the plan is fixed the digest is a new amendment's.
+    return angle === "amendment"
+      ? `fix the plan, then run: ${amendCommand(change)}`
+      : `fix the plan, then run: ${reviewCommand(change, angle)}`;
+  }
   if (angle === "amendment") return startNextStep(root, change);
   if (pending.length > 0) return reviewCommand(change, pending[0]!);
   return state.approval === null ? approveCommand(change) : startNextStep(root, change);

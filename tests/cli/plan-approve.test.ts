@@ -41,9 +41,16 @@ describe("lexforge plan approve", () => {
     await review(root, "gaps", "approved", "- important: scenario Y has no task");
     const result = await approveCall(root);
     expect(result.json.error).toMatchObject({
-      code: "plan-reviews-missing",
+      code: "plan-findings-open",
       message: expect.stringContaining("gaps"),
     });
+    expect(result.json.nextStep).toBe("fix the plan, then run: lexforge plan review --change demo --angle gaps --file <report.md>");
+  });
+
+  it("keeps plan-reviews-missing for an angle whose latest report requested changes", async () => {
+    await allFourApproved(root);
+    await review(root, "gaps", "changes-requested", "- minor: wording");
+    expect((await approveCall(root)).json.error?.code).toBe("plan-reviews-missing");
   });
 
   it("refuses code written before approval", async () => {
