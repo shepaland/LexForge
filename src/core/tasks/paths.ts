@@ -1,7 +1,7 @@
 import path from "node:path";
 import { UsageError } from "../../cli/errors.js";
 
-export type TaskArtifact = "brief.md" | "review.md" | "red.log" | "green.log";
+export type TaskArtifact = "brief.md" | "review.md" | "report.md" | "red.log" | "green.log";
 
 function refuse(message: string): never {
   throw new UsageError("execution-invalid", message, "lexforge status");
@@ -27,6 +27,16 @@ export function taskRecordPath(root: string, change: string, id: string): string
 
 export function taskArtifactPath(root: string, change: string, id: string, name: TaskArtifact): string {
   return inChange(root, change, "tasks", checkId(id), name);
+}
+
+/** The directory of a task's files: brief, report, review package, logs and kept reviews. */
+export function taskDirPath(root: string, change: string, id: string): string {
+  return inChange(root, change, "tasks", checkId(id));
+}
+
+/** The n-th review report of a task, kept as the reviewer wrote it. */
+export function taskReviewCopyPath(root: string, change: string, id: string, n: number): string {
+  return inChange(root, change, "tasks", checkId(id), "reviews", `${n}.md`);
 }
 
 export function planStatePath(root: string, change: string): string {

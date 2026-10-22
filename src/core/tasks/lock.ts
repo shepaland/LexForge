@@ -92,7 +92,7 @@ export function unlockChange(root: string, change: string): { removed: boolean; 
     throw new UsageError(
       "lock-held-by-live-process",
       `process ${held.pid} still holds the lock of ${change}, running "${held.command}".`,
-      "wait for that process to finish, or stop it, then run lexforge unlock again",
+      `wait for process ${held.pid} to finish, then run: lexforge unlock --change ${change}`,
     );
   }
   unlinkSync(file);

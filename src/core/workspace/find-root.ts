@@ -11,6 +11,8 @@ import { CONFIG_FILE, WORKSPACE_DIR } from "./paths.js";
  */
 export function findWorkspaceRoot(cwd: string): string {
   let dir = path.resolve(cwd);
+  const main = mainOfTaskWorktree(dir);
+  if (main !== null) return main;
 
   for (;;) {
     const workspace = path.join(dir, WORKSPACE_DIR);
@@ -38,4 +40,20 @@ export function findWorkspaceRoot(cwd: string): string {
     }
     dir = parent;
   }
+}
+
+/** Where `task start` puts the worktrees of tasks, under the main worktree. */
+const TASK_WORKTREES = `${path.sep}.lexforge${path.sep}worktrees${path.sep}`;
+
+/**
+ * A task worktree carries its own copy of `lexforge/config.yaml`, but the
+ * state of a change lives in the main worktree. A directory under
+ * `<main>/.lexforge/worktrees/` resolves to `<main>` when `<main>` is a
+ * workspace. Other linked worktrees keep their own root.
+ */
+function mainOfTaskWorktree(dir: string): string | null {
+  const at = `${dir}${path.sep}`.indexOf(TASK_WORKTREES);
+  if (at <= 0) return null;
+  const main = dir.slice(0, at);
+  return existsSync(path.join(main, WORKSPACE_DIR, CONFIG_FILE)) ? main : null;
 }

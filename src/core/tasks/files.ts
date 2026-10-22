@@ -12,6 +12,14 @@ export function save(file: string, data: unknown): void {
   renameSync(tmp, file);
 }
 
+/** Atomic write of a text file, the same way `save` writes JSON. */
+export function saveText(file: string, text: string): void {
+  mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = file + "." + randomUUID() + ".tmp";
+  writeFileSync(tmp, text, { flag: "wx" });
+  renameSync(tmp, file);
+}
+
 /** Reads a JSON state file. Broken JSON and a foreign schema both refuse with `code`. */
 export function readJson<T>(file: string, schema: z.ZodType<T>, code: string): T {
   let text: string;

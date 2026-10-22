@@ -110,6 +110,7 @@ const ProjectConfigSchema = z.object({
       disabled: z.record(z.string(), z.string()).optional(),
     })
     .nullish(),
+  worktree: z.object({ setup: z.string().min(1) }).nullish(),
 });
 
 export interface ProjectConfig {
@@ -131,6 +132,8 @@ export interface ProjectConfig {
   stores: { name: string; dialect: string }[];
   /** The `engineering` section: the named stacks (`null` when absent) and the switched-off rules with reasons. */
   engineering: { stacks: string[] | null; disabled: Record<string, string> };
+  /** The command `task start` runs in a new task worktree, from `worktree.setup`; `null` when absent. */
+  worktreeSetup: string | null;
 }
 
 export function readProjectConfig(root: string): ProjectConfig {
@@ -171,6 +174,7 @@ export function readProjectConfig(root: string): ProjectConfig {
       stacks: result.data.engineering?.stacks ?? null,
       disabled: result.data.engineering?.disabled ?? {},
     },
+    worktreeSetup: result.data.worktree?.setup ?? null,
   };
 }
 

@@ -126,6 +126,6 @@ describe("lexforge plan amend", () => {
     appendTask(root, "1.3");
     await amendCall(root);
     const result = await review(root, "amendment");
-    expect(result.json.data?.nextStep).not.toContain("--task 1.1 ");
+    expect(result.json.data?.nextStep).toBe("lexforge task start --change demo --task 1.3 --executor <id>");
   });
 });
