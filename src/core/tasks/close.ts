@@ -17,13 +17,33 @@ export interface CloseResult {
   nextStep: string;
 }
 
-/** `- [ ] ` becomes `- [x] ` on the given line of the file, counted from 1. */
-export function tickTask(file: string, line: number): void {
-  const text = readFileSync(file, "utf8");
-  const lines = text.split("\n");
-  const at = line - 1;
-  lines[at] = lines[at]!.replace(/^(\s*-\s*)\[ \]/, "$1[x]");
-  saveText(file, lines.join("\n"));
+type PlanLine = Pick<PlanTask, "file" | "line" | "number">;
+
+const UNTICKED = /^(\s*-\s*)\[ \]/;
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** The lines of the plan, after checking that the task's line is still its open box. */
+function openTaskLines(task: PlanLine, change: string): string[] {
+  const lines = readFileSync(task.file, "utf8").split("\n");
+  const text = lines[task.line - 1] ?? "";
+  if (!new RegExp(`^\\s*-\\s*\\[ \\]\\s+${escapeRegExp(task.number)}(?:\\s|$)`).test(text)) {
+    throw new UsageError(
+      "plan-line-moved",
+      `line ${task.line} of ${task.file} no longer holds the open box of task ${task.number}: "${text.trim()}".`,
+      `lexforge status --change ${change}`,
+    );
+  }
+  return lines;
+}
+
+/** `- [ ] ` becomes `- [x] ` on the task's line, counted from 1, once the line is checked to hold the task. */
+export function tickTask(task: PlanLine, change: string): void {
+  const lines = openTaskLines(task, change);
+  lines[task.line - 1] = lines[task.line - 1]!.replace(UNTICKED, "$1[x]");
+  saveText(task.file, lines.join("\n"));
 }
 
 /** Paths git reports as changed or untracked outside the change directory. */
@@ -163,8 +183,8 @@ function defectSteps(record: TaskRecord, change: string, next: string): string {
 
 /** Checks the task in git, merges it into the change branch, ticks it and removes its worktree. */
 export function closeTask(root: string, change: string, taskId: string): CloseResult {
-  const task = findPlanTask(root, change, taskId);
   return withChangeLock(root, change, "task close", () => {
+    const task = findPlanTask(root, change, taskId);
     const record = requireInProgress(root, change, taskId);
     assertMainWorktree(root, change);
     assertWorktreeClean(record.worktree, taskId);
@@ -172,6 +192,7 @@ export function closeTask(root: string, change: string, taskId: string): CloseRe
     const tip = headOf(record.worktree);
     assertHistory(task, record, change, tip);
     assertReviewed(record, change, tip);
+    openTaskLines(task, change);
 
     const merged = mergeTaskBranch(root, record.branch, `Task ${taskId}: ${task.firstLine}`);
     if (!merged.merged) {
@@ -182,7 +203,7 @@ export function closeTask(root: string, change: string, taskId: string): CloseRe
         `lexforge journal add --change ${change} --kind question --text "<what the plan missed>"`,
       );
     }
-    tickTask(task.file, task.line);
+    tickTask(task, change);
     removeTaskWorktree(root, record.worktree, record.branch);
     writeTaskRecord(root, change, { ...record, closed: { merge: merged.commit, at: new Date().toISOString() } });
 
