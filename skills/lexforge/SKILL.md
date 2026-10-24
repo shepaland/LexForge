@@ -107,19 +107,8 @@ In doubt take the heavier one.
 3. **Propose the name** in kebab-case before running anything: `Add Auth` becomes
    `add-auth`. Exit `2` on a taken name: show that change's status, ask whether to
    continue it or rename. Never write into it.
-4. **Run** `lexforge new change <name> --schema <schema>`, with `--short` only when the
-   short path fits, then run its `nextStep`, saying which one it is.
-
-## The short path
-
-`--short` gives one task and no plan review. It fits one task, no new capability, no
-`Data:` and no migrations. Anything more takes the full path, whatever its size; a request
-to keep it small lifts no limit, and a migration moved out of the change still ships.
-
-The order holds on it too: the delta spec, or `skip_specs: true` when the user declares
-that no requirement changes; then `lexforge validate <name> --strict` before `lexforge task
-start`, and the red run after it. A refusal `short-path-not-eligible` means the change
-outgrew the path: run `lexforge plan escalate --change <name>`, never trim the change to fit.
+4. **Run** `lexforge new change <name> --schema <schema>`, then run its `nextStep`,
+   saying which one it is.
 
 ## The class holds
 

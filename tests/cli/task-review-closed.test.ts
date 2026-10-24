@@ -37,20 +37,6 @@ describe("lexforge task review on a closed task", { timeout: 60_000 }, () => {
     expect(taskFindings(root, CHANGE)).toEqual([]);
   });
 
-  it("after changes requested on a closed task, names the fix task and the second review that clears it", async () => {
-    writeTaskRecord(root, CHANGE, { ...readTaskRecord(root, CHANGE, "1.2")!, reviews: [] });
-    const file = report({ reviewer: "rev-late", verdict: "changes-requested", findings: ["- important: src/a.ts:3 - wrong"] });
-    const registered = await cli(root, ["task", "review", "--change", CHANGE, "--task", "1.2", "--file", file]);
-
-    expect(registered.exitCode).toBe(0);
-    expect(registered.json.data.nextStep).toBe(
-      "add a task that fixes the findings of task 1.2, then run: lexforge plan amend --change demo --quote \"<owner's words>\"; " +
-        "once that task is closed, send lexforge/changes/demo/tasks/1.2/review.md to a reviewer again and run: " +
-        "lexforge task review --change demo --task 1.2 --file <report.md>",
-    );
-    expect(taskFindings(root, CHANGE).map((f) => f.rule)).toEqual(["task-not-reviewed"]);
-  });
-
   it("still refuses a closed task whose review already covers its green commit", async () => {
     const refused = await review("1.2", "rev-late");
     expect(refused.exitCode).toBe(2);

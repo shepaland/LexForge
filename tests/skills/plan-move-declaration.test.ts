@@ -18,50 +18,50 @@ function moveDeclarationSection(): string {
 const EXPECTED_MOVE_DECLARATION_SECTION =
   "## Move declaration " +
   "A task whose whole work is carrying existing code from one file to another, without " +
-  "changing behaviour, carries `(move)` right after its number: `- [ ] 3.2 (move) ...`. That " +
-  "is the one place the CLI reads the declaration - nowhere else on the line counts. " +
-  "Such a task carries no `Test:` line, because a move has no run to watch fail: a failing " +
-  "test written for it would test behaviour nobody is changing. It keeps `Files:` and the " +
-  "`Command:` that `lexforge task green` runs after the move, and `lexforge task red` refuses " +
-  "it with `move-task-needs-no-red`. A move is written as one task, whole. " +
+  "changing behaviour, carries `(move)` right after its group label: `- [ ] 3.2 [B] (move) " +
+  "...`. The label groups tasks into one agent's run, and `(move)` follows it because that " +
+  "is the one place a reader checks for the declaration - nowhere else on the line counts. " +
+  "Such a task is not written as the usual triple - a test, a red run, an implementation - " +
+  "because a move has no run to watch fail: the failing test a triple opens with would test " +
+  "behaviour nobody is changing. A move is written as one task, whole. " +
   "A task adding a branch, a field or a rule, however small, changes behaviour, so it never " +
-  "carries `(move)` and keeps its test and its red run. A move left undeclared has a test " +
-  "that cannot fail, and `lexforge task red` refuses the passing run as `red-run-passed`. A " +
-  "task declared a move that does change behaviour skips the red run, and only the reviewer " +
-  "reading its diff can catch it, since the CLI trusts the declaration. Neither risk is " +
-  "closed by guessing: `(move)` is not written just in case, or because the work merely " +
-  "resembles a move.";
+  "carries `(move)` and keeps the triple that comes with a red run. A move left undeclared " +
+  "stops the change at `verify`, because the check reads the declaration alone to decide " +
+  "whether a red record is owed - and a task declared a move that does change behaviour " +
+  "passes that same check when it should have failed, since the check trusts the declaration " +
+  "and never rereads the diff. Neither risk is closed by guessing: `(move)` is not written " +
+  "just in case, or because the work merely resembles a move.";
 
 describe("раздел «Move declaration» держит смысл целиком", () => {
   it("текст раздела совпадает с ожидаемым дословно", () => {
     expect(moveDeclarationSection()).toBe(EXPECTED_MOVE_DECLARATION_SECTION);
   });
 
-  it("(move) идёт сразу за номером, и другое место на строке не считается", () => {
+  it("(move) идёт сразу за группой, и другое место на строке не считается", () => {
     const text = moveDeclarationSection();
 
     for (const phrase of ["or elsewhere on the line if that reads better"]) {
-      expect(text, `«${phrase}» разрешает ставить (move) не после номера`).not.toContain(phrase);
+      expect(text, `«${phrase}» разрешает ставить (move) не после ярлыка`).not.toContain(phrase);
     }
   });
 
-  it("у переноса нет прогона, который можно увидеть падающим, поэтому у него нет Test:", () => {
+  it("у переноса нет прогона, который можно увидеть падающим, поэтому он - одна задача", () => {
     const text = moveDeclarationSection();
 
     for (const phrase of [
-      "because a move has no run to watch fail, though writing a test anyway is harmless",
+      "because a move has no run to watch fail, though writing the triple anyway is harmless",
     ]) {
-      expect(text, `«${phrase}» допускает тест для переноса`).not.toContain(phrase);
+      expect(text, `«${phrase}» допускает тройку для переноса`).not.toContain(phrase);
     }
   });
 
-  it("незаявленный перенос отказывает на task red, и ложный (move) ловит только ревьюер", () => {
+  it("незаявленный перенос останавливает change на verify, и ложный (move) проходит проверку зря", () => {
     const text = moveDeclarationSection();
 
     for (const phrase of [
-      "refuses the passing run as `red-run-passed`, though it may pass if the diff looks like a move",
+      "stops the change at `verify`, though `verify` may let it through if the diff looks like a move",
     ]) {
-      expect(text, `«${phrase}» пропускает незаявленный перенос через task red`).not.toContain(
+      expect(text, `«${phrase}» пропускает незаявленный перенос через verify`).not.toContain(
         phrase,
       );
     }

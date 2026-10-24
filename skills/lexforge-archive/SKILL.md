@@ -81,8 +81,6 @@ session, or the user saying it came out clean. Those are what `lexforge archive`
 - `1` - findings or conflicts, listed; nothing was written. Fix what is named, run again.
 - `2` - refused: no workspace, no change, planning unfinished, archive path taken, no
   repository, empty `verification`. Show `error.message` and stop.
-  `change-needs-migration` instead: the change predates workflow 3; run
-  `lexforge migrate --change <name>` and follow its `nextStep`.
 
 Never announce the code you expect: a command you did not run has no result to report.
 
@@ -137,3 +135,5 @@ worktree stay, and the failure is the next thing you say.
 - A file under `lexforge/specs/` edited by hand while a conflict is open.
 - A branch merged, pushed or deleted before the user answered.
 - An exit code named instead of read.
+
+Migration: [authorization, preview, reconciliation, freshness](../lexforge-apply/execution-v2.md#safe-migration-of-existing-work).

@@ -35,8 +35,10 @@ export function section(body: string, heading: string): string {
   return next === -1 ? body.slice(start) : body.slice(start, next);
 }
 
-export function parallelText(): string {
-  const path = fileURLToPath(new URL("../../skills/lexforge-apply/parallel.md", import.meta.url));
+export function parallelExecutionText(): string {
+  const path = fileURLToPath(
+    new URL("../../skills/lexforge-apply/parallel-execution.md", import.meta.url),
+  );
   // A source line wrap must not break a phrase match: collapse whitespace runs
   // (including a mid-sentence newline) down to a single space.
   return readFileSync(path, "utf8").replace(/\s+/g, " ");
@@ -44,10 +46,10 @@ export function parallelText(): string {
 
 /** The text of one `## Heading` section, up to the next `## `. */
 export function pxSection(heading: string): string {
-  const text = parallelText();
+  const text = parallelExecutionText();
   const start = text.toLowerCase().indexOf(`## ${heading}`.toLowerCase());
 
-  expect(start, `раздел «${heading}» не найден в parallel.md`).toBeGreaterThan(-1);
+  expect(start, `раздел «${heading}» не найден в parallel-execution.md`).toBeGreaterThan(-1);
 
   const next = text.indexOf("## ", start + 3);
   return (next === -1 ? text.slice(start) : text.slice(start, next)).toLowerCase();
