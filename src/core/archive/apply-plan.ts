@@ -49,7 +49,8 @@ export interface CapabilityMerge {
 export interface MergedSpec {
   capability: string;
   file: string;
-  content: string;
+  /** Null when the delta removed every requirement: the spec file goes away. */
+  content: string | null;
   /** False when the text is the one already on disk, word for word. */
   changed: boolean;
 }
@@ -89,7 +90,7 @@ export function applyChange(merges: CapabilityMerge[]): ApplyChangeResult {
       continue;
     }
 
-    const content = renderMainSpec(result.spec);
+    const content = result.spec.blocks.length === 0 ? null : renderMainSpec(result.spec);
     specs.push({
       capability: merge.capability,
       file: merge.specFile,

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";
@@ -311,6 +311,11 @@ function writeSpecs(root: string, specs: MergedSpec[]): string[] {
     }
 
     const file = path.join(root, spec.file);
+    if (spec.content === null) {
+      removeSpec(file);
+      written.push(spec.file);
+      continue;
+    }
     mkdirSync(path.dirname(file), { recursive: true });
 
     const temporary = `${file}.tmp`;
@@ -320,6 +325,16 @@ function writeSpecs(root: string, specs: MergedSpec[]): string[] {
   }
 
   return written;
+}
+
+/**
+ * Removes a spec whose every requirement the delta removed, and the
+ * capability directory with it once nothing else is left there.
+ */
+function removeSpec(file: string): void {
+  rmSync(file, { force: true });
+  const dir = path.dirname(file);
+  if (existsSync(dir) && readdirSync(dir).length === 0) rmdirSync(dir);
 }
 
 /**
