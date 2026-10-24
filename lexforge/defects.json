@@ -1792,6 +1792,16 @@
       "summary": "«find its places once» reads as the executor's places while the task's are meant",
       "state": "open",
       "recordedAt": "2026-10-24T21:07:09.802Z"
+    },
+    {
+      "id": "4543b508",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/scenarios/lexforge-apply/parallel-shared-file.md",
+      "line": 57,
+      "summary": "The scenario still names task unlock for a stale lock; the command is lexforge unlock --change <name>",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:11:44.376Z"
     }
   ]
 }
