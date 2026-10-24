@@ -117,8 +117,17 @@ requirements changes (delta specs), design decisions in `design.md` and the plan
 The schema sets their order. Checks between stages are called gates.
 
 `check plan` finds placeholders, references used in place of task descriptions and requirements
-without tasks. It also checks section dependencies, group labels and files shared by groups
-that would run concurrently. Each plan section must have its own file, linked from `tasks.md`.
+without tasks. It also checks section dependencies and a task's
+`Depends on:` list, and flags two tasks that write the same file when neither depends
+on the other (`shared-file-without-order`). Each plan section must have its own file,
+linked from `tasks.md`.
+
+`task start` opens the task's worktree and writes its brief. `lexforge/config.yaml` can set
+`worktree.setup`: a shell command, such as `npm ci`, that `task start` runs once in the new
+worktree; a non-zero exit removes the worktree and refuses with `worktree-setup-failed`. A
+`task red` that breaks before reaching the test refuses with `red-run-broken`: when the
+worktree is missing what `worktree.setup` installs, the fix is `worktree.setup`; when the
+break names a module the task never declared, the fix is `lexforge plan amend` instead.
 
 `task red` records a failing test run on a task's test commit; `task green` records the
 passing run on the implementation commit and writes the review package. When a task's work
@@ -310,6 +319,7 @@ in `lexforge/config.yaml`; agents receive them through `lexforge instructions`.
 | --- | --- |
 | `init` | Sets up the `lexforge/` workspace and installs the skills; `--tools`, `--scope`, `--language` |
 | `doctor` | Checks whether the local installation is healthy |
+| `migrate --change <name>` | Carries this change over to 6.0.0; without `--change`, every pending change and the config |
 | `new change <name>` | Creates the change directory, `.lexforge.yaml` and `workflow.json` on a new `feature/<name>` branch from `dev`; `--schema` overrides the project default |
 | `status` | Shows the artifact statuses of one change, or lists the active changes |
 | `instructions <artifact> --change <name>` | Serves the template, the context, the rules and the instruction |
@@ -329,13 +339,17 @@ in `lexforge/config.yaml`; agents receive them through `lexforge instructions`.
 | `plan escalate --change <name>` | Moves a short change to the full path |
 | `review final --change <name>` | Writes the final review package, or registers the reviewer's report with `--file` |
 | `resume --change <name>` | Rebuilds continuation state from primary records |
+| `journal add --change <name> --kind <kind> --text <text>` | Writes an entry into the change journal; `--quote`, `--reason`, `--scope` |
+| `journal resolve --change <name> --id <id> --note <words>` | Closes a journal entry with a note |
+| `journal session --change <name>` | Opens a new session; permissions of the last session expire |
+| `unlock --change <name>` | Removes the lock of a change left by a process that is no longer running |
 | `verify --change <name>` | Checks a change before the work is called finished |
 | `archive <change>` | Merges the delta and mockups into the specs, moves the change to the archive and merges `feature/<name>` into `dev` |
 | `styles find` | Lists the project's CSS files for mockups |
 | `styles set <paths...>` | Saves the chosen CSS files under `ui.styles` in `lexforge/config.yaml` |
 | `stacks set <stacks...>` | Saves the project's stacks under `engineering.stacks`; `--none` saves an empty list |
 | `stores add <name> --dialect <dialect>` | Appends a data store to `data_stores` in `lexforge/config.yaml` |
-| `rules --change <name> --files <paths...>` | Prints the engineering rules that apply to the files of a cycle |
+| `rules --change <name> --files <paths...>` | Prints the engineering rules that apply to the files of a task |
 | `defect record --change <name>` | Records a defect against a change; `--level`, `--file`, `--line`, `--summary` |
 | `defect close <id>` | Marks a recorded defect as fixed |
 | `defect list` | Lists recorded defects; `--change` and `--open` narrow the list |
@@ -350,7 +364,7 @@ standard error. Changes to JSON fields and exit codes are listed in the [CHANGEL
 | `2` | The command cannot run: an unknown argument, a missing change, no workspace, no git repository |
 
 Code `1` reports a finding or a rejected run. Code `2` means the call cannot proceed,
-including stale evidence or unmet cycle prerequisites.
+including stale evidence or unmet task prerequisites.
 `doctor` has one exception: a missing workspace is a finding for it, so it answers `1`, not `2`.
 
 ## What to commit

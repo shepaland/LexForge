@@ -37,5 +37,10 @@ ${head}
 #   tests: npm test
 #   lint: npm run lint
 
+# worktree.setup: the command \`task start\` runs in a new task worktree, so a red run
+# fails on the test and not on missing dependencies.
+# worktree:
+#  setup: npm ci
+
 ${modelsSectionText(tools)}`;
 }
