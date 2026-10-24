@@ -102,7 +102,7 @@ The CLI checks that documents are ready and test results are current before the 
 | OpenSpec: requirements format | `### Requirement:` with `WHEN`/`THEN` scenarios, checked by `validate --strict` |
 | OpenSpec: specifications in the repository | the delta is merged on `archive`, the change moves to `lexforge/changes/archive/` |
 | superpowers: identifying the task type before design | the `lexforge` skill chooses an investigation (spike) or the `bounded` / `spec-driven` schema |
-| superpowers: test-driven development (TDD) and independent review | `lexforge-apply` runs tests and independent review for each behavioural cycle |
+| superpowers: test-driven development (TDD) and independent review | `lexforge-apply` runs tests and independent review for each task |
 | superpowers: completion backed by check results | `evidence record` runs the command and links the result to the commit and file state |
 
 The CLI also checks plans for placeholders and requirements without tasks, and checks whether
@@ -121,9 +121,11 @@ without tasks. It also checks section dependencies, group labels and files share
 that would run concurrently. Each plan section must have its own file, linked from `tasks.md`.
 
 `task red` records a failing test run on a task's test commit; `task green` records the
-passing run on the implementation commit and writes the review package. `evidence record`
-runs a project check and saves its result, exit code, commit and working-tree fingerprint as
-a stamp. Editing the code makes the stamp stale; `check evidence` detects this.
+passing run on the implementation commit and writes the review package. A task whose work
+grows past its delta spec stops there instead of a quiet fix: it names the gap and waits
+for the user. `evidence record` runs a project check and saves its result, exit code,
+commit and working-tree fingerprint as a stamp. Editing the code makes the stamp stale;
+`check evidence` detects this.
 
 `verify` reads saved results, so checks must run first. It also checks that every task is
 closed and reviewed, and that current files match the latest reviewed snapshots. A task
@@ -290,7 +292,7 @@ Skills wait until required documents are ready before starting implementation.
 
 | Skill | Fires when | Result |
 | --- | --- | --- |
-| `lexforge-apply` | The artifacts are done, implementation is asked for | Behavioural cycles with RED/GREEN, independent review and evidence; the legacy task loop for workflow 1 |
+| `lexforge-apply` | The artifacts are done, implementation is asked for | RED/GREEN on each task of the plan, with independent review and a review package before it closes |
 | `lexforge-verify` | Implementation is finished, before archiving | Machine checks and review against requirements; open `CRITICAL` and `IMPORTANT` block completion |
 | `lexforge-archive` | The report has no `CRITICAL` findings | The delta in `lexforge/specs/`, the change in the archive, the branch merged into `dev`, a question about `main` |
 | `lexforge-debug` | A test fails, a build breaks, code behaves unexpectedly | The cause named, a failing test for the bug, one edit at that point |
