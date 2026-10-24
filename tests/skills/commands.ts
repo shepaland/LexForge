@@ -9,8 +9,13 @@ import { createCapture } from "../helpers/capture.js";
 import type { SkillFile } from "../helpers/read-skills.js";
 import type { SkillFinding } from "./findings.js";
 
-/** `lexforge` followed by one or two words: a command and, when the text gives one, its subcommand. */
-const COMMAND_CALL = /(?<![\w-])lexforge[ \t]+([a-z][a-z0-9-]*)(?:[ \t]+([a-z][a-z0-9-]*))?/g;
+/**
+ * `lexforge` followed by one or two words: a command and, when the text gives one, its
+ * subcommand. The gap before the subcommand allows a newline: a markdown paragraph wraps
+ * a long call across the line, and the two words still read as one call - `lexforge task\nstart`
+ * is `lexforge task start`, not `task` alone with its subcommand dropped on the floor.
+ */
+const COMMAND_CALL = /(?<![\w-])lexforge[ \t]+([a-z][a-z0-9-]*)(?:[ \t\n]+([a-z][a-z0-9-]*))?/g;
 
 const FENCED_BLOCK = /```[\s\S]*?```/g;
 
@@ -63,14 +68,16 @@ function collectNames(command: Command): string[] {
   ]);
 }
 
-/** Fenced blocks are quoted output, so a command inside one is not a call. */
-export function namedCommands(body: string): CommandCall[] {
-  const text = body.replace(FENCED_BLOCK, "");
-
+function extractCalls(text: string): CommandCall[] {
   return [...text.matchAll(COMMAND_CALL)].map((match) => ({
     command: match[1]!,
     subcommand: match[2],
   }));
+}
+
+/** Fenced blocks are quoted output, so a command inside one is not a call. */
+export function namedCommands(body: string): CommandCall[] {
+  return extractCalls(body.replace(FENCED_BLOCK, ""));
 }
 
 /**
@@ -79,7 +86,7 @@ export function namedCommands(body: string): CommandCall[] {
  * and acts on exactly as it would the skill's own body. A directory that does
  * not exist (a fixture built from an in-memory `SkillFile`) has no companions.
  */
-function companionFiles(skillFile: string): SkillFile[] {
+function companionFiles(skillFile: string): { file: string; body: string }[] {
   const dir = path.dirname(skillFile);
   if (!existsSync(dir)) {
     return [];
@@ -89,7 +96,7 @@ function companionFiles(skillFile: string): SkillFile[] {
     .filter((entry) => entry.isFile() && entry.name !== "SKILL.md" && entry.name.endsWith(".md"))
     .map((entry) => {
       const file = path.join(dir, entry.name);
-      return { dir: path.basename(dir), file, frontmatter: {}, body: readFileSync(file, "utf8") };
+      return { file, body: readFileSync(file, "utf8") };
     });
 }
 
@@ -102,10 +109,25 @@ export function checkNamedCommands(
   const reportedUnknownCommands = new Set<string>();
   const reportedUnknownPairs = new Set<string>();
 
-  for (const source of [skill, ...companionFiles(skill.file)]) {
+  // A skill's own body quotes example output in a fenced block, so that fence is
+  // stripped before reading calls (`namedCommands`). A companion beside it - the
+  // whole prompt handed to an executor, a reviewer or a plan reviewer, such as
+  // `executor-prompt.md` or `plan-reviewer-prompt.md` - is often itself one fence
+  // from end to end: that fence is not quoted output, it is the instructions sent
+  // to the subagent, and stripping it would hide the very commands the prompt
+  // tells the subagent to run. So a companion is scanned whole, unstripped.
+  const sources: { file: string; calls: CommandCall[] }[] = [
+    { file: skill.file, calls: namedCommands(skill.body) },
+    ...companionFiles(skill.file).map((companion) => ({
+      file: companion.file,
+      calls: extractCalls(companion.body),
+    })),
+  ];
+
+  for (const source of sources) {
     const file = answerPath(source.file);
 
-    for (const call of namedCommands(source.body)) {
+    for (const call of source.calls) {
       if (!known.includes(call.command)) {
         const key = `${file}\u0000${call.command}`;
         if (reportedUnknownCommands.has(key)) continue;
