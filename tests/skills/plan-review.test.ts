@@ -25,6 +25,11 @@ function digestText(): string {
   return read("digest.md");
 }
 
+/** `digest.md` with a source line wrap collapsed to one space, for a phrase that spans a wrap. */
+function digestFlat(): string {
+  return digestText().replace(/\s+/g, " ");
+}
+
 describe("раздел «Work»: четыре угла до одобрения", () => {
   it("четыре угла названы, и их отправка в тексте стоит раньше команды одобрения", () => {
     const text = workSection();
@@ -110,7 +115,7 @@ describe("digest.md: порядок решений, углов и ссылки �
   });
 
   it("решения, меняющие видимое поведение, идут первыми внутри своего пункта", () => {
-    const text = digestText();
+    const text = digestFlat();
 
     expect(text).toMatch(/Put first the ones that change what a user, a client or another system sees/);
 
@@ -120,7 +125,7 @@ describe("digest.md: порядок решений, углов и ссылки �
   });
 
   it("вердикт каждого угла несёт число закрытых находок, а не только сам вердикт", () => {
-    const text = digestText();
+    const text = digestFlat();
 
     expect(text).toMatch(/each with its verdict and the number of findings it closed, by level/);
 
