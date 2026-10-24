@@ -54,12 +54,12 @@ export function sealForVerify(root: string, change: string): void {
 }
 
 /**
- * Commits the work a test wrote outside lexforge/ on the current branch and
+ * Commits the work a test wrote outside the change directory on the current branch and
  * moves the change branch to that commit, the way task close leaves the work:
  * the records, their reviews and the final review all name the new tip.
  */
 export function commitWork(root: string, change: string): void {
-  git(root, "add", "--all", "--", ".", ":(exclude)lexforge");
+  git(root, "add", "--all", "--", ".", `:(exclude)lexforge/changes/${change}`);
   git(root, "commit", "--allow-empty", "--message", "work of the change");
   const tip = git(root, "rev-parse", "HEAD");
   const branch = featureBranchName(change);

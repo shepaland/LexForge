@@ -53,6 +53,22 @@ describe("verify refuses a change it has no base for", { timeout: 60_000 }, () =
     expect(error.nextStep).toBe("git branch dev main, then run: lexforge verify --change demo");
   });
 
+  it("leaves an unrelated dev in place and names a step that keeps its commits", () => {
+    const root = withChecks(createMigratedChangeAllClosed());
+    const emptyTree = git(root, "hash-object", "-t", "tree", "/dev/null");
+    git(root, "branch", "--force", "dev", git(root, "commit-tree", emptyTree, "-m", "unrelated"));
+    const dev = git(root, "rev-parse", "dev");
+    const error = refusal(root);
+    expect(error.code).toBe("dev-branch-missing");
+    expect(error.nextStep).not.toContain("--force");
+    expect(error.nextStep).toBe(
+      "git checkout feature/demo && git merge --allow-unrelated-histories --no-edit dev, then run: lexforge verify --change demo",
+    );
+    git(root, "merge", "--allow-unrelated-histories", "--no-edit", "dev");
+    expect(git(root, "rev-parse", "dev")).toBe(dev);
+    expect(() => verifyChange({ cwd: root, change: CHANGE })).not.toThrow();
+  });
+
   it("refuses a migrated change without its branch before looking for a merge-base", () => {
     const root = withChecks(createMigratedChangeAllClosed());
     const merge = listTaskRecords(root, CHANGE).at(-1)!.closed!.merge;

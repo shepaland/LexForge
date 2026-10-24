@@ -160,11 +160,13 @@ describe("verifyChange: счётчики", () => {
     expect(result.data.summary).toEqual({
       openTasks: 2,
       tasksWithoutClosedRecord: 0,
+      tasksNotReviewed: 0,
       missingCommits: 0,
       requirementsWithoutTrace: 0,
       staleLabels: 1,
       openDefects: 0,
       finalReview: 0,
+      uncommittedWork: 0,
       shortPath: 0,
     });
     expect(result.data.findings).toHaveLength(3);

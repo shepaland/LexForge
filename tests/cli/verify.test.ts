@@ -113,11 +113,13 @@ interface VerifyDocument {
   summary: {
     openTasks: number;
     tasksWithoutClosedRecord: number;
+    tasksNotReviewed: number;
     missingCommits: number;
     requirementsWithoutTrace: number;
     staleLabels: number;
     openDefects: number;
     finalReview: number;
+    uncommittedWork: number;
     shortPath: number;
   };
   nextStep: string;
@@ -158,11 +160,13 @@ describe("lexforge verify", () => {
     expect(data.summary).toEqual({
       openTasks: 0,
       tasksWithoutClosedRecord: 0,
+      tasksNotReviewed: 0,
       missingCommits: 0,
       requirementsWithoutTrace: 0,
       staleLabels: 0,
       openDefects: 0,
       finalReview: 0,
+      uncommittedWork: 0,
       shortPath: 0,
     });
   });
@@ -249,11 +253,13 @@ describe("lexforge verify: четвёртое измерение — журна�
     expect(data.summary).toEqual({
       openTasks: 2,
       tasksWithoutClosedRecord: 0,
+      tasksNotReviewed: 0,
       missingCommits: 0,
       requirementsWithoutTrace: 0,
       staleLabels: 1,
       openDefects: 1,
       finalReview: 0,
+      uncommittedWork: 0,
       shortPath: 0,
     });
   });

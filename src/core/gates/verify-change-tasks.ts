@@ -1,6 +1,7 @@
 import path from "node:path";
 import { UsageError } from "../../cli/errors.js";
 import { workspacePath } from "../answer-path.js";
+import { DEFECTS_FILE } from "../defects/paths.js";
 import { featureBranchName } from "../git/feature-branch.js";
 import { tryGit } from "../git/repository.js";
 import { isAncestor } from "../git/task-worktree.js";
@@ -14,8 +15,9 @@ import {
 } from "../tasks/final-review.js";
 import { changeDir, finalReviewPath } from "../tasks/paths.js";
 import { readChangePlan } from "../tasks/plan-ready.js";
-import { amendCommand, readPlanState } from "../tasks/plan-state.js";
+import { readPlanState } from "../tasks/plan-state.js";
 import { listTaskRecords, type TaskRecord } from "../tasks/records.js";
+import { taskCommand } from "../tasks/task-guards.js";
 import { assertSpecsBeforeCode, isShortPath, shortPathProblems } from "../tasks/short-path.js";
 import { makeFinding, type Finding } from "../validation/finding.js";
 import type { PlanTask, PlanTasks } from "./task-list.js";
@@ -86,8 +88,8 @@ function recordFinding(
 /**
  * A native record closed past its review: the last review is approved, written
  * by someone other than the executor, covers the green commit and leaves no
- * critical or important finding. The same rule task close enforces; a closed
- * task takes no new review, so the way out is a new task that redoes the work.
+ * critical or important finding. The same rule task close enforces; task
+ * review takes the missing review of a closed task and clears the finding.
  */
 function reviewFinding(
   record: TaskRecord,
@@ -102,7 +104,8 @@ function reviewFinding(
     return at(
       NOT_REVIEWED,
       `Task ${record.id} is closed, and ${error.message} ` +
-        `Add a task that redoes task ${record.id} under review, then run: ${amendCommand(change)}`,
+        `Send lexforge/changes/${change}/tasks/${record.id}/review.md to a reviewer other than ${record.executor}. ` +
+        `Run: ${taskCommand("review", change, record.id)} --file <report.md>`,
     );
   }
 }
@@ -173,28 +176,61 @@ function shortPathFindings(root: string, change: string, planFile: string): Find
 }
 
 /**
- * Work outside lexforge/ that the working tree holds and the change branch
- * does not: no review saw it, and archive would commit it into dev with the
- * rest of the change.
+ * The paths LexForge commands write while a change runs, which no review has to
+ * see: the change directory (plan, records, stamps, review copies), the task
+ * worktrees under .lexforge/ and the defect ledger that defect record and
+ * defect close keep. Everything else in the tree is work.
+ */
+function commandWrittenPaths(change: string): string[] {
+  return [`:(exclude)lexforge/changes/${change}`, ":(exclude).lexforge", `:(exclude)lexforge/${DEFECTS_FILE}*`];
+}
+
+function gitLines(root: string, args: string[]): string[] {
+  const run = tryGit(root, ["-c", "core.quotepath=off", ...args]);
+  return run.ok
+    ? run.output
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line !== "")
+    : [];
+}
+
+/**
+ * Work the working tree holds and no commit does: changed against HEAD or
+ * untracked, and different from the change branch tip, so a file the change
+ * branch already holds is not listed when another branch is checked out. No
+ * review saw it, and archive would commit it into dev with the rest.
  */
 function uncommittedFindings(root: string, change: string, tip: string): Finding[] {
-  const scope = ["--", ".", ":(exclude)lexforge", ":(exclude).lexforge"];
-  const changed = tryGit(root, ["-c", "core.quotepath=off", "diff", "--name-only", tip, ...scope]);
-  const untracked = tryGit(root, ["-c", "core.quotepath=off", "ls-files", "--others", "--exclude-standard", ...scope]);
-  const files = [...new Set([changed, untracked].flatMap((run) => (run.ok ? run.output.split("\n") : [])))]
-    .map((line) => line.trim())
-    .filter((line) => line !== "");
+  const scope = ["--", ".", ...commandWrittenPaths(change)];
+  const changed = gitLines(root, ["diff", "--name-only", "HEAD", ...scope]);
+  const untracked = gitLines(root, ["ls-files", "--others", "--exclude-standard", ...scope]);
+  if (changed.length + untracked.length === 0) return [];
+  const differsFromTip = new Set(gitLines(root, ["diff", "--name-only", tip, ...scope]));
+  const files = [
+    ...changed.filter((file) => differsFromTip.has(file)),
+    ...untracked.filter((file) => !sameAsTip(root, tip, file)),
+  ];
   if (files.length === 0) return [];
   const branch = featureBranchName(change);
+  const onBranch = tryGit(root, ["branch", "--show-current"]);
+  const checkout = onBranch.ok && onBranch.output.trim() === branch ? "" : `Run git checkout ${branch}, then commit`;
   return [
     makeFinding(
-      workspacePath(root, finalReviewPath(root, change)),
+      workspacePath(root, path.join(root, files[0])),
       1,
       UNCOMMITTED,
-      `The working tree differs from ${branch} at ${tip.slice(0, 12)} outside lexforge/: ${files.join(", ")}. ` +
-        `No review saw these changes. Commit them on ${branch} or drop them, then run: ${finalPackageCommand(change)}`,
+      `The working tree holds changes no commit of ${branch} has: ${files.join(", ")}. No review saw them. ` +
+        `${checkout === "" ? "Commit" : checkout} them on ${branch} or drop them, then run: ${finalPackageCommand(change)}`,
     ),
   ];
+}
+
+/** Whether an untracked file has the same content the change branch tip holds at that path. */
+function sameAsTip(root: string, tip: string, file: string): boolean {
+  const atTip = tryGit(root, ["rev-parse", "--verify", "--quiet", `${tip}:${file}`]);
+  const here = tryGit(root, ["hash-object", "--", file]);
+  return atTip.ok && here.ok && atTip.output.trim() === here.output.trim();
 }
 
 /**

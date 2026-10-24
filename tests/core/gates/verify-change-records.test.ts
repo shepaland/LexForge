@@ -2,9 +2,11 @@ import { rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { UsageError } from "../../../src/cli/errors.js";
+import { verifyChange } from "../../../src/core/gates/verify-change.js";
 import { taskFindings } from "../../../src/core/gates/verify-change-tasks.js";
 import { registerFinalReview } from "../../../src/core/tasks/final-review.js";
 import { finalReviewPath } from "../../../src/core/tasks/paths.js";
+import { readPlanState } from "../../../src/core/tasks/plan-state.js";
 import { readTaskRecord, writeTaskRecord, type TaskRecord } from "../../../src/core/tasks/records.js";
 import { createTwoTaskChange, twoTaskSteps } from "../../helpers/final-review-fixture.js";
 import { git, writeAt, type GitWorkspace } from "../../helpers/git-workspace.js";
@@ -49,7 +51,7 @@ describe("taskFindings: the review a closed record carries", { timeout: 60_000 }
   ])("finds a closed record with %s", (_, spoil) => {
     rewriteRecord("1.2", spoil);
     expect(rules()).toEqual(["task-not-reviewed"]);
-    expect(messages()[0]).toContain("lexforge plan amend --change demo");
+    expect(messages()[0]).toContain("Run: lexforge task review --change demo --task 1.2 --file <report.md>");
   });
 
   it("lets a minor finding of an approved review through", () => {
@@ -77,9 +79,49 @@ describe("taskFindings: work the change branch lacks", { timeout: 60_000 }, () =
     expect(rules()).toEqual(["uncommitted-work"]);
   });
 
-  it("leaves files under lexforge/ to the change itself", () => {
+  it("leaves the directory of the change to the change itself", () => {
     writeAt(root, "lexforge/changes/demo/notes.md", "draft\n");
     expect(rules()).toEqual([]);
+  });
+
+  it("leaves the defect ledger that defect record writes", () => {
+    writeAt(root, "lexforge/defects.json", "[]\n");
+    expect(rules()).toEqual([]);
+  });
+
+  it("finds an untracked main spec", () => {
+    writeAt(root, "lexforge/specs/billing/spec.md", "# billing\n");
+    expect(rules()).toEqual(["uncommitted-work"]);
+    expect(messages()[0]).toContain("lexforge/specs/billing/spec.md");
+  });
+
+  it("finds an edit of lexforge/config.yaml", () => {
+    writeAt(root, "lexforge/config.yaml", "schema: spec-driven\nverification:\n  tests: node -e \"\"\n");
+    expect(rules()).toEqual(["uncommitted-work"]);
+    expect(messages()[0]).toContain("lexforge/config.yaml");
+  });
+
+  it("finds a file under another change", () => {
+    writeAt(root, "lexforge/changes/other/proposal.md", "## Why\n");
+    expect(rules()).toEqual(["uncommitted-work"]);
+  });
+});
+
+describe("taskFindings: a working tree on another branch", { timeout: 60_000 }, () => {
+  beforeEach(() => {
+    git(root, "checkout", "--quiet", "-b", "other", readPlanState(root, CHANGE).approval!.base);
+  });
+
+  it("does not list files the change branch already holds", () => {
+    expect(rules()).toEqual([]);
+  });
+
+  it("names checking out the change branch for work left in the tree", () => {
+    writeAt(root, "src/extra.js", "export const extra = 1;\n");
+    expect(rules()).toEqual(["uncommitted-work"]);
+    expect(messages()[0]).toContain("src/extra.js");
+    expect(messages()[0]).not.toContain("src/rank.js");
+    expect(messages()[0]).toContain("git checkout feature/demo");
   });
 });
 
@@ -122,6 +164,19 @@ describe("taskFindings: each finding names its way out", { timeout: 60_000 }, ()
     expect(refusal).toMatchObject({
       code: "change-branch-missing",
       nextStep: `git branch feature/demo ${merge}, then run: lexforge verify --change demo`,
+    });
+  });
+});
+
+describe("verify: the summary counts each finding under its own key", { timeout: 60_000 }, () => {
+  it("counts an unreviewed task and uncommitted work apart from closed records and the final review", () => {
+    writeAt(root, "lexforge/config.yaml", 'schema: spec-driven\nverification:\n  tests: node -e ""\nengineering:\n  stacks: []\n');
+    rewriteRecord("1.2", (r) => ({ ...r, reviews: [] }));
+    expect(verifyChange({ cwd: root, change: CHANGE }).data.summary).toMatchObject({
+      tasksNotReviewed: 1,
+      uncommittedWork: 1,
+      tasksWithoutClosedRecord: 0,
+      finalReview: 0,
     });
   });
 });

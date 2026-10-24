@@ -4,8 +4,9 @@ import { UsageError } from "../../cli/errors.js";
 import { withChangeLock } from "./lock.js";
 import { taskReviewCopyPath } from "./paths.js";
 import { findPlanTask } from "./plan-ready.js";
-import { clearsAngle } from "./plan-state.js";
-import { writeTaskRecord, type Finding } from "./records.js";
+import { assertReviewed } from "./close.js";
+import { amendCommand, clearsAngle } from "./plan-state.js";
+import { readTaskRecord, writeTaskRecord, type Finding, type TaskRecord } from "./records.js";
 import { parseReviewReport, type ReviewReport } from "./review-report.js";
 import { requireInProgress, taskCommand } from "./task-guards.js";
 
@@ -40,13 +41,47 @@ function readReport(file: string, change: string, taskId: string): ReviewReport 
   }
 }
 
+/** Whether a closed native record lacks the approved review task close requires of its green commit. */
+function closedWithoutReview(record: TaskRecord | null, change: string): record is TaskRecord {
+  if (record === null || record.closed === null || record.origin === "historical") return false;
+  try {
+    assertReviewed(record, change, record.green?.commit ?? "");
+    return false;
+  } catch (error) {
+    if (error instanceof UsageError) return true;
+    throw error;
+  }
+}
+
+/**
+ * The record a review is registered on: a task in progress, or a closed task
+ * whose record carries no approved review of its green commit, which verify
+ * finds and only a review can clear. A closed task already reviewed is refused.
+ */
+function reviewableRecord(root: string, change: string, taskId: string): { record: TaskRecord; closed: boolean } {
+  const record = readTaskRecord(root, change, taskId);
+  if (closedWithoutReview(record, change)) return { record, closed: true };
+  return { record: requireInProgress(root, change, taskId), closed: false };
+}
+
+function nextAfterReview(report: ReviewReport, change: string, taskId: string, closed: boolean): string {
+  if (closed) {
+    return clearsAngle(report)
+      ? `lexforge verify --change ${change}`
+      : `add a task that fixes the findings of task ${taskId}, then run: ${amendCommand(change)}`;
+  }
+  return clearsAngle(report)
+    ? taskCommand("close", change, taskId)
+    : `fix the findings in the worktree, commit, run: ${taskCommand("green", change, taskId)}`;
+}
+
 /** Registers a reviewer's report against the current green commit of a task. */
 export function registerTaskReview(root: string, change: string, taskId: string, file: string): TaskReviewResult {
   const task = findPlanTask(root, change, taskId);
   const reportFile = path.resolve(file);
   const report = readReport(reportFile, change, taskId);
   return withChangeLock(root, change, "task review", () => {
-    const record = requireInProgress(root, change, taskId);
+    const { record, closed } = reviewableRecord(root, change, taskId);
     if (record.green === null) {
       throw new UsageError("green-missing", `task ${taskId} has no green run to review.`, taskCommand("green", change, taskId));
     }
@@ -82,9 +117,6 @@ export function registerTaskReview(root: string, change: string, taskId: string,
         },
       ],
     });
-    const nextStep = clearsAngle(report)
-      ? taskCommand("close", change, taskId)
-      : `fix the findings in the worktree, commit, run: ${taskCommand("green", change, taskId)}`;
-    return { verdict: report.verdict, findings: report.findings, nextStep };
+    return { verdict: report.verdict, findings: report.findings, nextStep: nextAfterReview(report, change, taskId, closed) };
   });
 }

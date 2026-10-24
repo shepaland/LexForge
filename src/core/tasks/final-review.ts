@@ -118,7 +118,7 @@ export function finalReviewBase(root: string, change: string, rerun: string): st
       throw new UsageError(
         "dev-branch-missing",
         `change "${change}" was migrated from 5.x, and ${featureBranchName(change)} shares no history with ${DEV}.`,
-        `git branch --force ${DEV} main, then run: ${rerun}`,
+        `git checkout ${featureBranchName(change)} && git merge --allow-unrelated-histories --no-edit ${DEV}, then run: ${rerun}`,
       );
     }
     return base.output.trim();

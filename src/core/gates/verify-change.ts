@@ -51,13 +51,14 @@ export const NOT_CHECKED = [
  */
 export const CHECKED_DIMENSIONS = [
   "every checkbox in tasks.md is ticked",
-  "every ticked task has a closed task record with an approved review of its green commit",
+  "every ticked task has a closed task record",
+  "every closed task record carries an approved review of its green commit",
   "every commit a task record names is in the history of the change branch",
   "every delta-spec requirement has a trace in the code",
   "every label described in verification carries a fresh stamp",
   "no critical or important defect naming this change is open",
   "a change on the short path still fits it, and its delta passes validate --strict",
-  "the working tree holds no change outside lexforge/ that the change branch lacks",
+  "the working tree holds no uncommitted change outside the change directory, the task worktrees and the defect ledger",
   "an approved final review covers the tip of the change branch",
 ];
 
@@ -70,11 +71,13 @@ export interface VerifyChangeOptions {
 export interface VerifyChangeSummary {
   openTasks: number;
   tasksWithoutClosedRecord: number;
+  tasksNotReviewed: number;
   missingCommits: number;
   requirementsWithoutTrace: number;
   staleLabels: number;
   openDefects: number;
   finalReview: number;
+  uncommittedWork: number;
   shortPath: number;
 }
 
@@ -307,12 +310,14 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
 
   return {
     openTasks: count("task-not-done"),
-    tasksWithoutClosedRecord: count(TICKED_WITHOUT_RECORD) + count(RECORD_NOT_CLOSED) + count(NOT_REVIEWED),
+    tasksWithoutClosedRecord: count(TICKED_WITHOUT_RECORD) + count(RECORD_NOT_CLOSED),
+    tasksNotReviewed: count(NOT_REVIEWED),
     missingCommits: count(COMMIT_MISSING),
     requirementsWithoutTrace: count("requirement-without-trace"),
     staleLabels: count("evidence-not-fresh"),
     openDefects: count(DEFECT_OPEN_RULE),
-    finalReview: count(FINAL_MISSING) + count(FINAL_STALE) + count(FINAL_OPEN) + count(UNCOMMITTED),
+    finalReview: count(FINAL_MISSING) + count(FINAL_STALE) + count(FINAL_OPEN),
+    uncommittedWork: count(UNCOMMITTED),
     shortPath: count(SHORT_PATH_OUTGROWN) + count(SPECS_BEFORE_CODE),
   };
 }
