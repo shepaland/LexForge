@@ -61,20 +61,64 @@ export function finalReviewClears(review: FinalReview): boolean {
   return clearsAngle(review);
 }
 
+/** The command that writes the final review package; with `--file` it registers the report instead. */
+export function finalPackageCommand(change: string): string {
+  return `lexforge review final --change ${change}`;
+}
+
+/**
+ * The commit a missing change branch is put back on: the last merge a task
+ * close made into it, else the approval base, else the base of the first task
+ * record, else HEAD. A branch recreated anywhere older would drop the merges
+ * the task records name.
+ */
+function lastKnownTip(root: string, change: string): string {
+  const records = listTaskRecords(root, change);
+  const merges = records
+    .flatMap((record) => (record.closed === null || record.closed.merge === "" ? [] : [record.closed]))
+    .sort((a, b) => a.at.localeCompare(b.at));
+  const last = merges.at(-1)?.merge;
+  if (last !== undefined) return last;
+  const approval = readPlanState(root, change).approval;
+  if (approval !== null && approval.base !== "") return approval.base;
+  return records[0]?.base || readGit(root, ["rev-parse", "HEAD"]);
+}
+
+/** The tip of `feature/<change>`; a missing branch is refused with the commit to put it back on. */
+export function changeBranchTip(root: string, change: string, rerun: string): string {
+  const branch = featureBranchName(change);
+  const tip = tryGit(root, ["rev-parse", "--verify", "--quiet", `${branch}^{commit}`]);
+  if (tip.ok) return tip.output.trim();
+  throw new UsageError(
+    "change-branch-missing",
+    `change "${change}" has no branch ${branch}, so its work has nothing to be compared with.`,
+    `git branch ${branch} ${lastKnownTip(root, change)}, then run: ${rerun}`,
+  );
+}
+
 /**
  * The commit the final review compares the change branch with: the merge-base
  * with dev for a change migrated from 5.x, the approval base otherwise, and on
- * the short path without an approval the base of the one task record.
+ * the short path without an approval the base of the one task record. `rerun`
+ * is the command that asked, named again in the step out of a refusal.
  */
-export function finalReviewBase(root: string, change: string): string {
+export function finalReviewBase(root: string, change: string, rerun: string): string {
   const state = readPlanState(root, change);
   if (state.migratedFrom === "5.x") {
+    changeBranchTip(root, change, rerun);
+    if (!tryGit(root, ["rev-parse", "--verify", "--quiet", `${DEV}^{commit}`]).ok) {
+      throw new UsageError(
+        "dev-branch-missing",
+        `change "${change}" was migrated from 5.x and is compared with its merge-base with ${DEV}, and there is no ${DEV} branch.`,
+        `git branch ${DEV} main, then run: ${rerun}`,
+      );
+    }
     const base = tryGit(root, ["merge-base", DEV, featureBranchName(change)]);
     if (!base.ok) {
       throw new UsageError(
         "dev-branch-missing",
-        `change "${change}" was migrated from 5.x, and ${featureBranchName(change)} has no merge-base with ${DEV}.`,
-        `git branch ${DEV} main, then run: lexforge review final --change ${change}`,
+        `change "${change}" was migrated from 5.x, and ${featureBranchName(change)} shares no history with ${DEV}.`,
+        `git branch --force ${DEV} main, then run: ${rerun}`,
       );
     }
     return base.output.trim();
@@ -83,10 +127,15 @@ export function finalReviewBase(root: string, change: string): string {
   if (isShortPath(root, change)) {
     const record = listTaskRecords(root, change)[0];
     if (record !== undefined) return record.base;
+    throw new UsageError(
+      "short-path-not-started",
+      `change "${change}" runs on the short path and its task has not started, so there is no base to compare ${featureBranchName(change)} with.`,
+      startNextStep(root, change),
+    );
   }
   throw new UsageError(
     "plan-not-approved",
-    `change "${change}" has no approved plan, so the final review has no base to compare with.`,
+    `change "${change}" has no approved plan, so there is no base to compare ${featureBranchName(change)} with.`,
     `lexforge plan approve --change ${change} --quote "<owner's words>"`,
   );
 }
@@ -141,13 +190,13 @@ const REPORT_FORMAT = [
 /** Writes `final-review.md`: the base, the tip, the tasks with their executors and the whole diff. */
 export function writeFinalPackage(root: string, change: string): string {
   assertAllClosed(root, change);
-  const base = finalReviewBase(root, change);
+  const head = changeBranchTip(root, change, finalPackageCommand(change));
+  const base = finalReviewBase(root, change, finalPackageCommand(change));
   const branch = featureBranchName(change);
-  const head = readGit(root, ["rev-parse", branch]);
   const records = new Map(listTaskRecords(root, change).map((record) => [record.id, record]));
   const tasks = readChangePlan(root, change)
     .tasks.filter((task) => task.number !== "")
-    .map((task) => `- ${task.number} ${task.firstLine} (executor: ${records.get(task.number)?.executor ?? "none"})`);
+    .map((task) => `- ${task.number} ${task.firstLine} (executor: ${records.get(task.number)?.executor || "none"})`);
   const parts = [
     `# Final review of change ${change}`,
     `Base ${base}, tip of ${branch} ${head}.`,
@@ -203,11 +252,12 @@ export function registerFinalReview(root: string, change: string, file: string):
         `send lexforge/changes/${change}/final-review.md to another reviewer, then run: ${finalReviewCommand(change)}`,
       );
     }
+    const head = changeBranchTip(root, change, finalReviewCommand(change));
     const review: FinalReview = {
       reviewer,
       verdict: report.verdict,
-      head: readGit(root, ["rev-parse", featureBranchName(change)]),
-      base: finalReviewBase(root, change),
+      head,
+      base: finalReviewBase(root, change, finalReviewCommand(change)),
       findings: report.findings,
       at: new Date().toISOString(),
     };

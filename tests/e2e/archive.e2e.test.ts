@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 import { runCli } from "../helpers/run-cli.js";
-import { sealForVerify } from "../helpers/verify-seal.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -220,6 +220,7 @@ async function project(extra: Record<string, string> = {}): Promise<string> {
   for (const [file, content] of Object.entries(WORK)) {
     writeAt(made.root, file, content);
   }
+  commitWork(made.root, CHANGE);
 
   const recorded = await runCli(
     ["evidence", "record", "--change", CHANGE, "--label", "tests"],

@@ -113,8 +113,10 @@ describe("lexforge archive on a feature branch", () => {
 describe("lexforge archive outside a feature branch", () => {
   it("archives without a merge and says the merge was skipped", async () => {
     const root = await featureWorkspace();
+    // main carries the reviewed work of the change, so only the branch differs.
     git(root, "stash", "--include-untracked");
     git(root, "checkout", "main");
+    git(root, "merge", "--ff-only", `feature/${CHANGE}`);
     git(root, "stash", "pop");
 
     const { exitCode, capture } = await call(["archive", CHANGE, "--json"], root);

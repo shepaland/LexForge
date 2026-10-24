@@ -8,7 +8,7 @@ import {
   writeAt,
   type GitWorkspace,
 } from "../helpers/git-workspace.js";
-import { sealForVerify } from "../helpers/verify-seal.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -126,6 +126,7 @@ interface VerifyDocument {
 /** The work of the change: a line the base commit does not carry. */
 function editApp(root: string): void {
   writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
+  commitWork(root, CHANGE);
 }
 
 describe("lexforge verify", () => {

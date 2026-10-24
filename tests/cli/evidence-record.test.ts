@@ -9,7 +9,7 @@ import {
   writeAt,
   type GitWorkspace,
 } from "../helpers/git-workspace.js";
-import { sealForVerify } from "../helpers/verify-seal.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -222,6 +222,7 @@ describe("lexforge evidence record: verify без штампа метки", () =
   it("change без штампа метки даёт evidence-not-fresh", async () => {
     const root = verifiableWorkspace().root;
     writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
+    commitWork(root, CHANGE);
 
     const verify = await call(["verify", "--change", CHANGE, "--json"], root);
     const data = JSON.parse(verify.capture.out) as { findings: { rule: string }[] };

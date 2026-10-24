@@ -1,7 +1,7 @@
 import { rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { git } from "../helpers/git-workspace.js";
+import { git, writeAt } from "../helpers/git-workspace.js";
 import { call, CHANGE, changeFiles, CLOSED_PLAN, created, editApp, OPEN_PLAN, workspace } from "./archive-fixtures.js";
 
 afterEach(() => {
@@ -44,7 +44,7 @@ describe("lexforge verify over task records", () => {
   it("reports a commit on the change branch after the final review", async () => {
     const root = workspace(changeFiles(CLOSED_PLAN)).root;
     git(root, "checkout", `feature/${CHANGE}`);
-    editApp(root);
+    writeAt(root, "src/app.ts", 'export function app(): string {\n  return "late";\n}\n');
     git(root, "add", "src/app.ts");
     git(root, "commit", "--message", "late work");
 

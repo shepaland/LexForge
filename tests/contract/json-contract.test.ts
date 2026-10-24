@@ -15,7 +15,7 @@ import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 import { removeWorkspace } from "../helpers/workspace.js";
-import { sealForVerify } from "../helpers/verify-seal.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 
 const created: string[] = [];
 
@@ -276,6 +276,7 @@ async function archivableProject(): Promise<string> {
   repositories.push(made);
 
   writeAt(made.root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
+  commitWork(made.root, "add-auth");
   // Task 1.1 is ticked and names `src/app.ts`: the fifth measure of `verify`
   // needs a red record for it, written through the CLI's own writer.
   await call(

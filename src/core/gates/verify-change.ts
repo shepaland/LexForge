@@ -21,10 +21,14 @@ import {
   FINAL_MISSING,
   FINAL_OPEN,
   FINAL_STALE,
+  NOT_REVIEWED,
   RECORD_NOT_CLOSED,
   SHORT_PATH_OUTGROWN,
+  SPECS_BEFORE_CODE,
   TICKED_WITHOUT_RECORD,
+  UNCOMMITTED,
   taskFindings,
+  withHistoricalFiles,
 } from "./verify-change-tasks.js";
 
 /**
@@ -47,11 +51,13 @@ export const NOT_CHECKED = [
  */
 export const CHECKED_DIMENSIONS = [
   "every checkbox in tasks.md is ticked",
-  "every ticked task has a closed task record",
+  "every ticked task has a closed task record with an approved review of its green commit",
   "every commit a task record names is in the history of the change branch",
   "every delta-spec requirement has a trace in the code",
   "every label described in verification carries a fresh stamp",
   "no critical or important defect naming this change is open",
+  "a change on the short path still fits it, and its delta passes validate --strict",
+  "the working tree holds no change outside lexforge/ that the change branch lacks",
   "an approved final review covers the tip of the change branch",
 ];
 
@@ -106,13 +112,13 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
   assertRepository(root);
   // A change below workflow version 3 is refused with the migrate command.
   readWorkflowFile(root, options.change);
-  const base = finalReviewBase(root, options.change);
+  const base = finalReviewBase(root, options.change, `lexforge verify --change ${options.change}`);
   const changed = changedFiles(root, base);
 
   const findings = [
     ...openTaskFindings(plan),
     ...taskFindings(root, options.change),
-    ...traceFindings(plan, readDeltaSpecs(root, options.change), changed),
+    ...traceFindings(withHistoricalFiles(root, options.change, plan), readDeltaSpecs(root, options.change), changed),
     ...evidenceFindings(root, options.change, labels),
     ...defectFindings(root, options.change),
   ];
@@ -301,13 +307,13 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
 
   return {
     openTasks: count("task-not-done"),
-    tasksWithoutClosedRecord: count(TICKED_WITHOUT_RECORD) + count(RECORD_NOT_CLOSED),
+    tasksWithoutClosedRecord: count(TICKED_WITHOUT_RECORD) + count(RECORD_NOT_CLOSED) + count(NOT_REVIEWED),
     missingCommits: count(COMMIT_MISSING),
     requirementsWithoutTrace: count("requirement-without-trace"),
     staleLabels: count("evidence-not-fresh"),
     openDefects: count(DEFECT_OPEN_RULE),
-    finalReview: count(FINAL_MISSING) + count(FINAL_STALE) + count(FINAL_OPEN),
-    shortPath: count(SHORT_PATH_OUTGROWN),
+    finalReview: count(FINAL_MISSING) + count(FINAL_STALE) + count(FINAL_OPEN) + count(UNCOMMITTED),
+    shortPath: count(SHORT_PATH_OUTGROWN) + count(SPECS_BEFORE_CODE),
   };
 }
 

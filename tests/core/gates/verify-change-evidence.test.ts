@@ -7,6 +7,7 @@ import { UsageError } from "../../../src/cli/errors.js";
 import { recordEvidence } from "../../../src/core/gates/evidence-record.js";
 import { verifyChange } from "../../../src/core/gates/verify-change.js";
 import { writeAt } from "../../helpers/git-workspace.js";
+import { commitWork } from "../../helpers/verify-seal.js";
 import { CHANGE, created, SILENT, workspace } from "./verify-change-fixtures.js";
 
 afterEach(() => {
@@ -18,6 +19,7 @@ afterEach(() => {
 /** The work of the change: a line the base commit does not carry. */
 function editApp(root: string): void {
   writeAt(root, "src/app.ts", "export function app(): string {\n  return \"hashed\";\n}\n");
+  commitWork(root, CHANGE);
 }
 
 /** Every task closed, the requirement named, the file it names edited. */

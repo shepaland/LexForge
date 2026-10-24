@@ -7,7 +7,7 @@ import { archiveChange } from "../../../src/core/archive/archive-change.js";
 import { recordEvidence } from "../../../src/core/gates/evidence-record.js";
 import { createCapture } from "../../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../../helpers/git-workspace.js";
-import { sealForVerify } from "../../helpers/verify-seal.js";
+import { commitWork, sealForVerify } from "../../helpers/verify-seal.js";
 
 const CONFIG = `schema: spec-driven
 verification:
@@ -90,6 +90,7 @@ async function project(change: string, names: string[]): Promise<void> {
   root = ws.root;
   sealForVerify(root, change);
   writeAt(root, "src/app.ts", "export function app(): string {\n  return \"no export\";\n}\n");
+  commitWork(root, change);
   const capture = createCapture();
   await recordEvidence({ cwd: root, change, label: "tests", stdout: capture.stdout, stderr: capture.stderr });
 }

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { readFinalReviews } from "../../src/core/tasks/final-review.js";
+import { readPlanState, writePlanState } from "../../src/core/tasks/plan-state.js";
+import { readTaskRecord } from "../../src/core/tasks/records.js";
 import { git, type GitWorkspace } from "../helpers/git-workspace.js";
 import {
   createMigratedChangeAllClosed,
@@ -81,6 +83,16 @@ describe("lexforge review final", { timeout: 30_000 }, () => {
     expect((await close("1.2")).json.data.nextStep).toBe(
       "send lexforge/changes/demo/final-review.md to a reviewer, then run: lexforge review final --change demo --file <report.md>",
     );
+  });
+
+  it("task close of the last task stays done when the package cannot be written", async () => {
+    await lastTaskApproved();
+    writePlanState(root, CHANGE, { ...readPlanState(root, CHANGE), migratedFrom: "5.x" });
+    git(root, "branch", "-D", "dev");
+    const result = await close("1.2");
+    expect(result.exitCode).toBe(0);
+    expect(result.json.data.nextStep).toBe("git branch dev main, then run: lexforge review final --change demo");
+    expect(readTaskRecord(root, CHANGE, "1.2")?.closed).not.toBeNull();
   });
 
   it("without --file writes the package of a migrated change against its merge-base with dev", async () => {

@@ -6,7 +6,7 @@ import {
   type GitWorkspace,
 } from "../helpers/git-workspace.js";
 import { runCli } from "../helpers/run-cli.js";
-import { sealForVerify } from "../helpers/verify-seal.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -96,6 +96,7 @@ describe("машинный вывод ворот", () => {
   it("verify --json кладёт на стандартный вывод один документ, строки для человека — в stderr", async () => {
     const root = project().root;
     writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
+    commitWork(root, CHANGE);
     await runCli(["evidence", "record", "--change", CHANGE, "--label", "tests"], { cwd: root });
 
     const result = await runCli(["verify", "--change", CHANGE, "--json"], { cwd: root });

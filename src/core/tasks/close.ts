@@ -141,7 +141,7 @@ function assertHistory(task: PlanTask, record: TaskRecord, change: string, tip: 
 }
 
 /** The latest review approves the current green, comes from someone else and leaves nothing above minor open. */
-function assertReviewed(record: TaskRecord, change: string, tip: string): void {
+export function assertReviewed(record: TaskRecord, change: string, tip: string): void {
   const id = record.id;
   if (record.green === null || record.green.commit !== tip) {
     throw new UsageError(
@@ -182,6 +182,21 @@ function defectSteps(record: TaskRecord, change: string, next: string): string {
   return [...steps, next].join(", then run: ");
 }
 
+/**
+ * Writes the final review package once the last task is closed. The task is
+ * merged and ticked by then, so a package that cannot be written does not undo
+ * the close: its refusal becomes the next step, which reruns the package.
+ */
+function finalPackageAfterClose(root: string, change: string): string {
+  try {
+    writeFinalPackage(root, change);
+    return finalPackageStep(change);
+  } catch (error) {
+    if (error instanceof UsageError && error.nextStep !== "") return error.nextStep;
+    throw error;
+  }
+}
+
 /** Checks the task in git, merges it into the change branch, ticks it and removes its worktree. */
 export function closeTask(root: string, change: string, taskId: string): CloseResult {
   return withChangeLock(root, change, "task close", () => {
@@ -211,10 +226,7 @@ export function closeTask(root: string, change: string, taskId: string): CloseRe
     const states = [...taskReadiness(root, change).values()];
     const closed = states.filter((state) => state === "closed").length;
     let next = startNextStep(root, change);
-    if (closed === states.length) {
-      writeFinalPackage(root, change);
-      next = finalPackageStep(change);
-    }
+    if (closed === states.length) next = finalPackageAfterClose(root, change);
     return { merge: merged.commit, progress: { closed, total: states.length }, nextStep: defectSteps(record, change, next) };
   });
 }

@@ -89,8 +89,9 @@ describe("taskFindings", { timeout: 60_000 }, () => {
 
   it("finds a short-path change that outgrew the short path after its red", () => {
     writeWorkflowFile(root, CHANGE, { version: 3, schema: "spec-driven", schemaVersion: 1, path: "short" });
-    expect(taskFindings(root, "demo").map((f) => [f.file, f.rule])).toEqual([
-      ["lexforge/changes/demo/tasks.md", "short-path-not-eligible"],
+    expect(taskFindings(root, "demo").map((f) => [f.file, f.rule])).toContainEqual([
+      "lexforge/changes/demo/tasks.md",
+      "short-path-not-eligible",
     ]);
   });
 

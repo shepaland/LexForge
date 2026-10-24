@@ -1,5 +1,5 @@
 import { run } from "../../src/cli/run.js";
-import { sealForVerify } from "../helpers/verify-seal.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 import { createCapture } from "../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 
@@ -78,6 +78,7 @@ export async function call(argv: string[], cwd: string) {
 /** The work of the change: a line the base commit does not carry. */
 export function editApp(root: string): void {
   writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
+  commitWork(root, CHANGE);
 }
 
 /** Local date of the run, the form the archive directory is named with. */
