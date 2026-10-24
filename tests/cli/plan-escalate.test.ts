@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { readTaskRecord, writeTaskRecord } from "../../src/core/tasks/records.js";
 import { computeProgress } from "../../src/core/tasks/progress.js";
 import { readWorkflowFile } from "../../src/core/tasks/workflow-file.js";
 import type { GitWorkspace } from "../helpers/git-workspace.js";
 import { allFourApproved, approveCall, cli } from "../helpers/plan-fixture.js";
 import { createShortWorkspace, spoil } from "../helpers/short-workspace.js";
-import { CHANGE, taskSteps } from "../helpers/task-workspace.js";
+import { CHANGE, commitOnChangeBranch, taskSteps } from "../helpers/task-workspace.js";
 
 let ws: GitWorkspace;
 let root: string;
@@ -65,9 +66,33 @@ describe("lexforge plan escalate", { timeout: 30_000 }, () => {
   it("plan approve still refuses work that no closed task brought", async () => {
     await escalate();
     await allFourApproved(root);
-    const { commitOnChangeBranch } = await import("../helpers/task-workspace.js");
     commitOnChangeBranch(root, { "src/stray.js": "export {}\n" });
     const result = await approveCall(root);
     expect(result.json.error?.code).toBe("work-before-approval");
+  });
+
+  it("plan approve refuses a stray commit made on the change branch before a task closed", async () => {
+    await steps.approvedReview("1.1");
+    commitOnChangeBranch(root, { "src/stray.js": "export {}\n" });
+    expect((await steps.close("1.1")).exitCode).toBe(0);
+    spoil.addSecondTask(ws);
+    await escalate();
+    await allFourApproved(root);
+    const result = await approveCall(root);
+    expect(result.json.error).toMatchObject({ code: "work-before-approval", message: expect.stringContaining("src/stray.js") });
+  });
+
+  it("plan approve refuses a recorded merge that is missing from the repository", async () => {
+    await steps.approvedReview("1.1");
+    await steps.close("1.1");
+    spoil.addSecondTask(ws);
+    await escalate();
+    await allFourApproved(root);
+    const record = readTaskRecord(root, CHANGE, "1.1")!;
+    writeTaskRecord(root, CHANGE, { ...record, closed: { ...record.closed!, merge: "0".repeat(40) } });
+    const result = await approveCall(root);
+    expect(result.exitCode).toBe(2);
+    expect(result.json.error?.code).toBe("task-merge-missing");
+    expect(result.json.nextStep).toBe("lexforge status --change demo");
   });
 });

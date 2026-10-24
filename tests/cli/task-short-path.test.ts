@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { readTaskRecord } from "../../src/core/tasks/records.js";
 import type { GitWorkspace } from "../helpers/git-workspace.js";
 import { createShortWorkspace, spoil } from "../helpers/short-workspace.js";
-import { commitIn, FAILING_TEST, taskSteps } from "../helpers/task-workspace.js";
+import { CHANGE, commitIn, createTaskWorkspace, FAILING_TEST, taskSteps } from "../helpers/task-workspace.js";
 
 let ws: GitWorkspace;
 let steps: ReturnType<typeof taskSteps>;
@@ -58,12 +59,12 @@ describe("the short path in task commands", { timeout: 20_000 }, () => {
   });
 
   it("a full-path change is not asked for the delta at red", async () => {
-    // The task workspace has no workflow.json short flag, so it stays on the full path.
-    const { createTaskWorkspace } = await import("../helpers/task-workspace.js");
+    // The task workspace has no workflow.json, so it stays on the full path.
     const full = createTaskWorkspace();
     try {
       const fullSteps = taskSteps(full.root);
       await fullSteps.redDone("1.1");
+      expect(readTaskRecord(full.root, CHANGE, "1.1")?.red).not.toBeNull();
     } finally {
       full.remove();
     }

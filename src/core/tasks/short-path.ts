@@ -80,7 +80,7 @@ export function assertSpecsBeforeCode(root: string, change: string): void {
   if (validateChange({ cwd: root, change, strict: true }).exitCode !== 0) {
     throw new UsageError(
       "specs-before-code",
-      `the delta specs of change "${change}" have findings under the strict validation, so no red run is taken before they pass.`,
+      `the validation of change "${change}" has findings under --strict, so no red run is taken before they pass.`,
       `lexforge validate ${change} --strict`,
     );
   }

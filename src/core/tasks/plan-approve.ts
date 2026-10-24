@@ -5,7 +5,6 @@ import { readGit, tryGit } from "../git/repository.js";
 import { currentBranch } from "../git/task-worktree.js";
 import { validateChange } from "../validation/validate-change.js";
 import { withChangeLock } from "./lock.js";
-import { listTaskRecords } from "./records.js";
 import { changeDir } from "./paths.js";
 import { missingAngles, openFindingAngles } from "./plan-review.js";
 import { startNextStep } from "./plan-ready.js";
@@ -17,6 +16,7 @@ import {
   reviewCommand,
   writePlanState,
 } from "./plan-state.js";
+import { listTaskRecords } from "./records.js";
 
 export interface PlanApproveResult {
   digest: string;
@@ -48,6 +48,29 @@ function dirtyOutside(root: string, change: string): string[] {
   return paths;
 }
 
+/**
+ * The commits a closed task brought in: its merge, and the commits of its branch that the change branch
+ * did not hold. Anything else the merge reaches was on the change branch before and stays in the range.
+ */
+function closedTaskCommits(root: string, change: string): string[] {
+  const commits: string[] = [];
+  for (const record of listTaskRecords(root, change)) {
+    const merge = record.closed?.merge;
+    if (merge === undefined) continue;
+    if (!tryGit(root, ["cat-file", "-e", `${merge}^{commit}`]).ok) {
+      throw new UsageError(
+        "task-merge-missing",
+        `task ${record.id} is closed with the merge ${merge.slice(0, 12)}, and the repository holds no such commit.`,
+        `lexforge status --change ${change}`,
+      );
+    }
+    commits.push(merge);
+    const own = tryGit(root, ["rev-list", `${merge}^2`, "--not", `${merge}^1`]);
+    if (own.ok) commits.push(...own.output.split("\n").filter((line) => line !== ""));
+  }
+  return commits;
+}
+
 /** Files of commits since `dev` that touch anything outside the change directory. */
 function committedOutside(root: string, change: string): string[] {
   if (!tryGit(root, ["show-ref", "--verify", "--quiet", `refs/heads/${DEV}`]).ok) {
@@ -57,14 +80,17 @@ function committedOutside(root: string, change: string): string[] {
       `git branch ${DEV} main`,
     );
   }
-  // A closed task brought its commits in through its merge; they and the merge are not early work.
-  const merges = listTaskRecords(root, change)
-    .map((record) => record.closed?.merge)
-    .filter((merge): merge is string => merge !== undefined && tryGit(root, ["cat-file", "-e", `${merge}^{commit}`]).ok);
-  const raw = readGit(root, [
-    "log", `${DEV}..HEAD`, ...(merges.length > 0 ? ["--not", ...merges] : []), "--name-only", "--format=", "--", ".", `:(exclude)${changeDir(change)}`,
-  ]);
-  return [...new Set(raw.split("\n").filter((line) => line !== ""))].sort();
+  // Excluding a merge with `--not` would hide everything it reaches, so the commits are listed and filtered.
+  const own = new Set(closedTaskCommits(root, change));
+  const range = readGit(root, ["rev-list", `${DEV}..HEAD`]).split("\n").filter((id) => id !== "" && !own.has(id));
+  const files = new Set<string>();
+  for (const id of range) {
+    const raw = readGit(root, [
+      "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", id, "--", ".", `:(exclude)${changeDir(change)}`,
+    ]);
+    for (const line of raw.split("\n")) if (line !== "") files.add(line);
+  }
+  return [...files].sort();
 }
 
 export function approvePlan(root: string, change: string, quote: string | undefined): PlanApproveResult {
