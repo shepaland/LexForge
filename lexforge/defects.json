@@ -1742,6 +1742,16 @@
       "summary": "The changes-requested case of a closed task does not assert that the report was written into the record; the sibling cases cover each half separately",
       "state": "open",
       "recordedAt": "2026-10-24T17:43:47.898Z"
+    },
+    {
+      "id": "febc77e5",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/short-path.test.ts",
+      "line": 61,
+      "summary": "The short-path copy of the verify-reads-task-records test asserts only that three identifiers occur, so an inverted rewrite of the exit-0 bullet still passes; verify-skill.test.ts already pins the full rule",
+      "state": "open",
+      "recordedAt": "2026-10-24T19:30:05.975Z"
     }
   ]
 }
