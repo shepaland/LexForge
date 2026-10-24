@@ -10,7 +10,7 @@ import { createCapture } from "../helpers/capture.js";
 import { writeInstallation } from "../helpers/install-skills.js";
 import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 
-// Matched line by line by `cycle run --phase red`.
+// The newlines put the message on a line of its own, so a red run is matched by that line whole.
 const EXPECTED = "\n`status --json` exits `0` on the outdated installation\n";
 
 const created: string[] = [];

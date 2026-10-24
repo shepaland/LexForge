@@ -75,9 +75,8 @@ function declarations(lines: string[]): { present: boolean; values: string[]; pr
 /**
  * The only programs `readNamedFiles` trusts to run a script handed to them
  * as their very next token. The list is short and closed on purpose: `node`,
- * `python`, `python3`, `ruby`, `sh` and `bash` are the interpreters this
- * gate's own red-run commands and the plans it checks actually invoke this
- * way. A test runner such as `pytest`, `jest` or `ruff` is never on it, even
+ * `python`, `python3`, `ruby`, `sh` and `bash` are the interpreters the
+ * plans this gate checks actually invoke this way. A test runner such as `pytest`, `jest` or `ruff` is never on it, even
  * though its own name is not path-shaped either - its first argument is the
  * file it operates on, not a script it runs, and dropping it reopens the
  * shared-file collision this gate exists to catch. The cost of keeping the
