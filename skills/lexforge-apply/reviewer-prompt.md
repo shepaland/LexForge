@@ -1,199 +1,105 @@
 # Reviewer brief
 
-For workflow 2, every use of “task” below means the full behavioural cycle with all
-original task IDs and acceptance criteria. Review once after GREEN. Validate declared
-material inputs and the actual RED assertion; ensure authorization, cryptography, tenant
-isolation and migration work receives its required specialist control. Return the JSON
-report described in [execution-v2.md](execution-v2.md), alongside file/line findings.
-
-Fill this in and send it to a general-purpose subagent once the wave is green, before any checkbox of it is marked. The sender is the session that read the plan: an
-executor starts no agent of any kind, so it never sends this brief itself. Where the
-runtime can reach no agent at all, there is no sender: the task stops at its review,
-unmarked, rather than being sent anywhere. Everything the reviewer knows about the work
-comes from this text: the subagent starts with no history of your session.
-
-## What goes in
-
-| Slot | Where it comes from |
-|---|---|
-| `[TASK]` | the task line from its section file (or legacy `tasks.md`), word for word, with its `-> capability#requirement` reference |
-| `[REQUIREMENTS]` | every requirement named by that reference, copied from the change's delta specs |
-| `[DECISIONS]` | the decisions of `design.md` that touch this task |
-| `[CYCLE_PATCH]` | patch between this cycle’s before/after snapshots; see [context.md](context.md) |
-| `[SNAPSHOTS]` | paths to the manifest and immutable before/after files |
-| `[FILES]` | the paths this task itself names, one per line |
-| `[COMMAND]` | exact command, exit code and summary of its last run |
-| `[LOG]` | full log path, with relevant error excerpts supplied below |
-| `[PROJECT_RULES]` | `context` and `rules` from `lexforge/config.yaml` |
-| `[ENGINEERING_RULES]` | the output of `lexforge rules` over the files of the cycle: rule ID, rule and sign for each |
-
-The cycle starts from the actual file contents before its first edit, including earlier
-uncommitted work. `[CYCLE_PATCH]` contains only this cycle's changes to `[FILES]`, including
-new and deleted files. Missing snapshots block review. A path-scoped working-tree diff
-still accumulates earlier cycles touching those paths and is not a cycle patch.
+Send this to a reviewer once `lexforge task green` has written
+`lexforge/changes/<name>/tasks/<id>/review.md`, before `lexforge task close`. The reviewer
+is a subagent on the model of the `verify` stage and is never the task's executor:
+`lexforge task review` refuses a report signed by the executor with
+`reviewer-is-executor`. Where no agent can be reached, the task stops at its review.
 
 ## What stays out
 
-The history of your session. Your reasoning about why the code looks as it does.
-Anything the user said about the deadline or the size of the work. Other tasks of the
-plan, and other sections of the wave - `[FILES]` keeps them out of the diff, not just
-out of the words around it. Answers from earlier reviews.
+The package is the whole input: the brief path, the executor's report, the diff from the
+base to green, `Since the last review` when there is one, the engineering rules and the
+report format. Add only the paths of the change's delta specs and `design.md`, which the
+brief already quotes.
 
-A reviewer who reads your reasoning grades your reasoning. A reviewer who reads
-"they need this by five" starts weighing a deadline nobody gave them. A reviewer who
-reads the last three reviews learns the tone and starts calling a second finding of the
-same kind a nitpick. If the reviewer asks for the session history, send the
-requirements, the decisions and the cycle patch and snapshots again instead.
+Leave out the history of your session, your reasoning about the code, anything said
+about the deadline or the size of the work, other tasks, and earlier reviews. A reviewer
+who reads your reasoning grades your reasoning; one who reads the last three reviews
+learns their tone. If the reviewer asks for more, send the package again.
 
 ## The brief
 
 ```
-You are reviewing one task of a LexForge change against the requirements it claims to
-implement. You have no history of the session that produced it and you do not need one.
+You review one task of a LexForge change. Read the package:
 
-## The task
+lexforge/changes/[CHANGE]/tasks/[ID]/review.md
 
-[TASK]
-
-## The requirements it has to satisfy
-
-[REQUIREMENTS]
-
-## Design decisions that bind it
-
-[DECISIONS]
-
-## The diff
-
-Patch: [CYCLE_PATCH]
-Snapshots and manifest: [SNAPSHOTS]
-Files: [FILES]
-
-Read the patch by file and hunk. Resolve line references against the after snapshot;
-use the before snapshot for deletions. The snapshot manifest maps paths to the project.
-Earlier changes in the same file are baseline context, outside this cycle's diff.
-For fix rounds, inspect the fix patch and the resulting full cycle against its original
-baseline. Use snapshot content when the live tree has moved on.
-
-## How the task was confirmed
-
-Command: [COMMAND]
-
-Exit code, counts and relevant excerpts:
-
-[OUTPUT]
-
-Full log: [LOG]
-
-## Project rules
-
-[PROJECT_RULES]
-
-## Engineering rules
-
-[ENGINEERING_RULES]
-
-Every rule whose sign appears in the patch is a finding that names the rule ID, the file
-and the line, and the failure the sign points to. It is CRITICAL or IMPORTANT, never
-MINOR, and the wave stays open until a fix closes it. A rule that is not listed above is
-not yours to raise.
+It names the task's brief: read the brief too, for the task, its requirements and the
+design decisions that bind it.
 
 ## How you work
 
-Read only. Do not edit the working tree, do not stage anything, do not move `HEAD` or
-any branch. Inspect with `git show`, `git diff` and `git log`. If you need another
-revision checked out, use `git worktree add` into a temporary directory.
+Read only. Do not edit the worktree, do not stage, do not move HEAD or any branch.
+Inspect with `git show`, `git diff` and `git log`.
 
-Run no test, no build, no script of the change: under a wave a neighbour is writing into
-the same tree, so a run you start yourself measures a state nobody owns, and its failure
-would come back as this task's failure. Read the diff handed to you and the output of the
-run the executor already performed: its summary and relevant excerpts first; open the
-linked full log only where needed to resolve a question.
+Run no test, no build, no script of the change. Read the diff in the package and the
+output of the run the executor already performed, which `task red` and `task green`
+recorded and the executor's report quotes.
 
-Do all of this yourself. Do not dispatch subagents: not to split the diff, not for a
-second opinion. A verdict from an agent you spawned counts for nothing here.
+Do all of this yourself. Start no subagent: not to split the diff, not for a second
+opinion.
 
 ## What to check
 
 - Does the diff do what the requirements say, all of it and nothing besides?
-- Does it break any decision listed above?
-- Is there a test that fails without the implementation, and does it assert the
-  behaviour of the requirement rather than the shape of the code?
-- Parameters, flags and branches the requirements do not ask for.
-- Error paths, boundary values, and the cases the requirement's scenarios name.
-- Anything the project rules forbid.
+- Does it break any decision of the brief?
+- Does the test fail without the implementation, and does it assert the behaviour of the
+  requirement, not the shape of the code?
+- Parameters, flags and branches nobody asked for.
+- Error paths, boundary values, and the cases the scenarios name.
+- Every file of the diff is in the task's `Files:` or `Test:`.
 
-Judge severity honestly. Not everything is CRITICAL, and a real defect called MINOR
-costs as much as a nitpick called CRITICAL.
+A re-review: when the package has a section `Since the last review`, check that diff
+against the findings of the earlier review, and say for each finding whether it is
+closed, with `file:line`. The rest of the diff was reviewed already.
 
-## Answer in this form
+## Engineering rules
 
-Every finding names its cycle, for example `c3-coupon`, so the session can tie it to one
-cycle of the wave. A finding on an engineering rule carries `rule_id` in the JSON report,
-next to `id`, `level` and `message`:
+Every rule in the package's `Engineering rules` whose sign appears in the diff is a
+finding that names the rule ID, the file and the line, and the failure the sign points
+to. It is CRITICAL or IMPORTANT, never MINOR, and the task stays open until a fix closes
+it. A rule not listed in the package is not yours to raise.
 
-`{"id": "F1", "level": "critical", "rule_id": "BE-02", "message": "api/orders.py:58 - ...", "resolved": false}`
+## Controls
 
-Do not put the rule ID into `message` instead.
+The package lists the controls the task names: authorization, cryptography,
+tenant-isolation, migrations. Check each one yourself and, above `Findings:`, write one
+line per control you checked:
 
-### Strengths
-What the diff does well. Be specific; name files and lines.
+Control: <name> — confirmed
 
-### Findings
+followed by the files and lines you read for it. List the same names on the
+`Controls:` line. A control you did not check is not confirmed, and an approved report
+without it is refused.
 
-#### CRITICAL
-Wrong behaviour, data loss, a requirement not met, a decision broken.
+## Levels
 
-#### IMPORTANT
-A gap that will cost work later: a missing test, an unhandled error path, a design
-problem.
+CRITICAL: wrong behaviour, data loss, a requirement not met, a decision broken.
+IMPORTANT: a gap that will cost work later: a missing test, an unhandled error path.
+MINOR: naming, duplication, comments, small simplifications.
 
-#### MINOR
-Naming, duplication, comments, small simplifications.
+Every finding names `file:line`, what is wrong, and why it matters.
 
-Every finding carries: `file:line`, what is wrong, why it matters, and how to fix it if
-that is not obvious.
+## Answer
 
-### Verdict
-
-Ready to close the task: yes / no / with fixes.
-
-One or two sentences of reasoning.
-
-## Do not
-
-Do not answer "looks good" without naming files and lines - an answer with no file
-reference will be sent back to you. Do not raise a nitpick to CRITICAL. Do not comment
-on code you did not read. Do not leave the verdict out.
+Write the report in the format of the package's `Report` section: `Reviewer:`,
+`Verdict:`, `Controls:`, `Findings:`. `Verdict: approved` only when no CRITICAL or
+IMPORTANT is open. An answer that names no file and line will be sent back.
 ```
 
 ## Reading the answer
 
 An answer with no `file:line` anywhere is empty: send the brief again and say the review
 came back with no specific finding. A verdict resting on the reviewer's own run is sent
-back the same way: say the review ran the project itself and ask for one that reads the
-diff and the handed-over output instead.
+back the same way: ask for one that reads the diff and the recorded runs instead.
 
-CRITICAL and IMPORTANT are closed before the checkbox. MINOR is fixed now or recorded
-with:
+Save the answer to a file and register it with
+`lexforge task review --change <name> --task <id> --file <report.md>`, then run the
+command `nextStep` names. CRITICAL and IMPORTANT are fixed, committed, taken through
+`task green` and reviewed again. MINOR is fixed now or recorded with:
 
     lexforge defect record --change <name> --level minor --file <path> --line <number> --summary "<text>"
 
-`--file` and `--line` come from the finding's own `file:line`, and `--level` is always
-`minor` here - CRITICAL and IMPORTANT never reach the ledger unfixed, and a wrong level
-turns a nitpick into a blocking entry. If a finding is wrong, answer it with the
-requirement quoted, the test, or the line of code that disproves it - never with silence
-and never with a fix you do not believe in.
-
-## A re-review
-
-A re-review checks the fixes, not the wave again. Hand the reviewer the fix patch and the
-earlier findings only. Leave out the cycles that had no finding, the snapshots of the
-whole wave and the old verdicts. The reviewer answers with `"scope": "fixes"` and says,
-for each earlier finding, whether the patch closes it, with `file:line`. A finding the
-patch did not close stays open; the session sends the fix back to the executor.
-
-| Excuse | Reality |
-|---|---|
-| "The brief's fix-round rule asks for the full cycle against its original baseline, so the snapshots go in too." | The fix patch and the earlier findings are the whole brief. The baseline and the snapshots stay out. |
-| "A second review of the same diffs would only use up time before 17:30." | The same diffs are not sent again. Only the fix patch is, and the next step is its re-review. |
+If a finding is wrong, answer it with the requirement quoted, the test, or the line of
+code that disproves it, never with silence.

@@ -76,13 +76,18 @@ user change the assignment in `lexforge/config.yaml`; do not change it yourself.
 
 ## The machine half
 
+First the final review: send the package of `lexforge review final --change <name>` and
+[final-review-prompt.md](../lexforge-apply/final-review-prompt.md) to a reviewer who ran
+no task; register the answer with `--file <report>`.
+
 Run `lexforge verify --change <name> --json` and read the exit code.
 
-- `0` — the five measures found nothing, not the whole check: the rest needs reading,
+- `0` — the ten measures found nothing, not the whole check: the rest needs reading,
   not running.
 - `1` — work. `summary` names the measure to go back to: `openTasks`,
-  `requirementsWithoutTrace`, `staleLabels`, `openDefects`, `unrecordedTasks`.
-  Fix what `findings` names, run again, until `0`.
+  `tasksWithoutClosedRecord`, `tasksNotReviewed`, `missingCommits`,
+  `requirementsWithoutTrace`, `staleLabels`, `openDefects`, `finalReview`,
+  `uncommittedWork`, `shortPath`. Fix what `findings` names, run again, until `0`.
 - `2` — no check happened. Read `error.code`, repair the call or the config, write no
   report.
 
@@ -98,8 +103,7 @@ Run `lexforge verify --change <name> --json` and read the exit code.
 An empty section carries the reason - "no `design` artifact, schema `bounded`" - not a
 blank. Merged sections hide the failure of one behind the pass of another.
 
-Copy `notChecked` into the report whole and put a verdict under each line. Those lines
-are the work, not a caveat to paste under an answer.
+Copy `notChecked` into the report whole and put a verdict under each line.
 
 Section 3 reads `design.md` against the code, now. Writing the code with `design.md` open
 is memory, not reading; a green suite tests the code against your own reading of the
@@ -134,8 +138,7 @@ and a stored verdict rots on the next edit. An unfixed finding goes to
 
 | Excuse | Reality |
 |---|---|
-| "the automated evidence is real and it's enough to ship on" | One measure of five, and none of them read `design.md`. |
-| "I'm trusting a summary of a summary for that part" | Then nothing runs under the verdict. Run it again. |
+| "the automated evidence is real and it's enough to ship on" | One measure of ten, and none of them read `design.md`. |
 | "put 'reread decision 4' at the top of tomorrow's list" | Reading postponed past the archive is reading nobody does. |
 | "objective grounds for a severity change, not just schedule pressure" | No code changed between the finding and the argument. |
 | "The risk is latent rather than active" | A silent no-op surfaces in an incident. That is the level. |
@@ -149,5 +152,3 @@ and a stored verdict rots on the next edit. An unfixed finding goes to
 - A level lowered while the code stayed the same.
 
 Go back to the skipped section.
-
-Migration: [authorization, preview, reconciliation, freshness](../lexforge-apply/execution-v2.md#safe-migration-of-existing-work).

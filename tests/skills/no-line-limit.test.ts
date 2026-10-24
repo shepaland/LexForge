@@ -8,8 +8,8 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 
 const FILES = [
   "skills/lexforge-plan/plan-file-per-section.md",
-  "skills/lexforge-apply/parallel-execution.md",
-  "skills/lexforge-apply/execution-v2.md",
+  "skills/lexforge-apply/parallel.md",
+  "skills/lexforge-apply/executor-prompt.md",
   "skills/lexforge-verify/SKILL.md",
   "README.md",
   "README.ru.md",
@@ -26,7 +26,7 @@ describe("the product states no line limit", () => {
 
   it("the executor's brief no longer hands over a line limit", () => {
     const text = readFileSync(
-      path.join(REPO_ROOT, "skills/lexforge-apply/parallel-execution.md"),
+      path.join(REPO_ROOT, "skills/lexforge-apply/executor-prompt.md"),
       "utf8",
     );
 

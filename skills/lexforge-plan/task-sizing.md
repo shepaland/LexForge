@@ -1,6 +1,7 @@
 # Task sizing
 
 A task is sized so that one cycle finishes it and the suite is green when the cycle ends.
+One cycle is one test, its red run, the implementation and the green run.
 
 A task whose work has no point partway through it where the suite is green is not written
 as one task: it is cut into steps, each of which leaves the suite green when it ends.
@@ -16,21 +17,21 @@ budget: it is cut into steps, and a bigger budget is not offered as the fix.
 ## Move declaration
 
 A task whose whole work is carrying existing code from one file to another, without
-changing behaviour, carries `(move)` right after its group label: `- [ ] 3.2 [B] (move)
-...`. The label groups tasks into one agent's run, and `(move)` follows it because that
-is the one place a reader checks for the declaration - nowhere else on the line counts.
+changing behaviour, carries `(move)` right after its number: `- [ ] 3.2 (move) ...`. That
+is the one place the CLI reads the declaration - nowhere else on the line counts.
 
-Such a task is not written as the usual triple - a test, a red run, an implementation -
-because a move has no run to watch fail: the failing test a triple opens with would test
-behaviour nobody is changing. A move is written as one task, whole.
+Such a task carries no `Test:` line, because a move has no run to watch fail: a failing
+test written for it would test behaviour nobody is changing. It keeps `Files:` and the
+`Command:` that `lexforge task green` runs after the move, and `lexforge task red` refuses
+it with `move-task-needs-no-red`. A move is written as one task, whole.
 
 A task adding a branch, a field or a rule, however small, changes behaviour, so it never
-carries `(move)` and keeps the triple that comes with a red run. A move left undeclared
-stops the change at `verify`, because the check reads the declaration alone to decide
-whether a red record is owed - and a task declared a move that does change behaviour
-passes that same check when it should have failed, since the check trusts the declaration
-and never rereads the diff. Neither risk is closed by guessing: `(move)` is not written
-just in case, or because the work merely resembles a move.
+carries `(move)` and keeps its test and its red run. A move left undeclared has a test
+that cannot fail, and `lexforge task red` refuses the passing run as `red-run-passed`. A
+task declared a move that does change behaviour skips the red run, and only the reviewer
+reading its diff can catch it, since the CLI trusts the declaration. Neither risk is
+closed by guessing: `(move)` is not written just in case, or because the work merely
+resembles a move.
 
 ## Example
 

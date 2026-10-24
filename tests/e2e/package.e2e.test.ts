@@ -68,7 +68,11 @@ const SKILL_NAMES = [
 /** Material a skill body links to instead of carrying it: it ships with the skill. */
 const SKILL_FILES = [
   "lexforge-apply/reviewer-prompt.md",
-  "lexforge-apply/parallel-execution.md",
+  "lexforge-apply/executor-prompt.md",
+  "lexforge-apply/final-review-prompt.md",
+  "lexforge-apply/parallel.md",
+  "lexforge-plan/plan-reviewer-prompt.md",
+  "lexforge-plan/digest.md",
   "lexforge-spec/data-and-services.md",
 ];
 
