@@ -1,4 +1,4 @@
-import { hashFile } from "../execution/files.js";
+import { hashFile } from "../tasks/files.js";
 import path from "node:path";
 
 import { UsageError } from "../../cli/errors.js";

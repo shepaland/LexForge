@@ -5,10 +5,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { UsageError } from "../../../src/cli/errors.js";
 import { recordEvidence } from "../../../src/core/gates/evidence-record.js";
-import { putRedRun } from "../../../src/core/gates/red-run-store.js";
 import { verifyChange } from "../../../src/core/gates/verify-change.js";
 import { writeAt } from "../../helpers/git-workspace.js";
-import { CHANGE, created, RED_RECORD, SILENT, workspace } from "./verify-change-fixtures.js";
+import { CHANGE, created, SILENT, workspace } from "./verify-change-fixtures.js";
 
 afterEach(() => {
   while (created.length > 0) {
@@ -79,7 +78,6 @@ describe("verifyChange: три измерения разом", () => {
   it("чистый change даёт код 0", async () => {
     const root = workspace(COVERED_PLAN).root;
     editApp(root);
-    putRedRun(root, CHANGE, "1.1", RED_RECORD);
     await recordEvidence({
       cwd: root,
       change: CHANGE,
@@ -119,7 +117,6 @@ describe("verifyChange: граница машинной проверки", () =>
   it("ответ несёт три непроверенных пункта, среди них design.md", async () => {
     const root = workspace(COVERED_PLAN).root;
     editApp(root);
-    putRedRun(root, CHANGE, "1.1", RED_RECORD);
     await recordEvidence({
       cwd: root,
       change: CHANGE,
@@ -155,7 +152,6 @@ describe("verifyChange: счётчики", () => {
   it("summary считает находки каждого вида", () => {
     const root = workspace(TWO_OPEN_ONE_TRACED).root;
     editApp(root);
-    putRedRun(root, CHANGE, "1.1", RED_RECORD);
 
     const result = verifyChange({ cwd: root, change: CHANGE });
 
@@ -164,7 +160,6 @@ describe("verifyChange: счётчики", () => {
       requirementsWithoutTrace: 0,
       staleLabels: 1,
       openDefects: 0,
-      unrecordedTasks: 0,
     });
     expect(result.data.findings).toHaveLength(3);
   });

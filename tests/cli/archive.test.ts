@@ -14,7 +14,6 @@ import {
   created,
   editApp,
   errorCode,
-  recordRed,
   workspace,
 } from "./archive-fixtures.js";
 
@@ -97,8 +96,7 @@ describe("lexforge archive: предусловия и машинная пров�
 
     const root = workspace(files).root;
     editApp(root);
-    await recordRed(root);
-    await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
+      await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
 
     const { exitCode, capture } = await call(["archive", CHANGE], root);
 

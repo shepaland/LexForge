@@ -1,11 +1,3 @@
-import { migrationFreshness } from "../execution/migration-freshness.js";
-import { executionPlan } from "../execution/plan.js";
-import { effectiveCompletion } from "../execution/effective-completion.js";
-import { readMigrationState } from "../execution/migration-state.js";
-import path from "node:path";
-import { cycleProblems } from "../execution/context.js";
-import { workflow } from "../execution/plan.js";
-
 import { UsageError } from "../../cli/errors.js";
 import { answerPath, workspacePath } from "../answer-path.js";
 import { changeBase, changedFiles } from "../git/change-base.js";
@@ -21,7 +13,7 @@ import { PLAN_ARTIFACT } from "./plan-check.js";
 import { readPlanSource } from "./plan-source.js";
 import type { PlanTask, PlanTasks } from "./task-list.js";
 import { describedLabels, verificationEmpty } from "./verification-labels.js";
-import { evidenceFindings, redRecordFindings } from "./verify-change-evidence.js";
+import { evidenceFindings } from "./verify-change-evidence.js";
 
 /**
  * What this command does not measure. Exit code 0 is the most dangerous line
@@ -43,7 +35,6 @@ export const NOT_CHECKED = [
  */
 export const CHECKED_DIMENSIONS = [
   "every checkbox in tasks.md is ticked",
-  "every ticked task naming production work carries its own red record",
   "every delta-spec requirement has a trace in the code",
   "every label described in verification carries a fresh stamp",
   "no critical or important defect naming this change is open",
@@ -60,9 +51,6 @@ export interface VerifyChangeSummary {
   requirementsWithoutTrace: number;
   staleLabels: number;
   openDefects: number;
-  unrecordedTasks: number;
-  unclosedCycles?: number;
-  migration?: {confirmed:number;open:number;freshnessFindings:number};
 }
 
 export interface VerifyChangeData {
@@ -70,7 +58,7 @@ export interface VerifyChangeData {
   workspaceRoot: string;
   change: string;
   findings: Finding[];
-  /** The five dimensions folded into `findings`; the same list every time. */
+  /** The dimensions folded into `findings`; the same list every time. */
   dimensions: string[];
   /** What this command leaves to a person; the same list every time. */
   notChecked: string[];
@@ -100,32 +88,15 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
   const base = changeBase(root, options.change);
   const changed = changedFiles(root, base);
 
-  const workflow2 = workflow(root, options.change).version === 2;
-  let migrationSummary;
-  if (workflow2) {
-    try {
-      if (readMigrationState(root, options.change)) {
-        const completion = effectiveCompletion(root, options.change);
-        for (const task of plan.tasks) task.done = completion.completed.includes(task.number);
-        migrationSummary = {confirmed: completion.completed.length, open: completion.open.length, freshnessFindings: migrationFreshness(root, options.change, executionPlan(root, options.change, true), completion.ledger!).length};
-      }
-    } catch { /* cycleProblems reports corrupt migration state as a gate finding */ }
-  }
-  const cycleFindings = cycleProblems(root, options.change).map(message => makeFinding(plan.file, 1, "cycle-not-closed", message));
   const findings = [
-    ...cycleFindings,
     ...openTaskFindings(plan),
     ...traceFindings(plan, readDeltaSpecs(root, options.change), changed),
     ...evidenceFindings(root, options.change, labels),
     ...defectFindings(root, options.change),
-    ...redRecordFindings(root, options.change, plan),
   ];
 
-  const outsideEdits = cycleFindings.some(finding =>
-    finding.message.startsWith("Unreviewed changes outside the execution plan:"));
-  const nextStep = outsideEdits
-    ? `revert these edits, or add a task that owns them, then run lexforge verify --change ${options.change}`
-    : findings.length === 0
+  const nextStep =
+    findings.length === 0
       ? "go through the list above by hand: read design.md against the code, " +
         "then judge the requirements yourself"
       : `fix the findings above, then run: lexforge verify --change ${options.change}`;
@@ -135,13 +106,9 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
     workspaceRoot: answerPath(root),
     change: options.change,
     findings,
-    dimensions: workflow2
-      ? CHECKED_DIMENSIONS.map(dimension => dimension.includes("own red record")
-        ? "every behavioural cycle has valid RED/GREEN (or declared move regression), independent review and current reviewed files"
-        : dimension)
-      : CHECKED_DIMENSIONS,
+    dimensions: CHECKED_DIMENSIONS,
     notChecked: NOT_CHECKED,
-    summary: { ...summarise(findings), ...(migrationSummary ? {migration:migrationSummary} : {}), ...(workflow2 ? { unclosedCycles: cycleFindings.length } : {}) },
+    summary: summarise(findings),
     nextStep,
   };
 
@@ -315,7 +282,6 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
     requirementsWithoutTrace: count("requirement-without-trace"),
     staleLabels: count("evidence-not-fresh"),
     openDefects: count(DEFECT_OPEN_RULE),
-    unrecordedTasks: count("task-no-red-record"),
   };
 }
 

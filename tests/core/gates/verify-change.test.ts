@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { UsageError } from "../../../src/cli/errors.js";
-import { putRedRun } from "../../../src/core/gates/red-run-store.js";
 import { verifyChange } from "../../../src/core/gates/verify-change.js";
 import { createGitWorkspace } from "../../helpers/git-workspace.js";
-import { AUTH_SPEC, CHANGE, CONFIG, created, RED_RECORD, workspace } from "./verify-change-fixtures.js";
+import { AUTH_SPEC, CHANGE, CONFIG, created, workspace } from "./verify-change-fixtures.js";
 
 const PLAN_FILE = `lexforge/changes/${CHANGE}/tasks.md`;
 
@@ -75,34 +74,6 @@ describe("verifyChange: план как индекс", () => {
     expect(open).toHaveLength(1);
     expect(open[0]!.line).toBe(5);
     expect(open[0]!.file).toBe(`lexforge/changes/${CHANGE}/tasks/01-first.md`);
-  });
-});
-
-describe("verifyChange: задача и её красная запись переживают раскладку по файлам", () => {
-  it("задача с красной записью не даёт task-no-red-record, когда её раздел вынесен в свой файл", () => {
-    const INDEX_TASKS = ["## 1. Вход", "`tasks/01-first.md`", ""].join("\n");
-    const FIRST_SECTION = [
-      "Depends on: none",
-      "",
-      "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
-      "      -> auth#Password is stored hashed",
-      "",
-    ].join("\n");
-
-    const root = workspace(INDEX_TASKS, {
-      [`lexforge/changes/${CHANGE}/tasks/01-first.md`]: FIRST_SECTION,
-    }).root;
-
-    // The store reads only the task's own id - no file, no line - so a
-    // record written under "1.1" still answers for it once the section that
-    // used to hold "1.1" inline moves into `tasks/01-first.md`.
-    putRedRun(root, CHANGE, "1.1", RED_RECORD);
-
-    const findings = verifyChange({ cwd: root, change: CHANGE }).data.findings.filter(
-      (finding) => finding.rule === "task-no-red-record",
-    );
-
-    expect(findings).toEqual([]);
   });
 });
 

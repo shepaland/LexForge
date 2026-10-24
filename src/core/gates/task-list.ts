@@ -61,8 +61,8 @@ export interface PlanTask {
   done: boolean;
   /**
    * True when the line carries `(move)` right after the number: the
-   * task only carries code from one file to another, so the fifth dimension
-   * of `verify` does not check it for a red record. Read as written - a
+   * task only carries code from one file to another and needs no Test
+   * field of its own. Read as written - a
    * task's own wording never overrides or supplies it.
    */
   declaresMove: boolean;

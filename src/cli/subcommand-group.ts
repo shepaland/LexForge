@@ -6,10 +6,12 @@ import { UsageError } from "./errors.js";
  * A group is not a command of its own. Called on its own, or with a name it
  * does not carry, it says what it does carry and stops. Excess arguments are
  * taken in on purpose, so an unknown subcommand reports the same list instead
- * of the bare "too many arguments" of the parser.
+ * of the bare "too many arguments" of the parser. Unknown options are taken
+ * in for the same reason: a removed subcommand called with its old flags
+ * still hears that the subcommand is gone.
  */
 export function refuseWithoutSubcommand(group: Command): void {
-  group.allowExcessArguments().action((_options: unknown, command: Command) => {
+  group.allowExcessArguments().allowUnknownOption().action((_options: unknown, command: Command) => {
     throw noSubcommand(group, command.args[0]);
   });
 }
@@ -25,7 +27,7 @@ export function noSubcommand(group: Command, given?: string): UsageError {
     : `"lexforge ${group.name()}" needs a subcommand. It has:`;
 
   return new UsageError(
-    "subcommand-missing",
+    given ? "unknown-command" : "subcommand-missing",
     `${opening}\n${lines.join("\n")}`,
     `lexforge ${group.name()} ${group.commands[0]?.name() ?? ""} --change <name>`.trim(),
   );

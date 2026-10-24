@@ -1,5 +1,4 @@
 import { createGitWorkspace, type GitWorkspace } from "../../helpers/git-workspace.js";
-import type { RedRunRecord } from "../../../src/core/gates/red-run-store.js";
 
 export const CONFIG = `schema: spec-driven
 verification:
@@ -23,18 +22,6 @@ The system SHALL store a password as a hash.
 `;
 
 export const CHANGE = "add-auth";
-
-/** A red record good enough for the fifth dimension: any non-zero exit code. */
-export const RED_RECORD: RedRunRecord = {
-  command: "npx vitest run tests/core/gates/example.test.ts",
-  exitCode: 1,
-  startedAt: "2026-08-30T09:12:44.281Z",
-  durationMs: 1200,
-  head: "9f1c0b7a4e1d2c3b5a6f7e8d9c0b1a2f3e4d5c6b",
-  worktreeDigest: "sha256:1f0a",
-  outputTail: "FAIL",
-  outputTruncated: false,
-};
 
 /** Swallows the output of the check the ledger stamp is taken from. */
 export const SILENT = { write: () => true };

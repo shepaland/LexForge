@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrateChange, migrateConfig } from "../../../src/core/tasks/migrate.js";
@@ -109,6 +109,17 @@ describe("migrateChange", () => {
     expect(existsSync(path.join(changeDir, "execution-plan.json"))).toBe(false);
     expect(existsSync(path.join(changeDir, "execution-5x/execution-plan.json"))).toBe(true);
     expect(existsSync(path.join(changeDir, "execution-5x/search/state.json"))).toBe(true);
+  });
+
+  it("keeps execution/logs in place, so the log hashes of the evidence ledger still match their paths", () => {
+    const log = path.join(changeDir, "execution/logs/run.log");
+    mkdirSync(path.dirname(log), { recursive: true });
+    writeFileSync(log, "ok\n");
+    migrateChange(ws.root, "demo");
+    expect(readFileSync(log, "utf8")).toBe("ok\n");
+    expect(readdirSync(path.join(changeDir, "execution"))).toEqual(["logs"]);
+    expect(existsSync(path.join(changeDir, "execution-5x/search/state.json"))).toBe(true);
+    expect(existsSync(path.join(changeDir, "execution-5x/logs"))).toBe(false);
   });
 
   it("refuses a change that does not exist", () => {

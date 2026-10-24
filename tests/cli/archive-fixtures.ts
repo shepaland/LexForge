@@ -78,23 +78,6 @@ export function editApp(root: string): void {
   writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
 }
 
-/**
- * Task 1.1 of every fixture plan in this file is ticked and names
- * `src/app.ts`, so the fifth measure of `verify` needs a red record for it.
- * Written through the CLI's own writer (`lexforge evidence red`), the same
- * way a real change would produce one.
- */
-export async function recordRed(root: string, task = "1.1"): Promise<void> {
-  const { exitCode, capture } = await call(
-    ["evidence", "red", "--change", CHANGE, "--task", task, "--command", 'node -e "process.exit(1)"'],
-    root,
-  );
-
-  if (exitCode !== 0) {
-    throw new Error(`failed to record a red run for task ${task}: ${capture.err}`);
-  }
-}
-
 /** Local date of the run, the form the archive directory is named with. */
 export function today(): string {
   const now = new Date();
@@ -107,7 +90,6 @@ export function today(): string {
 export async function cleanWorkspace(files: Record<string, string>): Promise<string> {
   const root = workspace(files).root;
   editApp(root);
-  await recordRed(root);
   await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
   return root;
 }

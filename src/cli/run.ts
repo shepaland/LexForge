@@ -1,5 +1,4 @@
 import os from "node:os";
-import { registerContext } from "./commands/context.js";
 
 import { Command, CommanderError } from "commander";
 
@@ -119,7 +118,6 @@ export function createProgram(context: CliContext): Command {
   registerResume(program, context);
   registerMigrate(program, context);
   registerEvidence(program, context);
-  registerContext(program, context);
   registerDefect(program, context);
   registerStyles(program, context);
   registerRules(program, context);
@@ -152,6 +150,17 @@ export async function runProgram(
     if (error instanceof CommanderError) {
       if (error.code === "commander.helpDisplayed" || error.code === "commander.version") {
         return 0;
+      }
+      // A command 6.0.0 removed, or one that never existed: a script asking
+      // for JSON gets a refusal it can parse, with the list of commands as the
+      // next step.
+      if (error.code === "commander.unknownCommand" && wantsJson(argv)) {
+        renderUsageError(new UsageError("unknown-command", error.message, "lexforge --help"), {
+          json: true,
+          stdout: context.stdout,
+          stderr: context.stderr,
+        });
+        return 2;
       }
       // The help is already on the error stream: commander printed the one of
       // the command that refused the call.

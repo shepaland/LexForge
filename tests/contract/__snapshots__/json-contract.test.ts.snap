@@ -281,6 +281,5 @@ exports[`контракт машинного вывода ворот > verify > 
   "openTasks",
   "requirementsWithoutTrace",
   "staleLabels",
-  "unrecordedTasks",
 ]
 `;

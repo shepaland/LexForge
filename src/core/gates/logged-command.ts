@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { closeSync, mkdirSync, openSync, writeSync } from "node:fs";
-import { changeDir } from "../execution/plan.js";
-import { hashFile, local } from "../execution/files.js";
+import { hashFile, local } from "../tasks/files.js";
+import { changeDir } from "../tasks/paths.js";
 import { runLabelCommand, type RunCommandOptions } from "./run-command.js";
 /** Stream to durable storage; echo is opt-in. The runner retains only a bounded tail. */
 export async function runLoggedCommand(

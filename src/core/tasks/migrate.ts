@@ -109,26 +109,27 @@ function alreadyMigrated(change: string): UsageError {
 }
 
 /**
- * Moves the files of the 5.x execution engine into `execution-5x/`: the
- * `execution/` directory becomes it, and the plan of cycles and the red-run
- * store of the change go in with it. Nothing in 6.0.0 reads them again.
+ * Moves the files of the 5.x execution engine into `execution-5x/`: every
+ * entry of `execution/` but `logs`, plus the plan of cycles and the red-run
+ * store of the change. `execution/logs` stays where it is: the evidence ledger
+ * keeps a log by its path and hash, and a moved log would read as tampered.
+ * Nothing in 6.0.0 reads the moved files again.
  */
 function putExecutionAside(dir: string, files: string[]): void {
   const aside = path.join(dir, ASIDE);
   const execution = path.join(dir, "execution");
+  const moves: Array<[string, string]> = files.map((name) => [path.join(dir, name), path.join(aside, name)]);
   if (existsSync(execution)) {
-    if (existsSync(aside)) {
-      for (const name of readdirSync(execution)) renameSync(path.join(execution, name), path.join(aside, name));
-      rmdirSync(execution);
-    } else {
-      renameSync(execution, aside);
+    for (const name of readdirSync(execution)) {
+      if (name !== "logs") moves.push([path.join(execution, name), path.join(aside, name)]);
     }
   }
-  for (const name of files) {
-    if (!existsSync(path.join(dir, name))) continue;
+  for (const [from, to] of moves) {
+    if (!existsSync(from)) continue;
     mkdirSync(aside, { recursive: true });
-    renameSync(path.join(dir, name), path.join(aside, name));
+    renameSync(from, to);
   }
+  if (existsSync(execution) && readdirSync(execution).length === 0) rmdirSync(execution);
 }
 
 interface PlanMigration {

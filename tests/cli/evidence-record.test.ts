@@ -216,42 +216,10 @@ describe("lexforge evidence record: --task не поддерживается", (
   });
 });
 
-describe("lexforge evidence record: штамп метки и красная запись задачи не подменяют друг друга", () => {
-  it("свежий зелёный штамп метки не закрывает задачу без её красной записи", async () => {
+describe("lexforge evidence record: verify без штампа метки", () => {
+  it("change без штампа метки даёт evidence-not-fresh", async () => {
     const root = verifiableWorkspace().root;
     writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
-
-    const record = await call(
-      ["evidence", "record", "--change", CHANGE, "--label", "tests"],
-      root,
-    );
-    expect(record.exitCode).toBe(0);
-
-    const verify = await call(["verify", "--change", CHANGE, "--json"], root);
-    const data = JSON.parse(verify.capture.out) as { findings: { rule: string }[] };
-
-    expect(verify.exitCode).toBe(1);
-    expect(data.findings.map((finding) => finding.rule)).toContain("task-no-red-record");
-  });
-
-  it("красная запись задачи не заменяет отсутствующий штамп метки", async () => {
-    const root = verifiableWorkspace().root;
-    writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
-
-    const red = await call(
-      [
-        "evidence",
-        "red",
-        "--change",
-        CHANGE,
-        "--task",
-        "1.1",
-        "--command",
-        'node -e "process.exit(1)"',
-      ],
-      root,
-    );
-    expect(red.exitCode).toBe(0);
 
     const verify = await call(["verify", "--change", CHANGE, "--json"], root);
     const data = JSON.parse(verify.capture.out) as { findings: { rule: string }[] };

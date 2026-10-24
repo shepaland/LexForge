@@ -11,7 +11,6 @@ import {
   changeFiles,
   created,
   editApp,
-  recordRed,
   workspace,
   type ArchiveDocument,
 } from "./archive-fixtures.js";
@@ -37,7 +36,6 @@ async function featureWorkspace(beforeEdit?: (root: string) => void): Promise<st
   git(root, "checkout", "-b", `feature/${CHANGE}`);
   beforeEdit?.(root);
   editApp(root);
-  await recordRed(root);
   await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
   return root;
 }
