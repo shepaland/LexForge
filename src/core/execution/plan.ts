@@ -62,7 +62,8 @@ export function workflow(root: string, change: string) {
     return { version: 1, schema: config.schema, schemaVersion: 1 };
   const value = z
     .object({
-      version: z.union([z.literal(1), z.literal(2)]),
+      version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+      path: z.enum(["full", "short"]).optional(),
       schema: z.string(),
       schemaVersion: z.literal(1),
       migration: z.string().optional(),

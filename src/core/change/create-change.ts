@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 
 import { save } from "../execution/files.js";
+import type { WorkflowFile } from "../tasks/workflow-file.js";
 import path from "node:path";
 import { answerPath } from "../answer-path.js";
 import { UsageError } from "../../cli/errors.js";
@@ -18,6 +19,8 @@ export interface CreateChangeOptions {
   name: string;
   /** Schema of this change. Without it the project default from config.yaml is used. */
   schema?: string;
+  /** The short path: one task, no plan review. Without it the change takes the full path. */
+  short?: boolean;
 }
 
 export interface CreateChangeData {
@@ -53,7 +56,13 @@ export function createChange(options: CreateChangeOptions): CommandResult<Create
   mkdirSync(changeDir, { recursive: true });
   writeFileSync(configFile, `schema: ${schemaName}\n`, "utf8");
 
-  save(path.join(changeDir, "workflow.json"), { version: 2, schema: schemaName, schemaVersion: 1 });
+  const workflow: WorkflowFile = {
+    version: 3,
+    schema: schemaName,
+    schemaVersion: 1,
+    path: options.short ? "short" : "full",
+  };
+  save(path.join(changeDir, "workflow.json"), workflow);
 
   const first = schema.artifacts[0]!;
   const nextStep = `lexforge instructions ${first.id} --change ${name}`;
