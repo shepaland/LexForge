@@ -109,11 +109,10 @@ green at red is rewritten.
 ## Task order
 
 Take tasks in number order. Read [parallel.md](parallel.md)'s runtime check before the
-first task, whatever the plan says; its rest matters once `lexforge status` shows more
-than one ready task. Start a task when ready. The executor is you or a subagent; hand it
-`brief.md` whole with [executor-prompt.md](executor-prompt.md), working only in the
-task's worktree. A task needing a later task's result is a plan defect: name it, never
-reorder.
+first task, whatever the plan says. Start a task when ready. The executor is you or a
+subagent; find its places once and hand it `brief.md` whole beside their line numbers,
+with [executor-prompt.md](executor-prompt.md), working only in the task's worktree.
+A task needing a later task's result is a plan defect: name it, never reorder.
 
 Stop for the owner in four cases only:
 
