@@ -87,21 +87,26 @@ user change the assignment in `lexforge/config.yaml`; do not change it yourself.
 
 `TODO`, `TBD`, "clarify with the user", "the same way as task 3", "add error handling",
 "cover it with tests" - one defect under six names: the question is moved into the plan
-instead of answered before it. The executor reads one task, not the conversation. A
+instead of answered before it. The engineer reads one task, not the conversation. A
 step you do not understand is a question for the user, asked now.
 
 ## The shape of the plan
 
 - `tasks.md` itself holds no task: see [plan-file-per-section.md](plan-file-per-section.md).
-- Numbered sections; tasks `- [ ] 1.1`, each with `Files:`, `Test:` and `Command:`: the
-  files it may write, the test that fails first, the command that runs it. A move carries
-  `(move)` after its number and no `Test:`. `Depends on:` and `Controls:` join when
-  needed.
+- Numbered sections; tasks `- [ ] 1.1`, one action each.
+- Every task names the touched file and the confirming command.
 - File scope: see [plan-file-per-section.md](plan-file-per-section.md). Example:
   ``Files: `src/http/routes.ts` ``.
 - Every requirement of the delta specs is closed by at least one task ending a line with
   `-> <capability>#<requirement name>`, the name copied word for word from its
   `### Requirement:` heading. A typo there leaves the requirement unplanned.
+- A task that changes code is three tasks: write the failing test with the assertion in
+  it, run it and see it fail, write the implementation. A ten-line diff does not merge
+  them, and a green suite that never touches the new behaviour proves nothing.
+- Every task carries a group label in square brackets right after its id: `- [ ] 3.1 [A]
+  ...`. Tasks sharing a label may run in one agent, and a section one agent takes whole
+  carries one label across every task in it — two groups of a section never name the
+  same file, so a TDD triple keeps one label across all three tasks.
 - A task with no point partway through it where the suite is green is cut into steps,
   not given a bigger budget: see [task-sizing.md](task-sizing.md).
 
@@ -120,7 +125,7 @@ step you do not understand is a question for the user, asked now.
 
 - `TODO`, `TBD` or an open question inside a task.
 - A task pointing at another task instead of naming the file and the field.
-- A task with no `Test:` that is not a move.
+- A code task with no step that runs the test and sees it fail.
 - A requirement of the delta specs no task names.
 - A reference to a requirement no delta spec of the change carries.
 - A defect announced in a note and left in the file.
@@ -131,17 +136,8 @@ Stop and ask the question you avoided.
 ## Work
 
 Follow `template` from `lexforge instructions tasks --change <name> --tool <your runtime> --json`; read every
-delta spec first. Run `lexforge validate <name> --strict` and `lexforge check plan --change <name>`,
-each until it exits `0`. A finding is a task not written yet; rewrite the task, never the rule.
-
-Then start four reviewer subagents on the model of the `tasks` stage with
-[plan-reviewer-prompt.md](plan-reviewer-prompt.md), one per angle: `specs`, `code`,
-`dependencies`, `gaps`. Register each: `lexforge plan review --change <name> --angle
-<angle> --file <report.md>`. A self-written report is no review. A critical or important
-finding means fixing the plan and sending all four angles a new review, not only the one
-that found it - the CLI keeps only the current plan's reports, and a fix retires every
-earlier approval. Approval waits until all four angles approved the current plan.
-
-Send the owner a digest laid out by [digest.md](digest.md) with a link to `tasks.md`,
-wait for the words, run `lexforge plan approve --change <name> --quote "<owner's
-words>"`. Implementation starts on the next request.
+delta spec of the change first, so the tasks cover its requirements. Run
+`lexforge validate <name> --strict` and then `lexforge check plan --change <name>`, each
+until it exits `0`. Every finding of the gate is a task not written yet; rewrite the
+task, never the rule. Then show the user the finished artifacts and stop: implementation
+starts on their next request.
