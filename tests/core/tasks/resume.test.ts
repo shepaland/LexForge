@@ -115,10 +115,27 @@ describe("resume nextStep", () => {
     expect(resume(root, CHANGE).nextStep).toBe("lexforge plan amend --change demo --quote \"<owner's words>\"");
   });
 
-  it("asks for the verdict after the final review", () => {
+  function finalReview(verdict: "approved" | "changes-requested", level?: "critical" | "minor"): void {
+    const findings = level === undefined ? [] : [{ id: "F1", level, message: "x" }];
+    const entry = { reviewer: "final-1", verdict, head: "h", base: "b", findings, at: "2026-10-22T12:00:00.000Z" };
+    writeAt(root, finalReviewPath(root, CHANGE).slice(root.length + 1), JSON.stringify({ version: 1, reviews: [entry] }));
+  }
+
+  it("asks for the verdict after an approved final review", () => {
     setupAllClosed();
-    writeAt(root, finalReviewPath(root, CHANGE).slice(root.length + 1), "{}\n");
+    finalReview("approved", "minor");
     expect(resume(root, CHANGE).nextStep).toBe("lexforge verify --change demo");
+  });
+
+  it.each<["approved" | "changes-requested", "critical" | undefined]>([
+    ["changes-requested", undefined],
+    ["approved", "critical"],
+  ])("a final review %s with %s finding names a new task, not verify", (verdict, level) => {
+    setupAllClosed();
+    finalReview(verdict, level);
+    expect(resume(root, CHANGE).nextStep).toBe(
+      "add a task for each finding, then run: lexforge plan amend --change demo --quote \"<owner's words>\"",
+    );
   });
 
   it("a short change skips the plan review and the approval", () => {

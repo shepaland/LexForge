@@ -3,7 +3,8 @@ import path from "node:path";
 import { nextStepForChange } from "../next-step.js";
 import { readChangeState } from "../status/change-status.js";
 import { activeEntries, readJournal, type JournalEntry } from "./journal.js";
-import { changeDir, finalReviewPath } from "./paths.js";
+import { finalFindingsStep, finalReviewClears, finalReviewCommand, readFinalReviews } from "./final-review.js";
+import { changeDir } from "./paths.js";
 import { firstReadyTask, startCommand } from "./plan-ready.js";
 import { pendingAngles } from "./plan-review.js";
 import {
@@ -89,9 +90,9 @@ function chooseNextStep(root: string, change: string, progress: Progress, record
   const ready = firstReadyTask(root, change);
   if (ready !== null) return startCommand(change, ready);
   if (progress.total > 0 && progress.closed === progress.total) {
-    return existsSync(finalReviewPath(root, change))
-      ? `lexforge verify --change ${change}`
-      : `lexforge review final --change ${change} --file <report.md>`;
+    const last = readFinalReviews(root, change).at(-1);
+    if (last === undefined) return finalReviewCommand(change);
+    return finalReviewClears(last) ? `lexforge verify --change ${change}` : finalFindingsStep(change);
   }
   return `lexforge status --change ${change}`;
 }

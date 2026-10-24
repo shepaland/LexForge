@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { checkPlan } from "../../../src/core/gates/plan-check.js";
 import { parseTaskList } from "../../../src/core/gates/task-list.js";
 import { migrateChange } from "../../../src/core/tasks/migrate.js";
-import { assertPlanApproved, readPlanState } from "../../../src/core/tasks/plan-state.js";
+import { assertPlanApproved, readPlanState, writePlanState } from "../../../src/core/tasks/plan-state.js";
 import { readTaskRecord } from "../../../src/core/tasks/records.js";
 import { CHANGE_5X as CHANGE, DIR_5X, makeChange5x, type Change5xOptions } from "../../helpers/change-5x.js";
 import type { GitWorkspace } from "../../helpers/git-workspace.js";
@@ -102,6 +102,15 @@ describe("migrateChange on a change of LexForge 5.x", () => {
     expect(readPlanState(root, CHANGE).approval).toMatchObject({ quote: "migrated from 5.x" });
     expect(() => assertPlanApproved(root, CHANGE)).not.toThrow();
     expect(checkPlan({ cwd: root, change: CHANGE }).data.findings).toEqual([]);
+  });
+
+  it("plan check trusts a historical record only on a plan migrated from 5.x", () => {
+    const root = setup({ workflow: 1, allClosed: true });
+    migrateChange(root, CHANGE);
+    expect(checkPlan({ cwd: root, change: CHANGE }).data.findings).toEqual([]);
+    writePlanState(root, CHANGE, { ...readPlanState(root, CHANGE), migratedFrom: null });
+    const rules = checkPlan({ cwd: root, change: CHANGE }).data.findings.map((item) => item.rule);
+    expect(rules).toEqual(expect.arrayContaining(["task-missing-files", "task-missing-command"]));
   });
 
   it("leaves the plan unapproved and names the missing fields of a task outside every cycle", () => {

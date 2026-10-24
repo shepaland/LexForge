@@ -3,6 +3,7 @@ import { answerPath, workspacePath } from "../answer-path.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
 import { type Finding } from "../validation/finding.js";
+import { readPlanState } from "../tasks/plan-state.js";
 import { readTaskRecord } from "../tasks/records.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
@@ -192,8 +193,12 @@ function renderLines(data: CheckPlanData): string[] {
   return lines;
 }
 
-/** Ticked tasks that `lexforge migrate` closed as history of LexForge 5.x. */
+/**
+ * Ticked tasks that `lexforge migrate` closed as history of LexForge 5.x. A record
+ * that says "historical" is trusted only on a plan that migrate marked as 5.x.
+ */
 function historicalTasks(root: string, change: string, plan: PlanTasks): Set<string> {
+  if (readPlanState(root, change).migratedFrom !== "5.x") return new Set();
   return new Set(
     plan.tasks
       .filter((task) => task.done && task.number !== "")

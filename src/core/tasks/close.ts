@@ -7,6 +7,7 @@ import type { PlanTask } from "../gates/task-list.js";
 import { saveText } from "./files.js";
 import { withChangeLock } from "./lock.js";
 import { changeDir } from "./paths.js";
+import { finalPackageStep, writeFinalPackage } from "./final-review.js";
 import { findPlanTask, startNextStep, taskReadiness } from "./plan-ready.js";
 import { writeTaskRecord, type TaskRecord } from "./records.js";
 import { assertWorktreeClean, headOf, requireInProgress, taskCommand } from "./task-guards.js";
@@ -209,7 +210,11 @@ export function closeTask(root: string, change: string, taskId: string): CloseRe
 
     const states = [...taskReadiness(root, change).values()];
     const closed = states.filter((state) => state === "closed").length;
-    const next = closed === states.length ? `lexforge review final --change ${change}` : startNextStep(root, change);
+    let next = startNextStep(root, change);
+    if (closed === states.length) {
+      writeFinalPackage(root, change);
+      next = finalPackageStep(change);
+    }
     return { merge: merged.commit, progress: { closed, total: states.length }, nextStep: defectSteps(record, change, next) };
   });
 }

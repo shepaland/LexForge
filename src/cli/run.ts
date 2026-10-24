@@ -25,6 +25,7 @@ import { registerInit } from "./commands/init.js";
 import { registerJournal } from "./commands/journal.js";
 import { registerMigrate } from "./commands/migrate.js";
 import { registerResume } from "./commands/resume.js";
+import { registerReview } from "./commands/review.js";
 import { registerInstructions } from "./commands/instructions.js";
 import { registerNew } from "./commands/new-change.js";
 import { registerStatus } from "./commands/status.js";
@@ -113,6 +114,7 @@ export function createProgram(context: CliContext): Command {
   registerCheck(program, context);
   registerPlan(program, context);
   registerTask(program, context);
+  registerReview(program, context);
   registerUnlock(program, context);
   registerJournal(program, context);
   registerResume(program, context);
