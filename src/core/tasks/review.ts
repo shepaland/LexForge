@@ -68,7 +68,7 @@ function nextAfterReview(report: ReviewReport, change: string, taskId: string, c
   if (closed) {
     return clearsAngle(report)
       ? `lexforge verify --change ${change}`
-      : `add a task that fixes the findings of task ${taskId}, then run: ${amendCommand(change)}`;
+      : `add a task that fixes the findings of task ${taskId}, then run: ${amendCommand(change)}; once that task is closed, send lexforge/changes/${change}/tasks/${taskId}/review.md to a reviewer again and run: ${reviewAgain(change, taskId)}`;
   }
   return clearsAngle(report)
     ? taskCommand("close", change, taskId)
