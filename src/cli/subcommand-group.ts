@@ -12,7 +12,8 @@ import { UsageError } from "./errors.js";
  */
 export function refuseWithoutSubcommand(group: Command): void {
   group.allowExcessArguments().allowUnknownOption().action((_options: unknown, command: Command) => {
-    throw noSubcommand(group, command.args[0]);
+    // An unknown option lands among the arguments too: `evidence --json` names no subcommand.
+    throw noSubcommand(group, command.args.find((arg) => !arg.startsWith("-")));
   });
 }
 

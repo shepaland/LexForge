@@ -19,6 +19,12 @@ describe("the commands of the 5.x execution engine are gone", () => {
     },
   );
 
+  it("a group called without a subcommand still answers subcommand-missing", async () => {
+    const result = await cli(ws.root, ["evidence"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.json).toMatchObject({ error: { code: "subcommand-missing" } });
+  });
+
   it("no source file imports core/execution", () => {
     const grep = spawnSync("git", ["grep", "-l", "-e", "core/execution", "-e", "\\.\\./execution/", "--", "src"], {
       encoding: "utf8",
