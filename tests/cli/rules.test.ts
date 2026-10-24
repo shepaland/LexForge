@@ -237,7 +237,7 @@ describe("lexforge rules", () => {
     expect(exitCode, EXPECTED).toBe(1);
     expect(document.error?.code, EXPECTED).toBe("rules-too-many");
     expect(document.error?.message, EXPECTED).toContain(`${expected} rules match`);
-    expect(document.error?.message, EXPECTED).toContain("Split the cycle");
+    expect(document.error?.message, EXPECTED).toContain("Split the task");
   });
 
   it("drops a switched-off rule from the output", async () => {
