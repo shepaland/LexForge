@@ -1762,6 +1762,16 @@
       "summary": "The comment claims the backtick anchor excludes a paragraph that warns against a command, but the same regex matches a warning; the comment overstates what the assertion proves",
       "state": "open",
       "recordedAt": "2026-10-24T20:02:57.060Z"
+    },
+    {
+      "id": "01e51465",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "docs/engineering-rules.md",
+      "line": 11,
+      "summary": "The shipped guide still says the rules command asks to split the cycle, while the command now names the task; no task of the plan declares this file",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:00:15.874Z"
     }
   ]
 }
