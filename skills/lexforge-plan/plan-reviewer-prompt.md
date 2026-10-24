@@ -20,7 +20,7 @@ Read:
 - the design, when it exists: lexforge/changes/[CHANGE]/design.md;
 - the code the tasks name in `Files:`.
 
-How a task looks: `- [ ] 1.1 <one test cycle>` with `Files:` (the only files it may write),
+How a task looks: `- [ ] 1.1` with `Files:` (the only files it may write),
 `Test:` (the test that fails first) and `Command:` (the one command that runs it). A move
 carries `(move)` right after its number and has no `Test:`. `Depends on:` and `Controls:`
 appear when needed.

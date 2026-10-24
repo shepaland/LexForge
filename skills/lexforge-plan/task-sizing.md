@@ -4,12 +4,12 @@ A task is sized so that one executor finishes it, from the red run to the green 
 the suite is green when the task closes.
 
 A task whose work has no point partway through it where the suite is green is not written
-as one task: it is cut into steps, each of which leaves the suite green when it ends.
+as one task: it is cut into tasks, each of which leaves the suite green when it closes.
 
-Where the work replaces a structure already in use, those steps keep the old structure and
-the new one side by side until the last step: the new path is added first, callers move to
-it one at a time in the steps that follow, and the old path is removed only in the final
-step.
+Where the work replaces a structure already in use, those tasks keep the old structure and
+the new one side by side until the last task: the new path is added first, callers move to
+it one at a time in the tasks that follow, and the old path is removed only in the final
+task.
 
 A task naming work with no such midpoint is a plan defect, not a task that needs a larger
 budget: during implementation it is cut into tasks through `lexforge plan amend`, and a

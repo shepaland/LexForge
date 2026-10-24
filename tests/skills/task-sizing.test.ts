@@ -36,20 +36,32 @@ describe("правило разбивки задачи без зелёной с�
     }
   });
 
-  it("работа без промежуточной зелёной точки не пишется одной задачей - она разбивается на шаги", () => {
+  it("работа без промежуточной зелёной точки не пишется одной задачей - она разбивается на задачи", () => {
     const text = taskSizingText();
 
     expect(text).toMatch(
-      /is not written as one task: it is cut into steps, each of which leaves the suite green when it ends\./,
+      /is not written as one task: it is cut into tasks, each of which leaves the suite green when it closes\./,
     );
+
+    for (const phrase of [
+      "it is cut into steps, each of which leaves the suite green when it ends",
+    ]) {
+      expect(text, `«${phrase}» — единица 5.x «шаг», не «задача»`).not.toContain(phrase);
+    }
   });
 
-  it("замена структуры держит старый и новый путь рядом до последнего шага", () => {
+  it("замена структуры держит старый и новый путь рядом до последней задачи", () => {
     const text = taskSizingText();
 
     expect(text).toMatch(
-      /those steps keep the old structure and the new one side by side until the last step: the new path is added first, callers move to it one at a time in the steps that follow, and the old path is removed only in the final step\./,
+      /those tasks keep the old structure and the new one side by side until the last task: the new path is added first, callers move to it one at a time in the tasks that follow, and the old path is removed only in the final task\./,
     );
+
+    for (const phrase of [
+      "those steps keep the old structure and the new one side by side until the last step",
+    ]) {
+      expect(text, `«${phrase}» — единица 5.x «шаг», не «задача»`).not.toContain(phrase);
+    }
   });
 
   it("задачу, которую никто не может закончить, режут на задачи через lexforge plan amend, а не дают ей больший бюджет", () => {

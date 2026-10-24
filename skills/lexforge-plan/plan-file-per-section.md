@@ -12,9 +12,10 @@ reads it by the id alone, never by file or line, so a record written before the 
 still answers for the same task after it.
 
 A section file holds each task's requirement, its fields and its links, and nothing
-else. What happened while a task ran - rulings, refusals, sessions - goes into the change
-journal with `lexforge journal`, never into the plan. The task stays the current
-contract: an executor reads only the brief `lexforge task start` writes for it.
+else. What happened while a task ran - decisions, questions, promises, permissions,
+rulings - goes into the change journal with `lexforge journal add`, never into the plan.
+The task stays the current contract: an executor reads only the brief `lexforge task
+start` writes for it.
 
 ## Task file scope
 
