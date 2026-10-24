@@ -80,9 +80,12 @@ session, or the user saying it came out clean. Those are what `lexforge archive`
 - `0` - delta merged, change directory moved; `--json` gives `archivePath`.
 - `1` - findings or conflicts, listed; nothing was written. Fix what is named, run again.
 - `2` - refused: no workspace, no change, planning unfinished, archive path taken, no
-  repository, empty `verification`. Show `error.message` and stop.
+  repository, empty `verification`. Show `error.message` and stop. `change-needs-migration`
+  instead: installing LexForge 6.0.0 migrates no existing change by itself; run
+  `lexforge migrate --change <name>`, name historical and open tasks and any
+  `missingFields`, then send the open part through plan review and owner approval.
 
-Never announce the code you expect: a command you did not run has no result to report.
+Never announce the code you expect: an unrun command has no result.
 
 ## A conflict is fixed in the delta
 
@@ -91,12 +94,11 @@ the dropped scenario goes back into the MODIFIED block, a heading is spelled as 
 spells it.
 
 Editing a file under `lexforge/specs/` by hand to pass the merge is out. That file is what
-the merge writes; hand-editing it takes live behaviour out of the record and disarms the
-check that caught the mismatch. Offering to do it if they
-insist is doing it, one message later.
+the merge writes; hand-editing it takes live behaviour out of the record. Offering to do
+it if they insist is doing it, one message later.
 
 Copying the spec's block into the delta unchanged is the same failure wearing a `0`: the
-merge writes back what was there, and the change ships behaviour with no requirement.
+merge writes back what was there.
 
 Run the command again until it exits `0`.
 
@@ -135,5 +137,3 @@ worktree stay, and the failure is the next thing you say.
 - A file under `lexforge/specs/` edited by hand while a conflict is open.
 - A branch merged, pushed or deleted before the user answered.
 - An exit code named instead of read.
-
-Migration: [authorization, preview, reconciliation, freshness](../lexforge-apply/execution-v2.md#safe-migration-of-existing-work).
