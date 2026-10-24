@@ -5,6 +5,7 @@ import { readGit, tryGit } from "../git/repository.js";
 import { currentBranch } from "../git/task-worktree.js";
 import { validateChange } from "../validation/validate-change.js";
 import { withChangeLock } from "./lock.js";
+import { listTaskRecords } from "./records.js";
 import { changeDir } from "./paths.js";
 import { missingAngles, openFindingAngles } from "./plan-review.js";
 import { startNextStep } from "./plan-ready.js";
@@ -56,8 +57,12 @@ function committedOutside(root: string, change: string): string[] {
       `git branch ${DEV} main`,
     );
   }
+  // A closed task brought its commits in through its merge; they and the merge are not early work.
+  const merges = listTaskRecords(root, change)
+    .map((record) => record.closed?.merge)
+    .filter((merge): merge is string => merge !== undefined && tryGit(root, ["cat-file", "-e", `${merge}^{commit}`]).ok);
   const raw = readGit(root, [
-    "log", `${DEV}..HEAD`, "--name-only", "--format=", "--", ".", `:(exclude)${changeDir(change)}`,
+    "log", `${DEV}..HEAD`, ...(merges.length > 0 ? ["--not", ...merges] : []), "--name-only", "--format=", "--", ".", `:(exclude)${changeDir(change)}`,
   ]);
   return [...new Set(raw.split("\n").filter((line) => line !== ""))].sort();
 }

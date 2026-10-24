@@ -34,6 +34,7 @@ describe("список команд читается из программы CLI
       "cycle",
       "defect",
       "doctor",
+      "escalate",
       "evidence",
       "evidence",
       "find",

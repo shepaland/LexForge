@@ -5,9 +5,12 @@ import { collectMarkers } from "../validation/spec-markers.js";
 import { validateChange } from "../validation/validate-change.js";
 import { readChangeConfig } from "../workspace/change-config.js";
 import { workspacePaths } from "../workspace/paths.js";
+import { withChangeLock } from "./lock.js";
 import { changeDir } from "./paths.js";
 import { readChangePlan } from "./plan-ready.js";
-import { readWorkflowFile } from "./workflow-file.js";
+import { reviewCommand } from "./plan-state.js";
+import { listTaskRecords } from "./records.js";
+import { readWorkflowFile, writeWorkflowFile } from "./workflow-file.js";
 
 const DATA_LINE = /^\s*Data:\s*(.*?)\s*$/;
 
@@ -87,4 +90,33 @@ export function assertSpecsBeforeCode(root: string, change: string): void {
 export function assertShortPathAdmission(root: string, change: string, verb: "start" | "red"): void {
   assertShortPathEligible(root, change);
   if (verb === "red") assertSpecsBeforeCode(root, change);
+}
+
+export interface EscalateResult {
+  path: "full";
+  nextStep: string;
+}
+
+/** Moves a short change to the full path: from here on the plan is reviewed and approved as usual. */
+export function escalate(root: string, change: string): EscalateResult {
+  return withChangeLock(root, change, "plan escalate", () => {
+    const file = readWorkflowFile(root, change);
+    if (file.path === "full") {
+      throw new UsageError(
+        "already-full-path",
+        `change "${change}" is already on the full path.`,
+        `lexforge status --change ${change}`,
+      );
+    }
+    const running = listTaskRecords(root, change).find((record) => record.closed === null && record.executor !== "");
+    if (running !== undefined) {
+      throw new UsageError(
+        "task-in-progress",
+        `task ${running.id} of change "${change}" is started and not closed, so the change stays on the short path until it ends.`,
+        `lexforge task abandon --change ${change} --task ${running.id}`,
+      );
+    }
+    writeWorkflowFile(root, change, { ...file, path: "full" });
+    return { path: "full", nextStep: reviewCommand(change, "specs") };
+  });
 }

@@ -3,6 +3,7 @@ import type { Command } from "commander";
 import { amendPlan } from "../../core/tasks/plan-amend.js";
 import { approvePlan } from "../../core/tasks/plan-approve.js";
 import { registerPlanReview } from "../../core/tasks/plan-review.js";
+import { escalate } from "../../core/tasks/short-path.js";
 import type { CommandResult } from "../../core/types.js";
 import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { renderResult } from "../render.js";
@@ -12,6 +13,7 @@ import { refuseWithoutSubcommand } from "../subcommand-group.js";
 export const PLAN_DESCRIPTION = "Review, approve and amend the plan of a change";
 export const PLAN_APPROVE_DESCRIPTION = "Approve the reviewed plan with the owner's words";
 export const PLAN_AMEND_DESCRIPTION = "Accept a change of the approved plan";
+export const PLAN_ESCALATE_DESCRIPTION = "Move a short change to the full path";
 export const PLAN_REVIEW_DESCRIPTION = "Register a review report of the plan from one angle";
 
 interface Flags {
@@ -86,6 +88,21 @@ export function registerPlan(program: Command, context: CliContext): void {
       respond(context, options.json, {
         ...result,
         summary: `Recorded an amendment of the plan of change "${options.change}": ${result.changedTasks.length} tasks changed.`,
+      });
+    });
+
+  group
+    .command("escalate")
+    .description(PLAN_ESCALATE_DESCRIPTION)
+    .allowExcessArguments(false)
+    .requiredOption("--change <name>", "short change that moves to the full path")
+    .option("--json", "print one JSON document instead of human output")
+    .action((options: Flags) => {
+      const root = findWorkspaceRoot(context.cwd);
+      const result = escalate(root, options.change);
+      respond(context, options.json, {
+        ...result,
+        summary: `Change "${options.change}" is on the full path: the plan goes through review and approval.`,
       });
     });
 }
