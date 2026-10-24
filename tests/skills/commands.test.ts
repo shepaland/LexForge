@@ -44,6 +44,7 @@ describe("список команд читается из программы CLI
       "journal",
       "list",
       "migrate",
+      "migrate",
       "new",
       "plan",
       "plan",
