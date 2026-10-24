@@ -9,6 +9,7 @@ import {
   writeAt,
   type GitWorkspace,
 } from "../helpers/git-workspace.js";
+import { sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -197,6 +198,7 @@ function verifiableWorkspace(config = CONFIG): GitWorkspace {
     [`lexforge/changes/${CHANGE}/design.md`]: "## Context\n\nOne service, one database.\n",
     [`lexforge/changes/${CHANGE}/tasks.md`]: CLOSED_PLAN,
   });
+  sealForVerify(made.root, CHANGE);
   created.push(made);
   return made;
 }

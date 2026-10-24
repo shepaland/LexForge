@@ -8,6 +8,7 @@ import {
   writeAt,
   type GitWorkspace,
 } from "../helpers/git-workspace.js";
+import { sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -93,6 +94,7 @@ afterEach(() => {
 
 function workspace(tasks: string): GitWorkspace {
   const made = createGitWorkspace(changeFiles(tasks));
+  sealForVerify(made.root, CHANGE);
   created.push(made);
   return made;
 }
@@ -110,9 +112,13 @@ interface VerifyDocument {
   notChecked: string[];
   summary: {
     openTasks: number;
+    tasksWithoutClosedRecord: number;
+    missingCommits: number;
     requirementsWithoutTrace: number;
     staleLabels: number;
     openDefects: number;
+    finalReview: number;
+    shortPath: number;
   };
   nextStep: string;
 }
@@ -150,9 +156,13 @@ describe("lexforge verify", () => {
     expect(data.findings).toEqual([]);
     expect(data.summary).toEqual({
       openTasks: 0,
+      tasksWithoutClosedRecord: 0,
+      missingCommits: 0,
       requirementsWithoutTrace: 0,
       staleLabels: 0,
       openDefects: 0,
+      finalReview: 0,
+      shortPath: 0,
     });
   });
 
@@ -237,9 +247,13 @@ describe("lexforge verify: четвёртое измерение — журна�
     expect(exitCode).toBe(1);
     expect(data.summary).toEqual({
       openTasks: 2,
+      tasksWithoutClosedRecord: 0,
+      missingCommits: 0,
       requirementsWithoutTrace: 0,
       staleLabels: 1,
       openDefects: 1,
+      finalReview: 0,
+      shortPath: 0,
     });
   });
 

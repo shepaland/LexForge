@@ -1,4 +1,5 @@
 import { createGitWorkspace, type GitWorkspace } from "../../helpers/git-workspace.js";
+import { sealForVerify } from "../../helpers/verify-seal.js";
 
 export const CONFIG = `schema: spec-driven
 verification:
@@ -39,6 +40,7 @@ export function workspace(tasks: string, files: Record<string, string> = {}): Gi
     [`lexforge/changes/${CHANGE}/tasks.md`]: tasks,
     ...files,
   });
+  sealForVerify(made.root, CHANGE);
   created.push(made);
   return made;
 }

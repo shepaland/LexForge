@@ -15,6 +15,7 @@ import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 import { removeWorkspace } from "../helpers/workspace.js";
+import { sealForVerify } from "../helpers/verify-seal.js";
 
 const created: string[] = [];
 
@@ -172,6 +173,7 @@ function gateProject(): string {
     "lexforge/changes/add-auth/design.md": "## Context\n\nOne service, one database.\n",
     "lexforge/changes/add-auth/tasks.md": GATE_PLAN,
   });
+  sealForVerify(made.root, "add-auth");
   repositories.push(made);
   return made.root;
 }
@@ -270,6 +272,7 @@ async function archivableProject(): Promise<string> {
     "lexforge/changes/add-auth/design.md": "## Context\n\nOne service, one database.\n",
     "lexforge/changes/add-auth/tasks.md": CLEAN_PLAN,
   });
+  sealForVerify(made.root, "add-auth");
   repositories.push(made);
 
   writeAt(made.root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');

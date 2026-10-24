@@ -1,8 +1,10 @@
 import { UsageError } from "../../cli/errors.js";
 import { answerPath, workspacePath } from "../answer-path.js";
-import { changeBase, changedFiles } from "../git/change-base.js";
+import { changedFiles } from "../git/change-base.js";
 import { assertRepository } from "../git/repository.js";
 import { readChangeState } from "../status/change-status.js";
+import { finalReviewBase } from "../tasks/final-review.js";
+import { readWorkflowFile } from "../tasks/workflow-file.js";
 import type { CommandResult } from "../types.js";
 import { makeFinding, type Finding } from "../validation/finding.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
@@ -14,6 +16,16 @@ import { readPlanSource } from "./plan-source.js";
 import type { PlanTask, PlanTasks } from "./task-list.js";
 import { describedLabels, verificationEmpty } from "./verification-labels.js";
 import { evidenceFindings } from "./verify-change-evidence.js";
+import {
+  COMMIT_MISSING,
+  FINAL_MISSING,
+  FINAL_OPEN,
+  FINAL_STALE,
+  RECORD_NOT_CLOSED,
+  SHORT_PATH_OUTGROWN,
+  TICKED_WITHOUT_RECORD,
+  taskFindings,
+} from "./verify-change-tasks.js";
 
 /**
  * What this command does not measure. Exit code 0 is the most dangerous line
@@ -35,9 +47,12 @@ export const NOT_CHECKED = [
  */
 export const CHECKED_DIMENSIONS = [
   "every checkbox in tasks.md is ticked",
+  "every ticked task has a closed task record",
+  "every commit a task record names is in the history of the change branch",
   "every delta-spec requirement has a trace in the code",
   "every label described in verification carries a fresh stamp",
   "no critical or important defect naming this change is open",
+  "an approved final review covers the tip of the change branch",
 ];
 
 export interface VerifyChangeOptions {
@@ -48,9 +63,13 @@ export interface VerifyChangeOptions {
 
 export interface VerifyChangeSummary {
   openTasks: number;
+  tasksWithoutClosedRecord: number;
+  missingCommits: number;
   requirementsWithoutTrace: number;
   staleLabels: number;
   openDefects: number;
+  finalReview: number;
+  shortPath: number;
 }
 
 export interface VerifyChangeData {
@@ -85,11 +104,14 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
   const plan = readPlan(root, options.change);
 
   assertRepository(root);
-  const base = changeBase(root, options.change);
+  // A change below workflow version 3 is refused with the migrate command.
+  readWorkflowFile(root, options.change);
+  const base = finalReviewBase(root, options.change);
   const changed = changedFiles(root, base);
 
   const findings = [
     ...openTaskFindings(plan),
+    ...taskFindings(root, options.change),
     ...traceFindings(plan, readDeltaSpecs(root, options.change), changed),
     ...evidenceFindings(root, options.change, labels),
     ...defectFindings(root, options.change),
@@ -279,9 +301,13 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
 
   return {
     openTasks: count("task-not-done"),
+    tasksWithoutClosedRecord: count(TICKED_WITHOUT_RECORD) + count(RECORD_NOT_CLOSED),
+    missingCommits: count(COMMIT_MISSING),
     requirementsWithoutTrace: count("requirement-without-trace"),
     staleLabels: count("evidence-not-fresh"),
     openDefects: count(DEFECT_OPEN_RULE),
+    finalReview: count(FINAL_MISSING) + count(FINAL_STALE) + count(FINAL_OPEN),
+    shortPath: count(SHORT_PATH_OUTGROWN),
   };
 }
 

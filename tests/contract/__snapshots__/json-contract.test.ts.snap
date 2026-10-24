@@ -277,9 +277,13 @@ exports[`контракт машинного вывода ворот > verify > 
 
 exports[`контракт машинного вывода ворот > verify > verify: ключи summary 1`] = `
 [
+  "finalReview",
+  "missingCommits",
   "openDefects",
   "openTasks",
   "requirementsWithoutTrace",
+  "shortPath",
   "staleLabels",
+  "tasksWithoutClosedRecord",
 ]
 `;

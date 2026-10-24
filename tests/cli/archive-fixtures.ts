@@ -1,4 +1,5 @@
 import { run } from "../../src/cli/run.js";
+import { sealForVerify } from "../helpers/verify-seal.js";
 import { createCapture } from "../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 
@@ -63,6 +64,7 @@ export const created: GitWorkspace[] = [];
 
 export function workspace(files: Record<string, string>): GitWorkspace {
   const made = createGitWorkspace(files);
+  if (`lexforge/changes/${CHANGE}/tasks.md` in files) sealForVerify(made.root, CHANGE);
   created.push(made);
   return made;
 }

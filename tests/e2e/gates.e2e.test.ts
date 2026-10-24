@@ -6,6 +6,7 @@ import {
   type GitWorkspace,
 } from "../helpers/git-workspace.js";
 import { runCli } from "../helpers/run-cli.js";
+import { sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -57,6 +58,7 @@ function project(): GitWorkspace {
     [`lexforge/changes/${CHANGE}/design.md`]: "## Context\n\nOne service, one database.\n",
     [`lexforge/changes/${CHANGE}/tasks.md`]: PLAN,
   });
+  sealForVerify(made.root, CHANGE);
   created.push(made);
   return made;
 }

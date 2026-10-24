@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 import { runCli } from "../helpers/run-cli.js";
+import { sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -213,6 +214,7 @@ function changeFiles(): Record<string, string> {
 /** A workspace with the change committed, the work on disk and a fresh stamp. */
 async function project(extra: Record<string, string> = {}): Promise<string> {
   const made = createGitWorkspace({ ...changeFiles(), ...extra });
+  sealForVerify(made.root, CHANGE);
   created.push(made);
 
   for (const [file, content] of Object.entries(WORK)) {

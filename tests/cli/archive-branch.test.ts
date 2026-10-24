@@ -33,7 +33,8 @@ async function featureWorkspace(beforeEdit?: (root: string) => void): Promise<st
   const root = workspace(files).root;
 
   git(root, "branch", "dev");
-  git(root, "checkout", "-b", `feature/${CHANGE}`);
+  // The fixture has already cut feature/add-auth at HEAD for the task records.
+  git(root, "checkout", `feature/${CHANGE}`);
   beforeEdit?.(root);
   editApp(root);
   await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);

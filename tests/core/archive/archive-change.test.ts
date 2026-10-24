@@ -7,6 +7,7 @@ import { archiveChange } from "../../../src/core/archive/archive-change.js";
 import { recordEvidence } from "../../../src/core/gates/evidence-record.js";
 import { createCapture } from "../../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../../helpers/git-workspace.js";
+import { sealForVerify } from "../../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -60,6 +61,7 @@ afterEach(() => {
 /** A change that passes every check: closed plan, edited file, fresh stamp. */
 async function cleanWorkspace(): Promise<string> {
   const made = createGitWorkspace(FILES);
+  sealForVerify(made.root, CHANGE);
   created.push(made);
 
   writeAt(made.root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
