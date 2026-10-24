@@ -28,9 +28,9 @@
      needs no Test. Depends on names earlier tasks by number; two tasks that
      write one file need an order between them. Controls is optional. -->
 
-<!-- Keep requirements, acceptance checks, scope and links in each task. Put execution
-     history in execution/<cycle>/journal.md and full output in linked log files.
-     Link task -> journal -> evidence; preserve task IDs and evidence records. -->
+<!-- Keep requirements, acceptance checks, scope and links in each task. Decisions,
+     questions, promises, permissions and rulings go into the change journal with
+     `lexforge journal add`, never into the plan. -->
 
 <!-- A task that carries out a requirement of a delta spec ends with a line
      "-> <capability>#<requirement name>", the name copied from the heading
