@@ -2,22 +2,34 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import { UsageError } from "../../cli/errors.js";
+import { readPlanSource } from "../gates/plan-source.js";
+import { parseTaskList, type PlanTask } from "../gates/task-list.js";
+import { readHead } from "../git/repository.js";
 import { listActiveChanges } from "../workspace/change-config.js";
 import { workspacePaths } from "../workspace/paths.js";
 import { saveText } from "./files.js";
 import { withChangeLock } from "./lock.js";
+import {
+  ASIDE,
+  EXECUTION_PLAN,
+  RED_RUNS_FILE,
+  fieldsFromExecutionPlan,
+  readClosedCycles,
+  readExecutionPlan,
+  readRedRunTasks,
+  rewritePlanFile,
+} from "./migrate-fields.js";
 import { changeDir } from "./paths.js";
-import { reviewCommand } from "./plan-state.js";
+import { planDigest, planTaskTexts, readPlanState, reviewCommand, writePlanState } from "./plan-state.js";
+import { writeTaskRecord } from "./records.js";
 import { writeWorkflowFile } from "./workflow-file.js";
 
 /** Keys 6.0.0 no longer reads, by file. */
 const CONFIG_KEYS = ["file_limit"];
 const CHANGE_KEYS = ["long_files"];
 
-/** Where the files of the 5.x execution engine are put aside. */
-const ASIDE = "execution-5x";
 /** Files of the 5.x engine at the top of the change directory. */
-const OLD_FILES = ["execution-plan.json", "red-runs.json"];
+const OLD_FILES = [EXECUTION_PLAN, RED_RUNS_FILE];
 
 export type MissingField = "Files" | "Test" | "Command";
 
@@ -119,6 +131,60 @@ function putExecutionAside(dir: string, files: string[]): void {
   }
 }
 
+interface PlanMigration {
+  /** New text per plan file, written only after the whole result is known. */
+  texts: Map<string, string>;
+  closed: string[];
+  reopened: string[];
+}
+
+/**
+ * Works out the plan of 6.0.0 from the plan and the cycles of 5.x. A ticked
+ * task stays closed when its cycle closed or `red-runs.json` holds a red for
+ * it; any other ticked task loses its tick.
+ */
+function migratePlan(dir: string, tasksFile: string): PlanMigration {
+  const plan = readExecutionPlan(dir);
+  const fields = plan === null ? new Map() : fieldsFromExecutionPlan(plan);
+  const closedCycles = readClosedCycles(dir);
+  const reds = readRedRunTasks(dir);
+  const tasks = readPlanSource(tasksFile).tasks.filter((task) => task.number !== "");
+  const closed: string[] = [];
+  const reopened: string[] = [];
+  for (const task of tasks.filter((item) => item.done)) {
+    const cycle = fields.get(task.number)?.cycle;
+    if ((cycle !== undefined && closedCycles.has(cycle)) || reds.has(task.number)) closed.push(task.number);
+    else reopened.push(task.number);
+  }
+  const texts = new Map<string, string>();
+  for (const file of [...new Set(tasks.map((task) => task.file))]) {
+    const own = tasks.filter((task) => task.file === file);
+    texts.set(file, rewritePlanFile(readFileSync(file, "utf8"), own, fields, (id) => closed.includes(id)));
+  }
+  return { texts, closed, reopened };
+}
+
+/** The open tasks and the fields each lacks, read off the rewritten plan. */
+function openTasks(texts: Map<string, string>): { open: string[]; missingFields: MigrationResult["missingFields"] } {
+  const tasks: PlanTask[] = [...texts.values()].flatMap((text) => parseTaskList(text));
+  const open = tasks.filter((task) => !task.done && task.number !== "");
+  const missingFields = open.flatMap((task) => {
+    const fields: MissingField[] = [];
+    if (task.files.length === 0) fields.push("Files");
+    if (task.tests.length === 0 && !task.declaresMove) fields.push("Test");
+    if (task.command === null) fields.push("Command");
+    return fields.length === 0 ? [] : [{ task: task.number, fields }];
+  });
+  return { open: open.map((task) => task.number), missingFields };
+}
+
+function nextStepFor(change: string, hasPlan: boolean, open: string[], missing: number): string {
+  if (!hasPlan) return `lexforge status --change ${change}`;
+  if (open.length === 0) return `lexforge verify --change ${change}`;
+  const review = reviewCommand(change, "specs");
+  return missing > 0 ? `add the fields to the open tasks in tasks.md, then run: ${review}` : review;
+}
+
 /** Carries one change of LexForge 5.x over to workflow 3. */
 export function migrateChange(root: string, change: string): MigrationResult {
   const dir = path.join(root, changeDir(change));
@@ -136,17 +202,53 @@ export function migrateChange(root: string, change: string): MigrationResult {
     const configFile = path.join(dir, ".lexforge.yaml");
     const config = removeTopLevelKeys(readFileSync(configFile, "utf8"), CHANGE_KEYS);
     const schema = String((parseYaml(config.text) as { schema?: unknown } | null)?.schema ?? "spec-driven");
+    const tasksFile = path.join(dir, "tasks.md");
+    const hasPlan = existsSync(tasksFile);
+    const plan: PlanMigration = hasPlan ? migratePlan(dir, tasksFile) : { texts: new Map(), closed: [], reopened: [] };
+    const { open, missingFields } = openTasks(plan.texts);
+    const at = new Date().toISOString();
+    const head = plan.closed.length > 0 || (hasPlan && open.length === 0) ? readHead(root) : "";
+
     if (config.removed.length > 0) saveText(configFile, config.text);
+    for (const [file, text] of plan.texts) saveText(file, text);
+    for (const id of plan.closed) {
+      writeTaskRecord(root, change, {
+        id,
+        origin: "historical",
+        executor: "5.x",
+        branch: "",
+        worktree: "",
+        base: head,
+        startedAt: at,
+        red: null,
+        green: null,
+        reviews: [],
+        closed: { merge: head, at },
+        attempts: 0,
+      });
+    }
     putExecutionAside(dir, OLD_FILES);
     writeWorkflowFile(root, change, { version: 3, schema, schemaVersion: 1, path: "full" });
+    const approved = hasPlan && open.length === 0;
+    const state = { ...readPlanState(root, change), migratedFrom: "5.x" as const };
+    if (approved) {
+      state.approval = {
+        quote: "migrated from 5.x",
+        digest: planDigest(root, change),
+        base: head,
+        taskTexts: planTaskTexts(root, change),
+        at,
+      };
+    }
+    writePlanState(root, change, state);
     return {
       change,
-      closed: [],
-      reopened: [],
-      open: [],
-      missingFields: [],
-      approved: false,
-      nextStep: reviewCommand(change, "specs"),
+      closed: plan.closed,
+      reopened: plan.reopened,
+      open,
+      missingFields,
+      approved,
+      nextStep: nextStepFor(change, hasPlan, open, missingFields.length),
     };
   });
 }
