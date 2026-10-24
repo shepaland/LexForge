@@ -109,26 +109,45 @@ function alreadyMigrated(change: string): UsageError {
 }
 
 /**
- * Moves the files of the 5.x execution engine into `execution-5x/`: every
- * entry of `execution/` but `logs`, plus the plan of cycles and the red-run
- * store of the change. `execution/logs` stays where it is: the evidence ledger
- * keeps a log by its path and hash, and a moved log would read as tampered.
- * Nothing in 6.0.0 reads the moved files again.
+ * The moves that put the files of the 5.x execution engine into
+ * `execution-5x/`: every entry of `execution/` but `logs`, plus the plan of
+ * cycles and the red-run store of the change. `execution/logs` stays where it
+ * is: the evidence ledger keeps a log by its path and hash, and a moved log
+ * would read as tampered. Nothing in 6.0.0 reads the moved files again.
+ *
+ * A target that already exists is left by an interrupted run. The moves are
+ * refused before anything is written, since only the owner knows which copy
+ * to keep.
  */
-function putExecutionAside(dir: string, files: string[]): void {
+function asideMoves(root: string, change: string): Array<[string, string]> {
+  const dir = path.join(root, changeDir(change));
   const aside = path.join(dir, ASIDE);
   const execution = path.join(dir, "execution");
-  const moves: Array<[string, string]> = files.map((name) => [path.join(dir, name), path.join(aside, name)]);
+  const moves: Array<[string, string]> = OLD_FILES.map((name) => [path.join(dir, name), path.join(aside, name)]);
   if (existsSync(execution)) {
     for (const name of readdirSync(execution)) {
       if (name !== "logs") moves.push([path.join(execution, name), path.join(aside, name)]);
     }
   }
+  const present = moves.filter(([from]) => existsSync(from));
+  const taken = present.find(([, to]) => existsSync(to));
+  if (taken !== undefined) {
+    const [from, to] = taken.map((file) => path.relative(root, file).split(path.sep).join("/"));
+    throw new UsageError(
+      "migration-aside-occupied",
+      `${to} already exists, left by an interrupted run of lexforge migrate; nothing was written.`,
+      `keep one of ${from} and ${to}, remove the other, then run: lexforge migrate --change ${change}`,
+    );
+  }
+  return present;
+}
+
+function putExecutionAside(dir: string, moves: Array<[string, string]>): void {
   for (const [from, to] of moves) {
-    if (!existsSync(from)) continue;
-    mkdirSync(aside, { recursive: true });
+    mkdirSync(path.dirname(to), { recursive: true });
     renameSync(from, to);
   }
+  const execution = path.join(dir, "execution");
   if (existsSync(execution) && readdirSync(execution).length === 0) rmdirSync(execution);
 }
 
@@ -201,12 +220,20 @@ export function migrateChange(root: string, change: string): MigrationResult {
 
   return withChangeLock(root, change, "migrate", () => {
     const configFile = path.join(dir, ".lexforge.yaml");
+    if (!existsSync(configFile)) {
+      throw new UsageError(
+        "change-config-invalid",
+        `change "${change}" has no .lexforge.yaml; nothing was written.`,
+        `write "schema: spec-driven" to ${changeDir(change)}/.lexforge.yaml, then run: lexforge migrate --change ${change}`,
+      );
+    }
     const config = removeTopLevelKeys(readFileSync(configFile, "utf8"), CHANGE_KEYS);
     const schema = String((parseYaml(config.text) as { schema?: unknown } | null)?.schema ?? "spec-driven");
     const tasksFile = path.join(dir, "tasks.md");
     const hasPlan = existsSync(tasksFile);
     const plan: PlanMigration = hasPlan ? migratePlan(dir, tasksFile) : { texts: new Map(), closed: [], reopened: [] };
     const { open, missingFields } = openTasks(plan.texts);
+    const moves = asideMoves(root, change);
     const at = new Date().toISOString();
     const head = plan.closed.length > 0 || (hasPlan && open.length === 0) ? readHead(root) : "";
 
@@ -228,7 +255,7 @@ export function migrateChange(root: string, change: string): MigrationResult {
         attempts: 0,
       });
     }
-    putExecutionAside(dir, OLD_FILES);
+    putExecutionAside(dir, moves);
     writeWorkflowFile(root, change, { version: 3, schema, schemaVersion: 1, path: "full" });
     const approved = hasPlan && open.length === 0;
     const state = { ...readPlanState(root, change), migratedFrom: "5.x" as const };
