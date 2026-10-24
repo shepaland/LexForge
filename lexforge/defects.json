@@ -1752,6 +1752,16 @@
       "summary": "The short-path copy of the verify-reads-task-records test asserts only that three identifiers occur, so an inverted rewrite of the exit-0 bullet still passes; verify-skill.test.ts already pins the full rule",
       "state": "open",
       "recordedAt": "2026-10-24T19:30:05.975Z"
+    },
+    {
+      "id": "4a180a55",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/e2e/migrate-docs.test.ts",
+      "line": 122,
+      "summary": "The comment claims the backtick anchor excludes a paragraph that warns against a command, but the same regex matches a warning; the comment overstates what the assertion proves",
+      "state": "open",
+      "recordedAt": "2026-10-24T20:02:57.060Z"
     }
   ]
 }
