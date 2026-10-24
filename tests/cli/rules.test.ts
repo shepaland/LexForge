@@ -179,7 +179,22 @@ describe("lexforge rules", () => {
     expect(refused.exitCode, EXPECTED).toBe(1);
     expect(refused.document.error?.code, EXPECTED).toBe("files-too-many");
     expect(refused.document.error?.message, EXPECTED).toContain("201");
+    expect(refused.document.error?.message, EXPECTED).toContain("Split the task");
     expect(same.exitCode, EXPECTED).toBe(0);
+  });
+
+  it("names the task, not the cycle, in the --files option description", async () => {
+    const capture = createCapture();
+
+    const exitCode = await run(["rules", "--help"], {
+      cwd: process.cwd(),
+      stdout: capture.stdout,
+      stderr: capture.stderr,
+    });
+
+    expect(exitCode, EXPECTED).toBe(0);
+    expect(capture.out, EXPECTED).toContain("the files of the task");
+    expect(capture.out, EXPECTED).not.toContain("the files of the cycle");
   });
 
   it("keeps a Node and React set within 60 rules", async () => {
