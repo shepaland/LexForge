@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-import { makeWorkspace, removeWorkspace } from "./workspace.js";
+import { makeWorkspace, removeWorkspace, type MakeWorkspaceOptions } from "./workspace.js";
 
 /** Identity of the test commits. Without it git refuses to commit on a bare machine. */
 const IDENTITY = [
@@ -62,13 +62,19 @@ export function commitAll(root: string, message: string): string {
  * check labels, one source file, one commit. Extra files are laid out before
  * the commit, so a change directory can be committed with it.
  */
-export function createGitWorkspace(files: Record<string, string> = {}): GitWorkspace {
+export function createGitWorkspace(
+  files: Record<string, string> = {},
+  options: MakeWorkspaceOptions = {},
+): GitWorkspace {
   const root = realpathSync(
-    makeWorkspace({
-      "lexforge/config.yaml": CONFIG,
-      "src/app.ts": APP,
-      ...files,
-    }),
+    makeWorkspace(
+      {
+        "lexforge/config.yaml": CONFIG,
+        "src/app.ts": APP,
+        ...files,
+      },
+      options,
+    ),
   );
 
   git(root, "init", "--initial-branch=main");

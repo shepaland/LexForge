@@ -7,11 +7,16 @@ import { cli } from "../helpers/plan-fixture.js";
 
 let ws: GitWorkspace;
 beforeEach(() => {
-  ws = createGitWorkspace({
-    "lexforge/config.yaml": "schema: spec-driven\nfile_limit:\n  lines: 400\nengineering:\n  stacks: []\n",
-    "lexforge/changes/one/.lexforge.yaml": "schema: spec-driven\nlong_files: keep\n",
-    "lexforge/changes/two/.lexforge.yaml": "schema: spec-driven\n",
-  });
+  ws = createGitWorkspace(
+    {
+      "lexforge/config.yaml": "schema: spec-driven\nfile_limit:\n  lines: 400\nengineering:\n  stacks: []\n",
+      "lexforge/changes/one/.lexforge.yaml": "schema: spec-driven\nlong_files: keep\n",
+      "lexforge/changes/two/.lexforge.yaml": "schema: spec-driven\n",
+    },
+    // Both changes are 5.x: a workflow.json of version 3 here would leave
+    // migrate nothing to carry over.
+    { noWorkflow: true },
+  );
 });
 afterEach(() => ws.remove());
 

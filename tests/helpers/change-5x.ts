@@ -135,5 +135,7 @@ export function makeChange5x(options: Change5xOptions = {}): GitWorkspace {
       records: Object.fromEntries(["1.1", "1.2", "2.1", "3.1"].map((id) => [id, { command: "x" }])),
     });
   }
-  return createGitWorkspace(files);
+  // A 5.x change carries no workflow.json of its own, or one below version 3:
+  // a version 3 file beside it would give migrate nothing to carry over.
+  return createGitWorkspace(files, { noWorkflow: true });
 }
