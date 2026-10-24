@@ -330,105 +330,51 @@ describe("README на двух языках: командная таблица �
   });
 });
 
-describe("README на двух языках: обещание проверки меток групп снято, файлы задачи не зовутся файлами цикла", () => {
-  it("README.md не несёт «group labels»", () => {
-    expect(README_EN_FLAT.toLowerCase(), "README.md всё ещё обещает проверку меток групп").not.toContain(
-      "group labels",
-    );
-  });
+/** Claims 6.0.0 drops from the READMEs because the behaviour they described is gone. One shape, tabled. */
+const REMOVED_README_CLAIMS: ReadonlyArray<{ file: string; text: string; phrase: string }> = [
+  { file: "README.md", text: README_EN_FLAT.toLowerCase(), phrase: "group labels" },
+  { file: "README.md", text: README_EN_FLAT.toLowerCase(), phrase: "shared by groups" },
+  { file: "README.md", text: README_EN_FLAT.toLowerCase(), phrase: "files of a cycle" },
+  { file: "README.md", text: README_EN_FLAT.toLowerCase(), phrase: "cycle prerequisites" },
+  { file: "README.ru.md", text: README_RU_FLAT, phrase: "метки групп" },
+  { file: "README.ru.md", text: README_RU_FLAT, phrase: "общие файлы у групп" },
+  { file: "README.ru.md", text: README_RU_FLAT, phrase: "файлам цикла" },
+  { file: "README.ru.md", text: README_RU_FLAT, phrase: "условия цикла" },
+];
 
-  it("README.md не несёт «shared by groups»", () => {
-    expect(README_EN_FLAT.toLowerCase(), "README.md всё ещё обещает проверку общих файлов групп").not.toContain(
-      "shared by groups",
-    );
-  });
-
-  it("README.md не зовёт файлы задачи «files of a cycle»", () => {
-    expect(README_EN_FLAT.toLowerCase(), "README.md всё ещё зовёт файлы задачи файлами цикла").not.toContain(
-      "files of a cycle",
-    );
-  });
-
-  it("README.md не несёт «cycle prerequisites» в разборе кода 2", () => {
-    expect(README_EN_FLAT.toLowerCase(), "README.md всё ещё называет условия цикла в коде 2").not.toContain(
-      "cycle prerequisites",
-    );
-  });
-
-  it("README.ru.md не несёт «метки групп»", () => {
-    expect(README_RU_FLAT, "README.ru.md всё ещё обещает проверку меток групп").not.toContain("метки групп");
-  });
-
-  it("README.ru.md не несёт «общие файлы у групп»", () => {
-    expect(README_RU_FLAT, "README.ru.md всё ещё обещает проверку общих файлов групп").not.toContain(
-      "общие файлы у групп",
-    );
-  });
-
-  it("README.ru.md не зовёт файлы задачи «файлам цикла»", () => {
-    expect(README_RU_FLAT, "README.ru.md всё ещё зовёт файлы задачи файлами цикла").not.toContain("файлам цикла");
-  });
-
-  it("README.ru.md не несёт «условия цикла» в разборе кода 2", () => {
-    expect(README_RU_FLAT, "README.ru.md всё ещё называет условия цикла в коде 2").not.toContain("условия цикла");
+describe("README на двух языках: обещание меток групп снято, файлы задачи не зовутся файлами цикла", () => {
+  it.each(REMOVED_README_CLAIMS)("$file не несёт «$phrase»", ({ file, text, phrase }) => {
+    expect(text, `${file} всё ещё несёт «${phrase}»`).not.toContain(phrase);
   });
 });
 
-describe("Три документа объясняют worktree.setup: что это, что он держит, и что task start запускает его в новом рабочем дереве", () => {
-  it("README.md: ключ держит команду оболочки", () => {
-    expect(README_EN_FLAT).toMatch(/`worktree\.setup`: a shell command/);
-  });
+/**
+ * What a reader needs about `worktree.setup`: what it holds, that `task start`
+ * runs it in the new worktree, and - since `red-run-broken` names two different
+ * fixes - which of its two causes each fix answers.
+ */
+const WORKTREE_SETUP_FACTS: ReadonlyArray<{ label: string; en: RegExp; ru: RegExp }> = [
+  { label: "ключ держит команду оболочки", en: /`worktree\.setup`: a shell command/, ru: /`worktree\.setup`: команду оболочки/ },
+  { label: "task start запускает её один раз в новом рабочем дереве", en: /that `task start` runs once in the new worktree/, ru: /которую `task start` один раз запускает в новом рабочем дереве/ },
+  { label: "ненулевой код завершения убирает дерево кодом worktree-setup-failed", en: /a non-zero exit removes the worktree and refuses with `worktree-setup-failed`/, ru: /при ненулевом коде завершения `task start` удаляет рабочее дерево и отказывает кодом `worktree-setup-failed`/ },
+  { label: "red-run-broken при нехватке зависимостей советует worktree.setup", en: /refuses with `red-run-broken`: when the worktree is missing what `worktree\.setup` installs, the fix is `worktree\.setup`/, ru: /отказывает кодом `red-run-broken`: когда в рабочем дереве не хватает того, что ставит `worktree\.setup`, отказ советует задать его/ },
+  { label: "red-run-broken при незаявленном модуле советует plan amend", en: /when the break names a module the task never declared, the fix is `lexforge plan amend` instead/, ru: /когда разбор называет модуль, который задача не объявила в `Files:`, отказ советует `lexforge plan amend`/ },
+];
 
-  it("README.md: `task start` запускает её один раз в новом рабочем дереве", () => {
-    expect(README_EN_FLAT).toMatch(/that `task start` runs once in the new worktree/);
+describe("README.md объясняет worktree.setup по-английски", () => {
+  it.each(WORKTREE_SETUP_FACTS)("$label", ({ en }) => {
+    expect(README_EN_FLAT).toMatch(en);
   });
+});
 
-  it("README.md: ненулевой код завершения убирает дерево и отказывает worktree-setup-failed", () => {
-    expect(README_EN_FLAT).toMatch(/a non-zero exit removes the worktree and refuses with `worktree-setup-failed`/);
-  });
+const RU_DOCS_WITH_WORKTREE_SETUP: ReadonlyArray<readonly [string, string]> = [
+  ["README.ru.md", README_RU_FLAT],
+  ["docs/task-execution.md", GUIDE_FLAT],
+];
 
-  it("README.md: red-run-broken называет worktree.setup исправлением", () => {
-    expect(README_EN_FLAT).toMatch(/refuses with `red-run-broken` and names `worktree\.setup` as the fix/);
-  });
-
-  it.each([
-    ["README.ru.md", "README_RU"],
-    ["docs/task-execution.md", "GUIDE"],
-  ] as const)("%s: ключ держит команду оболочки", (name) => {
-    const text = name === "README.ru.md" ? README_RU_FLAT : GUIDE_FLAT;
-    expect(text, `${name} не говорит, что worktree.setup — команда оболочки`).toMatch(
-      /`worktree\.setup`: команду оболочки/,
-    );
-  });
-
-  it.each([
-    ["README.ru.md", "README_RU"],
-    ["docs/task-execution.md", "GUIDE"],
-  ] as const)("%s: `task start` запускает её один раз в новом рабочем дереве", (name) => {
-    const text = name === "README.ru.md" ? README_RU_FLAT : GUIDE_FLAT;
-    expect(text, `${name} не говорит, что task start запускает worktree.setup в новом дереве`).toMatch(
-      /которую `task start` один раз запускает в новом рабочем дереве/,
-    );
-  });
-
-  it.each([
-    ["README.ru.md", "README_RU"],
-    ["docs/task-execution.md", "GUIDE"],
-  ] as const)("%s: ненулевой код завершения убирает дерево и отказывает worktree-setup-failed", (name) => {
-    const text = name === "README.ru.md" ? README_RU_FLAT : GUIDE_FLAT;
-    expect(text, `${name} не говорит, что неудачный worktree.setup убирает дерево`).toMatch(
-      /ненулевой код завершения удаляет рабочее дерево и отказывает кодом `worktree-setup-failed`/,
-    );
-  });
-
-  it.each([
-    ["README.ru.md", "README_RU"],
-    ["docs/task-execution.md", "GUIDE"],
-  ] as const)("%s: red-run-broken называет worktree.setup исправлением", (name) => {
-    const text = name === "README.ru.md" ? README_RU_FLAT : GUIDE_FLAT;
-    expect(text, `${name} не говорит, что red-run-broken называет worktree.setup исправлением`).toMatch(
-      /отказывает кодом `red-run-broken` и называет `worktree\.setup` исправлением/,
-    );
+describe.each(RU_DOCS_WITH_WORKTREE_SETUP)("%s объясняет worktree.setup по-русски", (name, text) => {
+  it.each(WORKTREE_SETUP_FACTS)("$label", ({ ru }) => {
+    expect(text, `${name} не говорит это по-русски`).toMatch(ru);
   });
 });
 
