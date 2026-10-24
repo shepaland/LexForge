@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { readTextFile } from "../../src/core/read-text.js";
+import { projectConfigText } from "../../src/core/init/config-template.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -292,12 +293,13 @@ describe("CHANGELOG.md: верхняя запись одна называет м
   );
 });
 
-describe("README на двух языках: командная таблица несёт те же одиннадцать команд", () => {
-  const TABLE_HEADING: Record<string, string> = {
-    "README.md": "## Commands and exit codes",
-    "README.ru.md": "## Команды и коды возврата",
-  };
+/** The heading of the command table, one per language. */
+const TABLE_HEADING: Record<string, string> = {
+  "README.md": "## Commands and exit codes",
+  "README.ru.md": "## Команды и коды возврата",
+};
 
+describe("README на двух языках: командная таблица несёт те же одиннадцать команд", () => {
   it.each(Object.entries(TABLE_HEADING))("таблица %s содержит каждую из одиннадцати команд строкой", (file, heading) => {
     const text = file === "README.md" ? README_EN : README_RU;
     const table = section(text, heading);
@@ -308,5 +310,138 @@ describe("README на двух языках: командная таблица �
       const escaped = command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       expect(table, `в таблице команд ${file} нет строки «${command}»`).toMatch(new RegExp("\\| `" + escaped + "\\b"));
     }
+  });
+});
+
+/** The three commands 6.0.0 adds, which the two README command tables must gain a row for. */
+const NEW_COMMANDS = ["migrate", "journal", "unlock"];
+
+describe("README на двух языках: командная таблица несёт три новые команды", () => {
+  it.each(Object.entries(TABLE_HEADING))("таблица %s содержит каждую из трёх новых команд строкой", (file, heading) => {
+    const text = file === "README.md" ? README_EN : README_RU;
+    const table = section(text, heading);
+
+    expect(table, `в ${file} нет раздела «${heading}»`).not.toBe("");
+
+    for (const command of NEW_COMMANDS) {
+      const escaped = command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      expect(table, `в таблице команд ${file} нет строки «${command}»`).toMatch(new RegExp("\\| `" + escaped + "\\b"));
+    }
+  });
+});
+
+describe("README на двух языках: обещание проверки меток групп снято, файлы задачи не зовутся файлами цикла", () => {
+  it("README.md не несёт «group labels»", () => {
+    expect(README_EN_FLAT.toLowerCase(), "README.md всё ещё обещает проверку меток групп").not.toContain(
+      "group labels",
+    );
+  });
+
+  it("README.md не несёт «shared by groups»", () => {
+    expect(README_EN_FLAT.toLowerCase(), "README.md всё ещё обещает проверку общих файлов групп").not.toContain(
+      "shared by groups",
+    );
+  });
+
+  it("README.md не зовёт файлы задачи «files of a cycle»", () => {
+    expect(README_EN_FLAT.toLowerCase(), "README.md всё ещё зовёт файлы задачи файлами цикла").not.toContain(
+      "files of a cycle",
+    );
+  });
+
+  it("README.md не несёт «cycle prerequisites» в разборе кода 2", () => {
+    expect(README_EN_FLAT.toLowerCase(), "README.md всё ещё называет условия цикла в коде 2").not.toContain(
+      "cycle prerequisites",
+    );
+  });
+
+  it("README.ru.md не несёт «метки групп»", () => {
+    expect(README_RU_FLAT, "README.ru.md всё ещё обещает проверку меток групп").not.toContain("метки групп");
+  });
+
+  it("README.ru.md не несёт «общие файлы у групп»", () => {
+    expect(README_RU_FLAT, "README.ru.md всё ещё обещает проверку общих файлов групп").not.toContain(
+      "общие файлы у групп",
+    );
+  });
+
+  it("README.ru.md не зовёт файлы задачи «файлам цикла»", () => {
+    expect(README_RU_FLAT, "README.ru.md всё ещё зовёт файлы задачи файлами цикла").not.toContain("файлам цикла");
+  });
+
+  it("README.ru.md не несёт «условия цикла» в разборе кода 2", () => {
+    expect(README_RU_FLAT, "README.ru.md всё ещё называет условия цикла в коде 2").not.toContain("условия цикла");
+  });
+});
+
+describe("Три документа объясняют worktree.setup: что это, что он держит, и что task start запускает его в новом рабочем дереве", () => {
+  it("README.md: ключ держит команду оболочки", () => {
+    expect(README_EN_FLAT).toMatch(/`worktree\.setup`: a shell command/);
+  });
+
+  it("README.md: `task start` запускает её один раз в новом рабочем дереве", () => {
+    expect(README_EN_FLAT).toMatch(/that `task start` runs once in the new worktree/);
+  });
+
+  it("README.md: ненулевой код завершения убирает дерево и отказывает worktree-setup-failed", () => {
+    expect(README_EN_FLAT).toMatch(/a non-zero exit removes the worktree and refuses with `worktree-setup-failed`/);
+  });
+
+  it("README.md: red-run-broken называет worktree.setup исправлением", () => {
+    expect(README_EN_FLAT).toMatch(/refuses with `red-run-broken` and names `worktree\.setup` as the fix/);
+  });
+
+  it.each([
+    ["README.ru.md", "README_RU"],
+    ["docs/task-execution.md", "GUIDE"],
+  ] as const)("%s: ключ держит команду оболочки", (name) => {
+    const text = name === "README.ru.md" ? README_RU_FLAT : GUIDE_FLAT;
+    expect(text, `${name} не говорит, что worktree.setup — команда оболочки`).toMatch(
+      /`worktree\.setup`: команду оболочки/,
+    );
+  });
+
+  it.each([
+    ["README.ru.md", "README_RU"],
+    ["docs/task-execution.md", "GUIDE"],
+  ] as const)("%s: `task start` запускает её один раз в новом рабочем дереве", (name) => {
+    const text = name === "README.ru.md" ? README_RU_FLAT : GUIDE_FLAT;
+    expect(text, `${name} не говорит, что task start запускает worktree.setup в новом дереве`).toMatch(
+      /которую `task start` один раз запускает в новом рабочем дереве/,
+    );
+  });
+
+  it.each([
+    ["README.ru.md", "README_RU"],
+    ["docs/task-execution.md", "GUIDE"],
+  ] as const)("%s: ненулевой код завершения убирает дерево и отказывает worktree-setup-failed", (name) => {
+    const text = name === "README.ru.md" ? README_RU_FLAT : GUIDE_FLAT;
+    expect(text, `${name} не говорит, что неудачный worktree.setup убирает дерево`).toMatch(
+      /ненулевой код завершения удаляет рабочее дерево и отказывает кодом `worktree-setup-failed`/,
+    );
+  });
+
+  it.each([
+    ["README.ru.md", "README_RU"],
+    ["docs/task-execution.md", "GUIDE"],
+  ] as const)("%s: red-run-broken называет worktree.setup исправлением", (name) => {
+    const text = name === "README.ru.md" ? README_RU_FLAT : GUIDE_FLAT;
+    expect(text, `${name} не говорит, что red-run-broken называет worktree.setup исправлением`).toMatch(
+      /отказывает кодом `red-run-broken` и называет `worktree\.setup` исправлением/,
+    );
+  });
+});
+
+describe("src/core/init/config-template.ts: закомментированный пример worktree.setup попадает в каждый новый config.yaml", () => {
+  const template = projectConfigText();
+
+  it("объясняет, что ключ — команда, которую `task start` запускает в новом рабочем дереве задачи", () => {
+    expect(template).toContain(
+      "# worktree.setup: the command `task start` runs in a new task worktree",
+    );
+  });
+
+  it("несёт закомментированный пример `worktree: setup: npm ci`", () => {
+    expect(template).toMatch(/^# worktree:\n# {2}setup: npm ci$/m);
   });
 });
