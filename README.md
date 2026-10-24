@@ -121,10 +121,11 @@ without tasks. It also checks section dependencies, group labels and files share
 that would run concurrently. Each plan section must have its own file, linked from `tasks.md`.
 
 `task red` records a failing test run on a task's test commit; `task green` records the
-passing run on the implementation commit and writes the review package. When a task's work grows past its delta spec, the executor stops, names what falls
-outside the spec and waits for the user instead of a quiet fix. `evidence record` runs a project check and saves its result, exit code,
-commit and working-tree fingerprint as a stamp. Editing the code makes the stamp stale;
-`check evidence` detects this.
+passing run on the implementation commit and writes the review package. When a task's work
+grows past its delta spec, the executor stops, names what falls outside the spec and waits
+for the user instead of a quiet fix. `evidence record` runs a project check and saves its
+result, exit code, commit and working-tree fingerprint as a stamp. Editing the code makes
+the stamp stale; `check evidence` detects this.
 
 `verify` reads saved results, so checks must run first. It also checks that every task is
 closed and reviewed, and that current files match the latest reviewed snapshots. A task
