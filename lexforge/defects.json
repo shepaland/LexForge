@@ -1732,6 +1732,16 @@
       "summary": "inlineKeys drops the constraint name of 'col int CONSTRAINT name REFERENCES t (c)', so DROP CONSTRAINT name in down and ADD CONSTRAINT name in up give false findings against the named inline spelling",
       "state": "open",
       "recordedAt": "2026-10-12T06:35:17.386Z"
+    },
+    {
+      "id": "8f8346cd",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/cli/task-review-closed.test.ts",
+      "line": 51,
+      "summary": "The changes-requested case of a closed task does not assert that the report was written into the record; the sibling cases cover each half separately",
+      "state": "open",
+      "recordedAt": "2026-10-24T17:43:47.898Z"
     }
   ]
 }
