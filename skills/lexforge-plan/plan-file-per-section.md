@@ -7,16 +7,15 @@ plan of one section is exempt.
 Each section's `Depends on:` line and its tasks live in a file of their own, one path
 segment below `tasks.md`, linked from the section's entry in the index.
 
-The split changes no task's id. `red-runs.json` reads a task by its id alone, never by
-file or line, so a record written before the split still answers for the same task after
-it.
+The split changes no task's id. The CLI keeps a task's record in `tasks/<id>.json` and
+reads it by the id alone, never by file or line, so a record written before the split
+still answers for the same task after it.
 
-Keep each task's requirement, acceptance checks, file scope and links in its section
-file. Execution history belongs in `execution/<cycle>/journal.md`, linked from the task;
-full command output belongs in log files linked from that journal. The task remains the
-current contract. Preserve task IDs, checkboxes and evidence references when moving
-old history. Executors read only their current task or cycle and its linked requirements
-and decisions; use the apply skill's `scripts/extract-task.mjs` for a legacy monolith.
+A section file holds each task's requirement, its fields and its links, and nothing
+else. What happened while a task ran - decisions, questions, promises, permissions,
+rulings - goes into the change journal with `lexforge journal add`, never into the plan.
+The task stays the current contract: an executor reads only the brief `lexforge task
+start` writes for it.
 
 ## Task file scope
 
@@ -29,18 +28,10 @@ continuation line with comma-separated backtick paths for the exact writable sco
 
     Files: `src/http/routes.ts`, `tests/http/routes.test.ts`
 
-A task may omit `Files:` when safe legacy inference is unambiguous. `Check:` operands
-name verification files; they do not enlarge writable scope.
+Nothing is inferred from the task's text: the `Files:` line is the whole writable scope,
+and `lexforge task close` refuses a file outside it with `undeclared-file`. Only a task
+closed under LexForge 5.x may lack `Files:`. `Test:` names the test files the task
+writes; `Command:` names the one command that runs them and does not enlarge the scope.
 
 A plan of nine sections can run to 190 lines and 43,000 characters, about 11,000 tokens for
 one read - an executor that needs one section would pay for all nine.
-
-## Workflow 2 context map
-
-For a change pinned to workflow 2, also write `execution-plan.json` beside `tasks.md`.
-Map all original task IDs to behavioural cycles, preserving requirements, criteria and
-section dependencies. One test/RED/GREEN result is one cycle; phases do not require
-separate agents. Declare file and symbol scope, test command/files, expected assertion,
-material inputs/environment, linked design headings and specialist controls. See
-[the execution guide](../lexforge-apply/execution-v2.md). A version 1 plan needs no sidecar
-until migration is explicitly requested. Never renumber tasks to accommodate the map.
