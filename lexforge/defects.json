@@ -1772,6 +1772,26 @@
       "summary": "The shipped guide still says the rules command asks to split the cycle, while the command now names the task; no task of the plan declares this file",
       "state": "open",
       "recordedAt": "2026-10-24T21:00:15.874Z"
+    },
+    {
+      "id": "c09b6bb4",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/token-budget.test.ts",
+      "line": 100,
+      "summary": "The negative phrase list runs against section(), which does not lowercase, so a contradiction that starts a line slips past it",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:07:09.592Z"
+    },
+    {
+      "id": "c4b7a170",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "skills/lexforge-apply/SKILL.md",
+      "line": 112,
+      "summary": "«find its places once» reads as the executor's places while the task's are meant",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:07:09.802Z"
     }
   ]
 }
