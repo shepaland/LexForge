@@ -71,6 +71,8 @@ const SKILL_FILES = [
   "lexforge-apply/executor-prompt.md",
   "lexforge-apply/final-review-prompt.md",
   "lexforge-apply/parallel.md",
+  "lexforge-plan/plan-reviewer-prompt.md",
+  "lexforge-plan/digest.md",
   "lexforge-spec/data-and-services.md",
 ];
 

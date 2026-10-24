@@ -15,7 +15,7 @@ it("documents exact task file scope without filesystem guessing", () => {
     /canonical workspace-root-relative paths/,
     /one `Files:` continuation line with comma-separated backtick paths/,
     /other task prose contains a backtick route or external path/,
-    /may omit `Files:` when safe legacy inference is unambiguous/,
+    /Only a task closed under LexForge 5\.x may lack `Files:`/,
     /Never abbreviate a repository path or resolve a basename by searching the workspace/,
   ];
 
@@ -23,5 +23,6 @@ it("documents exact task file scope without filesystem guessing", () => {
   if (missing.length > 0) console.error("PLAN_FILES_CONTRACT_MISSING");
   expect(missing, "PLAN_FILES_CONTRACT_MISSING").toEqual([]);
   expect(skill).toContain("Files: `src/http/routes.ts`");
+  expect(`${skill} ${sectionReference}`).not.toMatch(/safe legacy inference/);
   expect(sectionReference).toContain("Files: `src/http/routes.ts`, `tests/http/routes.test.ts`");
 });
