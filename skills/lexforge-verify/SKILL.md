@@ -99,7 +99,8 @@ Run `lexforge verify --change <name> --json` and read the exit code.
 3. **Decisions against implementation.** Every decision of `design.md` by name, with file
    and line where it is kept or broken.
 
-An empty section carries the reason, not a blank.
+An empty section carries the reason - "no `design` artifact, schema `bounded`" - not a
+blank.
 
 Copy `notChecked` into the report whole and put a verdict under each line. Those lines
 are the work, not a caveat to paste under an answer.
@@ -137,7 +138,6 @@ and a stored verdict rots on the next edit. An unfixed finding goes to
 | Excuse | Reality |
 |---|---|
 | "the automated evidence is real and it's enough to ship on" | One measure of ten, and none of them read `design.md`. |
-| "I'm trusting a summary of a summary for that part" | Then nothing runs under the verdict. Run it again. |
 | "put 'reread decision 4' at the top of tomorrow's list" | Reading postponed past the archive is reading nobody does. |
 | "objective grounds for a severity change, not just schedule pressure" | No code changed between the finding and the argument. |
 | "The risk is latent rather than active" | A silent no-op surfaces in an incident. That is the level. |
