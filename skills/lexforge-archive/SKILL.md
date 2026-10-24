@@ -94,11 +94,12 @@ the dropped scenario goes back into the MODIFIED block, a heading is spelled as 
 spells it.
 
 Editing a file under `lexforge/specs/` by hand to pass the merge is out. That file is what
-the merge writes; hand-editing it takes live behaviour out of the record. Offering to do
-it if they insist is doing it, one message later.
+the merge writes; hand-editing it takes live behaviour out of the record and disarms the
+check that caught the mismatch. Offering to do it if they insist is doing it, one message
+later.
 
 Copying the spec's block into the delta unchanged is the same failure wearing a `0`: the
-merge writes back what was there.
+merge writes back what was there, and the change ships behaviour with no requirement.
 
 Run the command again until it exits `0`.
 
@@ -129,7 +130,6 @@ worktree stay, and the failure is the next thing you say.
 | "so if it exits `0` the gate held" | Four machine checks held. A contradicted decision passes all four. |
 | "If you reaffirm, that's your call and I'll make the edit without re-arguing it" | The offer is the edit, one message later. |
 | "This should exit `0`" | The command decides that, not the argument that it would. |
-| "the archive command is queued to run against it" | A run you have not made has no result. |
 
 ## Red flags - stop
 

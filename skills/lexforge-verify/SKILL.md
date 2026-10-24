@@ -96,13 +96,13 @@ Run `lexforge verify --change <name> --json` and read the exit code.
    a verdict.
 2. **Plan against work done.** Closed tasks, stamp freshness, every finding of the
    command.
-3. **Decisions against implementation.** Every decision of `design.md` by name, with the
-   file and line where it is kept or broken.
+3. **Decisions against implementation.** Every decision of `design.md` by name, with file
+   and line where it is kept or broken.
 
-An empty section carries the reason - "no `design` artifact, schema `bounded`" - not a
-blank.
+An empty section carries the reason, not a blank.
 
-Copy `notChecked` into the report whole and put a verdict under each line.
+Copy `notChecked` into the report whole and put a verdict under each line. Those lines
+are the work, not a caveat to paste under an answer.
 
 Section 3 reads `design.md` against the code, now. Writing the code with `design.md` open
 is memory, not reading; a green suite tests the code against your own reading of the
