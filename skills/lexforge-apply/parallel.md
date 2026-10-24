@@ -59,5 +59,5 @@ A commit you did not make, a branch you did not create, or edits past what your 
 produced: name the paths, the commit, the branch, and call it unaccounted. Check your own
 subagents first. Ask the owner whose it is before any task closes on top of it; never
 attribute it to another person or session. A lock left by a process that has stopped is
-removed with `lexforge unlock --change <name>`, and only after you have checked that the
-process has stopped.
+removed with `lexforge task unlock`, and only after you have checked that the process
+has stopped.
