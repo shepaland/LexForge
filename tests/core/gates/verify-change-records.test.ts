@@ -89,6 +89,28 @@ describe("taskFindings: work the change branch lacks", { timeout: 60_000 }, () =
     expect(rules()).toEqual([]);
   });
 
+  it("leaves the task worktrees under .lexforge/worktrees/", () => {
+    writeAt(root, ".lexforge/worktrees/other/1.1/src/x.js", "1\n");
+    expect(rules()).toEqual([]);
+  });
+
+  it("leaves the lock and temporary files of the defect ledger", () => {
+    writeAt(root, "lexforge/defects.json.lock", "1\n");
+    writeAt(root, "lexforge/defects.json.tmp", "1\n");
+    expect(rules()).toEqual([]);
+  });
+
+  it("finds a file that only starts like the defect ledger", () => {
+    writeAt(root, "lexforge/defects.json.bak", "[]\n");
+    expect(rules()).toEqual(["uncommitted-work"]);
+  });
+
+  it("finds an edit of a delta spec of the change", () => {
+    writeAt(root, "lexforge/changes/demo/specs/notes/spec.md", "## ADDED Requirements\n");
+    expect(rules()).toEqual(["uncommitted-work"]);
+    expect(messages()[0]).toContain("lexforge/changes/demo/specs/notes/spec.md");
+  });
+
   it("finds an untracked main spec", () => {
     writeAt(root, "lexforge/specs/billing/spec.md", "# billing\n");
     expect(rules()).toEqual(["uncommitted-work"]);

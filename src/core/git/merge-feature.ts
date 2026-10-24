@@ -22,7 +22,8 @@ export function mergeFeature(root: string, name: string): MergeFeatureResult {
     return { merged: false };
   }
 
-  readGit(root, ["add", "--all"]);
+  // .lexforge/ holds the task worktrees; staged, each would land in dev as a gitlink.
+  readGit(root, ["add", "--all", "--", ".", ":(exclude).lexforge"]);
 
   if (tryGit(root, ["diff", "--cached", "--quiet"]).ok === false) {
     readGit(root, ["commit", "--message", `Complete ${name}`]);

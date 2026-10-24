@@ -128,3 +128,17 @@ describe("lexforge archive outside a feature branch", () => {
     expect(git(root, "log", "dev", "--merges", "--format=%s")).toBe("");
   });
 });
+
+describe("lexforge archive beside another change's task worktree", () => {
+  it("leaves the worktree out of dev", async () => {
+    const root = await featureWorkspace((dir) =>
+      git(dir, "worktree", "add", "--quiet", "-b", "task/other/1.1", ".lexforge/worktrees/other/1.1", "dev"),
+    );
+
+    const { exitCode, capture } = await call(["archive", CHANGE, "--json"], root);
+
+    expect(exitCode, capture.err).toBe(0);
+    const inDev = git(root, "ls-tree", "-r", "--name-only", "dev").split("\n");
+    expect(inDev.filter((file) => file.startsWith(".lexforge/"))).toEqual([]);
+  });
+});

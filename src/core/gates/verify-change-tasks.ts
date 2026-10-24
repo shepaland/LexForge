@@ -177,12 +177,25 @@ function shortPathFindings(root: string, change: string, planFile: string): Find
 
 /**
  * The paths LexForge commands write while a change runs, which no review has to
- * see: the change directory (plan, records, stamps, review copies), the task
- * worktrees under .lexforge/ and the defect ledger that defect record and
- * defect close keep. Everything else in the tree is work.
+ * see: the change directory (plan, records, stamps, review copies) save its
+ * delta specs, which archive merges into the main specs; the task worktrees
+ * under .lexforge/worktrees/, which archive never stages; and the defect
+ * ledger with the lock and temporary files defect record and defect close keep
+ * beside it. Everything else in the tree is work.
  */
-function commandWrittenPaths(change: string): string[] {
-  return [`:(exclude)lexforge/changes/${change}`, ":(exclude).lexforge", `:(exclude)lexforge/${DEFECTS_FILE}*`];
+function workScopes(change: string): string[][] {
+  const ledger = `lexforge/${DEFECTS_FILE}`;
+  const outside = [
+    `:(exclude)lexforge/changes/${change}`,
+    ":(exclude).lexforge/worktrees",
+    `:(exclude,literal)${ledger}`,
+    `:(exclude,literal)${ledger}.lock`,
+    `:(exclude,literal)${ledger}.tmp`,
+  ];
+  return [
+    ["--", ".", ...outside],
+    ["--", `lexforge/changes/${change}/specs`],
+  ];
 }
 
 function gitLines(root: string, args: string[]): string[] {
@@ -202,11 +215,12 @@ function gitLines(root: string, args: string[]): string[] {
  * review saw it, and archive would commit it into dev with the rest.
  */
 function uncommittedFindings(root: string, change: string, tip: string): Finding[] {
-  const scope = ["--", ".", ...commandWrittenPaths(change)];
-  const changed = gitLines(root, ["diff", "--name-only", "HEAD", ...scope]);
-  const untracked = gitLines(root, ["ls-files", "--others", "--exclude-standard", ...scope]);
+  const scopes = workScopes(change);
+  const lines = (args: string[]): string[] => scopes.flatMap((scope) => gitLines(root, [...args, ...scope]));
+  const changed = lines(["diff", "--name-only", "HEAD"]);
+  const untracked = lines(["ls-files", "--others", "--exclude-standard"]);
   if (changed.length + untracked.length === 0) return [];
-  const differsFromTip = new Set(gitLines(root, ["diff", "--name-only", tip, ...scope]));
+  const differsFromTip = new Set(lines(["diff", "--name-only", tip]));
   const files = [
     ...changed.filter((file) => differsFromTip.has(file)),
     ...untracked.filter((file) => !sameAsTip(root, tip, file)),

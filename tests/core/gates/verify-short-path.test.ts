@@ -12,7 +12,9 @@ beforeEach(async () => {
 }, 60_000);
 afterEach(() => ws.remove());
 
-const rules = (): string[] => taskFindings(ws.root, CHANGE).map((f) => f.rule);
+/** The delta edits below are left uncommitted on purpose; uncommitted-work has tests of its own. */
+const shortPathOnly = () => taskFindings(ws.root, CHANGE).filter((f) => f.rule !== "uncommitted-work");
+const rules = (): string[] => shortPathOnly().map((f) => f.rule);
 
 describe("taskFindings: the short path after red", { timeout: 60_000 }, () => {
   it("is clean while the change still fits the short path", () => {
@@ -32,7 +34,7 @@ describe("taskFindings: the short path after red", { timeout: 60_000 }, () => {
 
   it("finds a short change whose delta no longer passes validate --strict", () => {
     spoil.breakDeltaScenario(ws);
-    const findings = taskFindings(ws.root, CHANGE);
+    const findings = shortPathOnly();
     expect(findings.map((f) => f.rule)).toEqual(["specs-before-code"]);
     expect(findings[0].message).toContain("Run: lexforge validate demo --strict");
   });

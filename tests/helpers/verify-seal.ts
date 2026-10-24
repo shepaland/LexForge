@@ -59,7 +59,7 @@ export function sealForVerify(root: string, change: string): void {
  * the records, their reviews and the final review all name the new tip.
  */
 export function commitWork(root: string, change: string): void {
-  git(root, "add", "--all", "--", ".", `:(exclude)lexforge/changes/${change}`);
+  git(root, "add", "--all", "--", ".", `:(exclude)lexforge/changes/${change}`, ":(exclude).lexforge");
   git(root, "commit", "--allow-empty", "--message", "work of the change");
   const tip = git(root, "rev-parse", "HEAD");
   const branch = featureBranchName(change);
