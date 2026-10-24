@@ -3,6 +3,7 @@ import { answerPath, workspacePath } from "../answer-path.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
 import { type Finding } from "../validation/finding.js";
+import { readTaskRecord } from "../tasks/records.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { checkCoverage, readDeltaSpecs } from "./coverage-rules.js";
@@ -113,7 +114,7 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
     ...checkCoverage(plan, readDeltaSpecs(root, options.change)),
     ...checkIdentifiers(plan),
     ...checkSectionDependencies(plan, sections),
-    ...checkTaskFields(plan, sections),
+    ...checkTaskFields(plan, sections, historicalTasks(root, options.change, plan)),
     ...checkTaskFileDeclarations(plan),
     ...checkMaterialReferences(plan, readMaterialDelta(root, options.change)),
   ].sort((left, right) => left.line - right.line);
@@ -189,4 +190,14 @@ function renderLines(data: CheckPlanData): string[] {
   }
 
   return lines;
+}
+
+/** Ticked tasks that `lexforge migrate` closed as history of LexForge 5.x. */
+function historicalTasks(root: string, change: string, plan: PlanTasks): Set<string> {
+  return new Set(
+    plan.tasks
+      .filter((task) => task.done && task.number !== "")
+      .filter((task) => readTaskRecord(root, change, task.number)?.origin === "historical")
+      .map((task) => task.number),
+  );
 }

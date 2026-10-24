@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { checkPlan } from "../../../src/core/gates/plan-check.js";
@@ -60,6 +60,30 @@ describe("migrateChange on a change of LexForge 5.x", () => {
     expect(tasksMd(root)).toMatch(/^- \[x\] 1\.1 /m);
   });
 
+  it("leaves a closed task as it was, but for its group label", () => {
+    const root = setup();
+    const file = path.join(root, DIR_5X, "tasks/section-1.md");
+    const before = readFileSync(file, "utf8").split("\n");
+    migrateChange(root, CHANGE);
+    const after = readFileSync(file, "utf8").split("\n");
+    const own = (lines: string[]) => {
+      const at = lines.findIndex((line) => line.startsWith("- [x] 1.1 "));
+      let end = at + 1;
+      while (end < lines.length && /^\s+\S/.test(lines[end]!)) end += 1;
+      return lines.slice(at, end);
+    };
+    expect(own(after)).toEqual(own(before).map((line) => line.replace(" [A] ", " ")));
+  });
+
+  it("plan check still asks a ticked task without a historical record for its fields", () => {
+    const root = setup({ taskOutsideCycles: "4.1" });
+    migrateChange(root, CHANGE);
+    const file = path.join(root, DIR_5X, "tasks/section-4.md");
+    writeFileSync(file, readFileSync(file, "utf8").replace("- [ ] 4.1", "- [x] 4.1"));
+    const rules = checkPlan({ cwd: root, change: CHANGE }).data.findings.map((item) => item.rule);
+    expect(rules).toEqual(expect.arrayContaining(["task-missing-files", "task-missing-test", "task-missing-command"]));
+  });
+
   it("sends open tasks with their fields to plan review, and plan check passes", () => {
     const root = setup();
     expect(migrateChange(root, CHANGE)).toMatchObject({
@@ -77,6 +101,7 @@ describe("migrateChange on a change of LexForge 5.x", () => {
     expect(migrateChange(root, CHANGE)).toMatchObject({ approved: true, open: [], reopened: [] });
     expect(readPlanState(root, CHANGE).approval).toMatchObject({ quote: "migrated from 5.x" });
     expect(() => assertPlanApproved(root, CHANGE)).not.toThrow();
+    expect(checkPlan({ cwd: root, change: CHANGE }).data.findings).toEqual([]);
   });
 
   it("leaves the plan unapproved and names the missing fields of a task outside every cycle", () => {

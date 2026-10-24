@@ -5,8 +5,16 @@ import type { PlanTask, PlanTasks } from "./task-list.js";
 const DECLARATION_FIX =
   "Add one Files line with the paths the task writes, each in backticks, comma-separated.";
 
-/** Reads every field of every task: what is missing, malformed, unknown, or unordered. */
-export function checkTaskFields(plan: PlanTasks, sections: PlanSection[]): Finding[] {
+/**
+ * Reads every field of every task: what is missing, malformed, unknown, or unordered.
+ * A task in `historical` closed under LexForge 5.x and keeps the text it had then,
+ * so a field it lacks is not asked for.
+ */
+export function checkTaskFields(
+  plan: PlanTasks,
+  sections: PlanSection[],
+  historical: ReadonlySet<string> = new Set(),
+): Finding[] {
   const findings: Finding[] = [];
   const index = new Map<string, number>();
   plan.tasks.forEach((task, position) => {
@@ -19,18 +27,19 @@ export function checkTaskFields(plan: PlanTasks, sections: PlanSection[]): Findi
       findings.push(makeFinding(task.file, task.line, rule, message));
     };
     const problem = (field: string): boolean => task.fieldProblems.some((item) => item.field === field);
+    const asked = !(task.done && historical.has(task.number));
 
-    if (task.files.length === 0 && task.fileDeclarationProblems.length === 0) {
+    if (asked && task.files.length === 0 && task.fileDeclarationProblems.length === 0) {
       at("task-missing-files", `${name} has no Files line. ${DECLARATION_FIX}`);
     }
-    if (task.tests.length === 0 && !task.declaresMove && !problem("Test")) {
+    if (asked && task.tests.length === 0 && !task.declaresMove && !problem("Test")) {
       at(
         "task-missing-test",
         `${name} names no test. Add a Test line with the test file the task writes, in backticks, ` +
           "or mark a task that only carries code with (move) right after its number.",
       );
     }
-    if (task.command === null && !problem("Command")) {
+    if (asked && task.command === null && !problem("Command")) {
       at(
         "task-missing-command",
         `${name} has no command. Add a Command line with the one command that runs its test, in backticks.`,

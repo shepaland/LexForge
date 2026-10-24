@@ -152,8 +152,8 @@ function missingLines(task: PlanTask, cycle: CycleFields | undefined): string[] 
 
 /**
  * Rewrites the task lines of one plan file: the group labels out, `(move)`
- * right after the number, the tick as `ticked` says, and the field lines the
- * cycle supplies after the task's own continuation lines. Returns the new text.
+ * right after the number, the tick as `ticked` says, and, for an open task, the
+ * field lines the cycle supplies after the task's own continuation lines. Returns the new text.
  */
 export function rewritePlanFile(
   text: string,
@@ -183,7 +183,8 @@ export function rewritePlanFile(
     while (end + 1 < lines.length && CONTINUATION.test(lines[end + 1]!) && !ANY_TASK.test(lines[end + 1]!)) end += 1;
     out.push(...lines.slice(i + 1, end + 1));
     const pad = end > i ? /^\s*/.exec(lines[end]!)![0] : `${indent}  `;
-    out.push(...missingLines(task, fields.get(number!)).map((line) => pad + line));
+    // A closed task stays as 5.x left it: the plan records what was done, not what a cycle would add.
+    if (!ticked(number!)) out.push(...missingLines(task, fields.get(number!)).map((line) => pad + line));
     i = end;
   }
   return out.join("\n");
