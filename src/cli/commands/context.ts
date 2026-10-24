@@ -61,11 +61,6 @@ export function registerContext(program: Command, ctx: CliContext): void {
         o.json,
       ),
     );
-  common(
-    program
-      .command("resume")
-      .description("Recompute continuation from primary evidence"),
-  ).action((o) => output(continuation(root(), o.change), o.json));
   const flow = program
     .command("workflow")
     .description("Explicit workflow migration");
