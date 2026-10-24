@@ -18,13 +18,13 @@ describe("lexforge-apply under the task commands", () => {
   it.each([
     ["task close ticks the box", /`lexforge task close`[^.]*ticks the checkbox/],
     ["state is written by the CLI only", /Never edit `tasks\/<id>\.json`, `plan-state\.json` or a checkbox by hand/],
-    ["rulings go to the journal", /`lexforge journal add --kind ruling`/],
+    ["rulings go to the journal", /Any other fork is yours: choose, run `lexforge journal add --kind ruling`/],
     ["four reasons to stop", /Stop for the owner in four cases only/],
     ["a missing file is a question", /asked, never guessed/],
-    ["plan amend takes the owner's quote", /lexforge plan amend --change <name> --quote/],
+    ["plan amend takes the owner's quote", /After the owner's answer run\s*`lexforge plan amend --change <name> --quote "<owner's words>"`/],
     ["the amendment goes through the amendment angle", /`amendment` angle reviewed with `lexforge plan review --change <name> --angle amendment/],
     ["next step comes from the refusal", /run the command `nextStep` names/],
-    ["resume after compaction", /`lexforge resume --change <name>`/],
+    ["resume after compaction", /After a compaction run `lexforge resume --change <name>` and take progress,\s*running tasks and the journal from it, never from what you remember of the chat\./],
     ["installing 6.0.0 migrates nothing by itself", /migrates no existing change by itself/],
   ])("lexforge-apply: %s", (_name, rule) => {
     expect(applyText()).toMatch(rule);

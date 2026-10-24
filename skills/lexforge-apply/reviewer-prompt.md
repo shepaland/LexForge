@@ -10,7 +10,7 @@ is a subagent on the model of the `verify` stage and is never the task's executo
 
 | Slot | Where it comes from |
 |---|---|
-| `[ENGINEERING_RULES]` | the engineering rules already listed below, the same selection `lexforge task start` wrote into the task's `brief.md` over the task's files |
+| `[ENGINEERING_RULES]` | the engineering rules already listed below, under this task's own `review.md`'s `Engineering rules` section - not the narrower selection `brief.md` carries for the executor |
 
 The rest of the package is the whole input: the brief path, the executor's report, the
 diff from the base to green, `Since the last review` when there is one, and the report

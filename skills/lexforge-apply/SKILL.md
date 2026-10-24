@@ -72,20 +72,19 @@ user change the assignment in `lexforge/config.yaml`; do not change it yourself.
 
 ## Execution version
 
-One way to run a task, whatever the age of the change. Installing LexForge 6.0.0
-migrates no existing change by itself: a change made before 6.0.0 is refused with
+Run a task the same way whatever the change's age. Installing LexForge 6.0.0 migrates no
+existing change by itself: a change from before it is refused with
 `change-needs-migration`. Run `lexforge migrate --change <name>`, name its historical
 and open tasks and any `missingFields`, then send the open part through plan review and
-owner approval before any task command. At the start of a conversation run `lexforge
-journal session`. After a compaction run `lexforge resume --change <name>` and take
-progress, running tasks and the journal from it, never from what you remember of the
-chat.
+owner approval. Run `lexforge journal session` at the start of a conversation. After a
+compaction run `lexforge resume --change <name>` and take progress, running tasks and
+the journal from it, never from what you remember of the chat.
 
 ## The rule
 
 **NEVER WRITE IMPLEMENTATION BEFORE A RED THE CLI RECORDED.**
 
-Violating the letter of this rule is violating its spirit.
+Violating the letter violates the spirit.
 
 Every step of a task is a command:
 
@@ -99,19 +98,22 @@ Every step of a task is a command:
    ticks the checkbox.
 
 Never edit `tasks/<id>.json`, `plan-state.json` or a checkbox by hand. Everything under
-`lexforge/changes/<name>/` except `report.md` is written by the CLI; a deadline or the
-owner taking the blame changes nothing.
+`lexforge/changes/<name>/` except `report.md` is written by the CLI; a deadline changes
+nothing.
 
 A refusal is exit `2`. Read `error.code` and `error.message` to the end, then run the
-command `nextStep` names. A missing module that the task declares as a new file is
-already red: no stub goes into the test commit, and `task red` refuses one as
-`red-commit-touches-code`. A test that passes at red is rewritten.
+command `nextStep` names. A missing module the task declares as new is already red: no
+stub in the test commit; `task red` refuses one as `red-commit-touches-code`. A test
+green at red is rewritten.
 
 ## Task order
 
-Start a task when `lexforge status` shows it ready. The executor is you or a subagent;
-hand it `brief.md` whole with [executor-prompt.md](executor-prompt.md). It works only in
-the task's worktree. Several ready tasks: [parallel.md](parallel.md).
+Take tasks in number order. Read [parallel.md](parallel.md)'s runtime check before the
+first task, whatever the plan says; its rest matters once `lexforge status` shows more
+than one ready task. Start a task when ready. The executor is you or a subagent; hand it
+`brief.md` whole with [executor-prompt.md](executor-prompt.md), working only in the
+task's worktree. A task needing a later task's result is a plan defect: name it, never
+reorder.
 
 Stop for the owner in four cases only:
 

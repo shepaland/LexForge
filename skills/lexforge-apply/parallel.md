@@ -1,6 +1,9 @@
 # Several tasks at once
 
-Read this when `lexforge status` shows more than one ready task.
+Read "The runtime check" below before your first task of the change, whatever the plan
+says and however many tasks it records as independent - the check and its answer are
+owed either way. Read the rest of this file once `lexforge status` shows more than one
+ready task.
 
 ## Who runs together
 

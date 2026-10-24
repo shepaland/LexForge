@@ -1,8 +1,20 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import type { SkillFile } from "../helpers/read-skills.js";
 import { checkSkillStructure } from "./checks.js";
-import { bodyOf, fixture, only, pxSection } from "./helpers.js";
+import { bodyOf, fixture, only, pxSection, section } from "./helpers.js";
+
+/** The text of parallel.md before its first `## ` heading - the file's own opening frame. */
+function parallelOpening(): string {
+  const path = fileURLToPath(new URL("../../skills/lexforge-apply/parallel.md", import.meta.url));
+  const raw = readFileSync(path, "utf8");
+  const firstHeading = raw.indexOf("\n## ");
+
+  return firstHeading === -1 ? raw : raw.slice(0, firstHeading);
+}
 
 describe("раздел 14: lexforge-apply получает свой предел слов тела — 800 против общих 650", () => {
   it("фикстура lexforge-apply на 748 слов не даёт находки body-length", () => {
@@ -122,6 +134,79 @@ describe("parallel.md: проверка рантайма на исполните
       "the next task can start while this one waits on its reviewer",
     ]) {
       expect(text, `«${phrase}» открывает задачу поверх неревьюированной`).not.toContain(phrase);
+    }
+  });
+
+  it("проверка рантайма читается до первой задачи, не только когда задач несколько", () => {
+    const skillBody = bodyOf("lexforge-apply");
+    const order = section(skillBody, "Task order");
+
+    expect(order).toMatch(
+      /Read \[parallel\.md\]\(parallel\.md\)'s runtime check before the\s*first task, whatever the plan says/,
+    );
+
+    for (const phrase of [
+      "once several tasks are ready",
+      "only when more than one task is ready",
+      "when the plan has independent tasks",
+    ]) {
+      expect(order, `«${phrase}» обуславливает проверку рантайма числом готовых задач`).not.toContain(
+        phrase,
+      );
+    }
+  });
+
+  it("parallel.md не прячет проверку рантайма за «несколько готовых задач» своей вводной строкой", () => {
+    const opening = parallelOpening();
+
+    expect(opening).toMatch(
+      /before your first task of the change, whatever the plan\s*says and however many tasks it records as independent/,
+    );
+    expect(opening).toMatch(/the check and its answer are\s*owed either way/);
+
+    for (const phrase of [
+      "Read this when `lexforge status` shows more than one ready task.",
+      "only matters once several tasks are ready",
+      "skip the check when the plan has no independent tasks",
+    ]) {
+      expect(opening, `«${phrase}» вновь гейтит проверку рантайма числом готовых задач`).not.toContain(
+        phrase,
+      );
+    }
+  });
+});
+
+describe("раздел «Task order»: номер и запрет на перестановку задач", () => {
+  it("задачи идут в порядке номеров", () => {
+    const order = section(bodyOf("lexforge-apply"), "Task order");
+
+    expect(order).toMatch(/Take tasks in number order\./);
+
+    for (const phrase of [
+      "in any order",
+      "in whatever order suits",
+      "order does not matter",
+      "sections may run out of order",
+    ]) {
+      expect(order, `«${phrase}» снимает требование числового порядка`).not.toContain(phrase);
+    }
+  });
+
+  it("задача, которой нужен результат более позднего номера — дефект плана, который называют, а не повод переставить", () => {
+    const order = section(bodyOf("lexforge-apply"), "Task order");
+
+    expect(order).toMatch(
+      /A task needing a later task's result is a plan\s*defect: name it, never\s*reorder\./,
+    );
+
+    for (const phrase of [
+      "reorder them to fit",
+      "it is fine to run the later task first",
+      "move the later task ahead to unblock it",
+    ]) {
+      expect(order, `«${phrase}» разрешает переставлять задачи вместо того, чтобы назвать дефект`).not.toContain(
+        phrase,
+      );
     }
   });
 });

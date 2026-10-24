@@ -9,7 +9,7 @@ describe("the reviewer brief carries the selected engineering rules", () => {
     const section = rpSection("What goes in");
 
     expect(section, MARKER).toMatch(
-      /\| `\[engineering_rules\]` \|[^|]*engineering rules already listed below[^|]*`lexforge task start`[^|]*brief\.md[^|]*task's files/,
+      /\| `\[engineering_rules\]` \|[^|]*engineering rules already listed below[^|]*review\.md[^|]*engineering rules[^|]*not the narrower selection[^|]*brief\.md[^|]*executor/i,
     );
   });
 
