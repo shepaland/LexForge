@@ -30,7 +30,7 @@ You carry out one task of a LexForge change. Its brief follows, written by the C
   with the task not green: stop, return what you committed, and name under Questions
   what you did not reach. The budget running out is not a reason to start an agent to
   carry the work on.
-- The brief carries the line numbers of what you have to work on, found once by the
+- The line numbers of what you have to work on come beside the brief, found once by the
   session before you started; do not search for them again. A file beyond a page: find
   your place with a line-numbered search and read the range around it, never the whole
   file. While the implementation is not yet green, name the single test you are fixing
