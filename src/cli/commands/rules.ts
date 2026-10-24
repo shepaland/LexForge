@@ -51,7 +51,7 @@ export function registerRules(program: Command, context: CliContext): void {
     .command("rules")
     .description(RULES_DESCRIPTION)
     .requiredOption("--change <name>", "the change the files belong to")
-    .requiredOption("--files <paths...>", "the files of the task, relative to the project root")
+    .requiredOption("--files <paths...>", "the files of the cycle, relative to the project root")
     .option("--json", "print one JSON document instead of human output")
     .action((options: { change: string; files: string[]; json?: boolean }) => {
       const root = findWorkspaceRoot(context.cwd);
@@ -62,7 +62,7 @@ export function registerRules(program: Command, context: CliContext): void {
         result = refuse(
           options.change,
           "files-too-many",
-          `${options.files.length} files were given, the limit is ${MAX_FILES}. Split the task.`,
+          `${options.files.length} files were given, the limit is ${MAX_FILES}. Split the cycle.`,
           `Run the command for at most ${MAX_FILES} files at a time.`,
         );
       } else {
@@ -86,7 +86,7 @@ export function registerRules(program: Command, context: CliContext): void {
           result = refuse(
             options.change,
             "rules-too-many",
-            `${selected.length} rules match these files, the limit is ${MAX_SELECTED_RULES}. Split the task.`,
+            `${selected.length} rules match these files, the limit is ${MAX_SELECTED_RULES}. Split the cycle.`,
             "Choose the files so that fewer rules match, then run the command again.",
           );
         } else {
