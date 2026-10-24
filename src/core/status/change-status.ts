@@ -16,6 +16,7 @@ import {
 } from "../models/assignment.js";
 import { nextStepForChange } from "../next-step.js";
 import { loadSchema } from "../schemas/load-schema.js";
+import { readWorkflowFile } from "../tasks/workflow-file.js";
 import type { CommandResult } from "../types.js";
 import { readChangeConfig } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
@@ -86,6 +87,9 @@ export function readChangeState(root: string, change: string): ReadChangeState {
 export function changeStatus(options: ChangeStatusOptions): CommandResult<ChangeStatusData> {
   const root = findWorkspaceRoot(options.cwd);
   const { schema, state } = readChangeState(root, options.change);
+  // The change is resolved by the line above; a workflow below version 3 is
+  // refused here, before progress is counted with pre-6.0.0 semantics.
+  readWorkflowFile(root, options.change);
   const projectConfig = readProjectConfig(root);
   const models = projectConfig.models;
 
