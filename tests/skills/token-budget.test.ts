@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { epSection } from "./helpers.js";
+import { bodyOf, epSection, section } from "./helpers.js";
 
 describe("раздел 16: бюджет в 300 000 токенов на исполнителя одной задачи", () => {
   it("называет бюджет ровно в 300 000 токенов, не приблизительно", () => {
@@ -55,13 +55,24 @@ describe("раздел 16: бюджет в 300 000 токенов на испо�
 });
 
 describe("дисциплина чтения держит бюджет исполнителя одной задачи", () => {
-  it("номера строк приходят вместе с брифом, найденные сессией заранее", () => {
+  it("номера строк приходят рядом с брифом, найденные сессией заранее, а не внутри самого брифа", () => {
     const section = epSection("How you work");
 
     expect(section).toMatch(
-      /the brief carries the line numbers of what you have to work on, found once by the session before you started/,
+      /the line numbers of what you have to work on come beside the brief, found once by the session before you started/,
     );
     expect(section).toMatch(/do not search for them again/);
+
+    for (const phrase of [
+      "the brief carries the line numbers",
+      "the line numbers are inside the brief",
+      "find the line numbers yourself",
+    ]) {
+      expect(
+        section,
+        `«${phrase}» заставляет исполнителя искать номера строк самому`,
+      ).not.toContain(phrase);
+    }
   });
 
   it("большой файл находится построчным поиском вместо чтения целиком", () => {
@@ -77,5 +88,24 @@ describe("дисциплина чтения держит бюджет испол
 
     expect(section).toMatch(/name the single test you are fixing in every run/);
     expect(section).toMatch(/`command:` runs in full only at `task red` and `task green`/);
+  });
+
+  it("тело lexforge-apply поручает сессии находить места задачи один раз и передавать номера строк рядом с брифом", () => {
+    const order = section(bodyOf("lexforge-apply"), "Task order");
+
+    expect(order).toMatch(
+      /find its places once and hand it `brief\.md` whole beside their line numbers/,
+    );
+
+    for (const phrase of [
+      "the executor finds its own places",
+      "the executor searches for the line numbers",
+      "line numbers are optional",
+    ]) {
+      expect(
+        order,
+        `«${phrase}» снимает с сессии поиск номеров строк до запуска исполнителя`,
+      ).not.toContain(phrase);
+    }
   });
 });
