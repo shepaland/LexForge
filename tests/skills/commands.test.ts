@@ -1,8 +1,10 @@
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
 import { readSkills, type SkillFile } from "../helpers/read-skills.js";
+import { makeWorkspace, removeWorkspace } from "../helpers/workspace.js";
 import { checkNamedCommands, knownCommandNames } from "./commands.js";
 
 const FIXTURES = fileURLToPath(new URL("../fixtures/skills-structure", import.meta.url));
@@ -106,6 +108,55 @@ describe("проверка команд на фикстурах", () => {
     };
 
     expect(checkNamedCommands(skill).map((entry) => entry.message)).toHaveLength(1);
+  });
+
+  it("известная команда с подкомандой, которой у неё нет, даёт находку", () => {
+    const skill: SkillFile = {
+      dir: "bad-pair",
+      file: "/tmp/bad-pair/SKILL.md",
+      frontmatter: {},
+      body: "A lock left by a dead process is removed with `lexforge task unlock`.",
+    };
+
+    const findings = checkNamedCommands(skill);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.rule).toBe("unknown-command");
+    expect(findings[0]!.message).toContain("task unlock");
+  });
+
+  it("подкоманда, которую CLI действительно регистрирует под этой командой, находки не даёт", () => {
+    const skill: SkillFile = {
+      dir: "good-pair",
+      file: "/tmp/good-pair/SKILL.md",
+      frontmatter: {},
+      body: "Run `lexforge task start`, then `lexforge unlock --change demo` if the lock is stale.",
+    };
+
+    expect(checkNamedCommands(skill)).toEqual([]);
+  });
+
+  it("команда в файле рядом с SKILL.md тоже проверяется", () => {
+    const root = makeWorkspace({
+      "companion/parallel.md": "A lock left by a dead process is removed with `lexforge task unlock`.\n",
+    });
+
+    try {
+      const skill: SkillFile = {
+        dir: "companion",
+        file: path.join(root, "companion", "SKILL.md"),
+        frontmatter: {},
+        body: "Nothing in this body names a stale command.",
+      };
+
+      const findings = checkNamedCommands(skill);
+
+      expect(findings).toHaveLength(1);
+      expect(findings[0]!.message).toContain("parallel.md");
+      expect(findings[0]!.message).toContain("task unlock");
+    } finally {
+      removeWorkspace(root);
+    }
   });
 });
 
