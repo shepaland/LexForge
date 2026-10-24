@@ -32,7 +32,6 @@ describe("состав ответа changeStatus", () => {
 
     expect(Object.keys(result.data), "\n\"engineeringStacks\"\n").toEqual([
       "outputVersion",
-      "workflow",
       "workspaceRoot",
       "change",
       "schema",
@@ -40,6 +39,7 @@ describe("состав ответа changeStatus", () => {
       "artifacts",
       "stages",
       "engineeringStacks",
+      "tasks",
       "nextStep",
     ]);
     expect(result.data.outputVersion).toBe(1);

@@ -82,7 +82,7 @@ exports[`контракт машинного вывода > status по одно
   "outputVersion",
   "schema",
   "stages",
-  "workflow",
+  "tasks",
   "workspaceRoot",
 ]
 `;
