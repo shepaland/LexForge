@@ -16,6 +16,7 @@ import {
   type Readiness,
 } from "./plan-ready.js";
 import { assertPlanApproved } from "./plan-state.js";
+import { assertShortPathAdmission, isShortPath } from "./short-path.js";
 import { readTaskRecord, writeTaskRecord, type TaskRecord } from "./records.js";
 import { runTaskCommand } from "./run.js";
 
@@ -78,7 +79,8 @@ function assertStartable(root: string, change: string, taskId: string, executor:
       `lexforge status --change ${change}`,
     );
   }
-  assertPlanApproved(root, change);
+  if (isShortPath(root, change)) assertShortPathAdmission(root, change, "start");
+  else assertPlanApproved(root, change);
   const open = taskDependencies(readChangePlan(root, change), taskId).filter((id) => states.get(id) !== "closed");
   assertDependenciesClosed(change, taskId, open, states);
   assertNoOverlap(root, change, task, states);

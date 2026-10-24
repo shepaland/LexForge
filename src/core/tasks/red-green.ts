@@ -9,6 +9,7 @@ import { withChangeLock } from "./lock.js";
 import { taskArtifactPath } from "./paths.js";
 import { findPlanTask } from "./plan-ready.js";
 import { writeTaskRecord, type RunRecord, type TaskRecord } from "./records.js";
+import { assertShortPathAdmission, isShortPath } from "./short-path.js";
 import { classifyRed, runTaskCommand, type CommandRun } from "./run.js";
 import {
   assertRecordUnchanged,
@@ -72,6 +73,7 @@ export function recordRed(root: string, change: string, taskId: string): RedResu
   }
   const before = withChangeLock(root, change, "task red", () => {
     const record = requireInProgress(root, change, taskId);
+    if (isShortPath(root, change)) assertShortPathAdmission(root, change, "red");
     assertWorktreeClean(record.worktree, taskId);
     return { record, commit: checkRedCommit(record, task, change) };
   });
