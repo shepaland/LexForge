@@ -72,7 +72,7 @@ export function checkEvidence(options: CheckEvidenceOptions): CommandResult<Chec
 
   for (const label of labels) {
     const record = ledger.records[label];
-    const state = labelState(record, { ...current, command: config.verification[label], logValid: !record?.log || hashFile(root, record.log) === record.logHash });
+    const state = labelState(record, { ...current, command: config.verification[label], logValid: !record?.log || hashFile(root, record.log, `lexforge evidence record --change ${options.change} --label ${label}`) === record.logHash });
 
     reports.push({
       label,

@@ -26,7 +26,7 @@ export function evidenceFindings(root: string, change: string, labels: string[])
       file,
       change,
       label,
-      state: labelState(record, { ...current, command: readProjectConfig(root).verification[label], logValid: !record?.log || hashFile(root, record.log) === record.logHash }),
+      state: labelState(record, { ...current, command: readProjectConfig(root).verification[label], logValid: !record?.log || hashFile(root, record.log, `lexforge evidence record --change ${change} --label ${label}`) === record.logHash }),
       record,
       current,
     });

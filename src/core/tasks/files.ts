@@ -52,8 +52,9 @@ function unreadable(file: string, code: string, reason: string): UsageError {
   );
 }
 
-function refuse(message: string): never {
-  throw new UsageError("execution-invalid", message);
+/** `nextStep` is the command that is safe to run once the path is fixed: each caller knows it. */
+function refuse(message: string, nextStep: string): never {
+  throw new UsageError("execution-invalid", message, nextStep);
 }
 
 export function digest(value: string | Buffer): string {
@@ -61,7 +62,7 @@ export function digest(value: string | Buffer): string {
 }
 
 /** Reject escapes and symlink components, including parents of newly created files. */
-export function local(root: string, relative: string): string {
+export function local(root: string, relative: string, nextStep: string): string {
   if (
     !relative ||
     path.isAbsolute(relative) ||
@@ -69,19 +70,19 @@ export function local(root: string, relative: string): string {
     relative.includes(":") ||
     relative.split("/").some((p) => p === ".." || p === "." || p === "")
   )
-    refuse(`Unsafe project path: ${relative}`);
+    refuse(`Unsafe project path: ${relative}`, nextStep);
   const base = realpathSync(root);
   const file = path.resolve(base, relative);
   if (!file.startsWith(base + path.sep))
-    refuse(`Path outside workspace: ${relative}`);
+    refuse(`Path outside workspace: ${relative}`, nextStep);
   let cursor = base;
   for (const part of path.relative(base, file).split(path.sep)) {
     cursor = path.join(cursor, part);
     try {
       if (lstatSync(cursor).isSymbolicLink())
-        refuse(`Symlink paths are not execution inputs: ${relative}`);
+        refuse(`Symlink paths are not execution inputs: ${relative}`, nextStep);
       if (realpathSync(cursor) !== cursor)
-        refuse(`Noncanonical path: ${relative}`);
+        refuse(`Noncanonical path: ${relative}`, nextStep);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
@@ -89,10 +90,10 @@ export function local(root: string, relative: string): string {
   return file;
 }
 
-export function hashFile(root: string, relative: string): string {
-  const file = local(root, relative);
+export function hashFile(root: string, relative: string, nextStep: string): string {
+  const file = local(root, relative, nextStep);
   if (!existsSync(file)) return "<missing>";
-  if (!lstatSync(file).isFile()) refuse(`Expected a regular file: ${relative}`);
+  if (!lstatSync(file).isFile()) refuse(`Expected a regular file: ${relative}`, nextStep);
   return digest(
     Buffer.concat([
       Buffer.from(String(lstatSync(file).mode) + "\0"),

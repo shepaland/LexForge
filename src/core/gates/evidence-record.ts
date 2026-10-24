@@ -68,7 +68,7 @@ export async function recordEvidence(
   // rather than after minutes of testing that nothing can be written down.
   readLedger(root, options.change);
 
-  const run = await runLoggedCommand(root, options.change, {
+  const run = await runLoggedCommand(root, options.change, options.label, {
     command,
     cwd: root,
     stdout: options.stdout,
