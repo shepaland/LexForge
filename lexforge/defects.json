@@ -1802,6 +1802,46 @@
       "summary": "The scenario still names task unlock for a stale lock; the command is lexforge unlock --change <name>",
       "state": "open",
       "recordedAt": "2026-10-24T21:11:44.376Z"
+    },
+    {
+      "id": "7e8898e3",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/commands.ts",
+      "line": 18,
+      "summary": "The gap between command and subcommand accepts a run of newlines, so a command ending a paragraph can be joined to the first word of the next",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:21:38.343Z"
+    },
+    {
+      "id": "d553f204",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/commands.test.ts",
+      "line": 190,
+      "summary": "The WRAPPED_CALLS rows assert the pair exists rather than that it is wrapped, and one of them passes against the un-widened regex",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:21:38.525Z"
+    },
+    {
+      "id": "b201d5e1",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/commands.ts",
+      "line": 96,
+      "summary": "The companion scan takes only .md files directly beside SKILL.md; a companion in a subdirectory is skipped with no signal",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:21:38.701Z"
+    },
+    {
+      "id": "292a2c54",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/e2e/templates-vocabulary.test.ts",
+      "line": 33,
+      "summary": "it.each puts the machine's absolute path into the test name, and the test pins only the absence of the old phrases",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:21:38.877Z"
     }
   ]
 }
