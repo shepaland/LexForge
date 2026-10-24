@@ -6,6 +6,7 @@ import { selectRules } from "../rules/select.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { saveText } from "./files.js";
 import { readGit } from "../git/repository.js";
+import { renderMaterials, taskMaterials } from "./materials.js";
 import { changeDir, taskArtifactPath } from "./paths.js";
 import type { TaskRecord } from "./records.js";
 
@@ -74,12 +75,15 @@ function howToWork(root: string, change: string, id: string, worktree: string): 
 /** Writes `brief.md` for the executor and returns its path. */
 export function writeBrief(root: string, change: string, task: PlanTask, worktree: string): string {
   const file = taskArtifactPath(root, change, task.number, "brief.md");
+  const lines = taskLines(task);
   const text = [
     `# Task ${task.number} of change ${change}`,
     "## Task",
-    taskLines(task),
+    lines,
     "## Requirements",
     requirements(root, change, task),
+    "## Materials",
+    renderMaterials(taskMaterials(root, change, lines)),
     "## Decisions",
     decisions(root, change),
     "## Engineering rules",
