@@ -200,7 +200,7 @@ function openTasks(texts: Map<string, string>): { open: string[]; missingFields:
 
 function nextStepFor(change: string, hasPlan: boolean, open: string[], missing: number): string {
   if (!hasPlan) return `lexforge status --change ${change}`;
-  if (open.length === 0) return `lexforge verify --change ${change}`;
+  if (open.length === 0) return `lexforge review final --change ${change}`;
   const review = reviewCommand(change, "specs");
   return missing > 0 ? `add the fields to the open tasks in tasks.md, then run: ${review}` : review;
 }

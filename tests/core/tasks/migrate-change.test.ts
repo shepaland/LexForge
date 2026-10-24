@@ -98,7 +98,12 @@ describe("migrateChange on a change of LexForge 5.x", () => {
 
   it("approves a change whose tasks all closed historically", () => {
     const root = setup({ allClosed: true });
-    expect(migrateChange(root, CHANGE)).toMatchObject({ approved: true, open: [], reopened: [] });
+    expect(migrateChange(root, CHANGE)).toMatchObject({
+      approved: true,
+      open: [],
+      reopened: [],
+      nextStep: "lexforge review final --change demo",
+    });
     expect(readPlanState(root, CHANGE).approval).toMatchObject({ quote: "migrated from 5.x" });
     expect(() => assertPlanApproved(root, CHANGE)).not.toThrow();
     expect(checkPlan({ cwd: root, change: CHANGE }).data.findings).toEqual([]);
