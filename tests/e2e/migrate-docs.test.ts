@@ -357,8 +357,8 @@ const WORKTREE_SETUP_FACTS: ReadonlyArray<{ label: string; en: RegExp; ru: RegEx
   { label: "ключ держит команду оболочки", en: /`worktree\.setup`: a shell command/, ru: /`worktree\.setup`: команду оболочки/ },
   { label: "task start запускает её один раз в новом рабочем дереве", en: /that `task start` runs once in the new worktree/, ru: /которую `task start` один раз запускает в новом рабочем дереве/ },
   { label: "ненулевой код завершения убирает дерево кодом worktree-setup-failed", en: /a non-zero exit removes the worktree and refuses with `worktree-setup-failed`/, ru: /при ненулевом коде завершения `task start` удаляет рабочее дерево и отказывает кодом `worktree-setup-failed`/ },
-  { label: "red-run-broken называет worktree.setup следующим шагом при нехватке зависимостей", en: /refuses with `red-run-broken`: when the worktree is missing what `worktree\.setup` installs, the fix is `worktree\.setup`/, ru: /`task red` называет следующим шагом `worktree\.setup`/ },
-  { label: "red-run-broken называет plan amend следующим шагом при незаявленном модуле", en: /when the break names a module the task never declared, the fix is `lexforge plan amend` instead/, ru: /`task red` называет следующим шагом `lexforge plan amend`/ },
+  { label: "red-run-broken называет worktree.setup следующим шагом при нехватке зависимостей", en: /refuses with `red-run-broken`: when the worktree is missing what `worktree\.setup` installs, the fix is `worktree\.setup`/, ru: /не хватает того, что ставит `worktree\.setup`[^;]*`task red` называет следующим шагом `worktree\.setup`/ },
+  { label: "red-run-broken называет plan amend следующим шагом при незаявленном модуле", en: /when the break names a module the task never declared, the fix is `lexforge plan amend` instead/, ru: /не объявила в `Files:`, `task red` называет следующим шагом `lexforge plan amend`/ },
 ];
 
 describe("README.md объясняет worktree.setup по-английски", () => {
