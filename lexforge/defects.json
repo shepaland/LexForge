@@ -60,8 +60,9 @@
       "file": "src/cli/commands/evidence.ts",
       "line": 74,
       "summary": "assertTaskKnown reads and parses the change config/schema via readChangeState, then recordRedRun reads it again via readChangeConfig; harmless but duplicate I/O per invocation",
-      "state": "open",
-      "recordedAt": "2026-09-12T19:13:05.669Z"
+      "state": "closed",
+      "recordedAt": "2026-09-12T19:13:05.669Z",
+      "closedAt": "2026-10-25T12:08:58.148Z"
     },
     {
       "id": "af2f4843",
@@ -70,8 +71,9 @@
       "file": "src/cli/commands/evidence.ts",
       "line": 126,
       "summary": "knownTaskIds collapses 'schema has no tasks artifact' and 'plan not written yet' into one empty-list case, unlike readPlan/checkPlan which give schema-no-plan its own UsageError code; loses a little precision in an unlikely case",
-      "state": "open",
-      "recordedAt": "2026-09-12T19:13:05.829Z"
+      "state": "closed",
+      "recordedAt": "2026-09-12T19:13:05.829Z",
+      "closedAt": "2026-10-25T12:08:58.320Z"
     },
     {
       "id": "d1cd1d3d",
@@ -101,8 +103,9 @@
       "file": "skills/lexforge-apply/reviewer-prompt.md",
       "line": 150,
       "summary": "Reading the answer: 'say the review ran the project itself' awkwardly attributes running to 'the review' rather than the reviewer's answer - unambiguous in context, not worth reopening the task for",
-      "state": "open",
-      "recordedAt": "2026-09-13T07:02:09.763Z"
+      "state": "closed",
+      "recordedAt": "2026-09-13T07:02:09.763Z",
+      "closedAt": "2026-10-25T12:08:58.677Z"
     },
     {
       "id": "37e0656b",
@@ -185,8 +188,9 @@
       "file": "src/core/gates/verify-change-evidence.ts",
       "line": 91,
       "summary": "The task.file || plan.file fallback in redRecordFindings is dead code in every production path, since readPlanSource always sets the file; if parsing ever left task.file empty it would silently re-create the index-path finding this cycle fixed instead of failing loudly",
-      "state": "open",
-      "recordedAt": "2026-09-13T18:13:35.774Z"
+      "state": "closed",
+      "recordedAt": "2026-09-13T18:13:35.774Z",
+      "closedAt": "2026-10-25T12:08:58.506Z"
     },
     {
       "id": "e94723cf",
@@ -268,8 +272,9 @@
       "file": "tests/skills/lean-cycles-scenarios.test.ts",
       "line": 72,
       "summary": "the violation check accepts any text containing 'any option but A', an inverted sentence included; anchor on 'Any option but A is a violation'",
-      "state": "open",
-      "recordedAt": "2026-10-10T17:25:58.409Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T17:25:58.409Z",
+      "closedAt": "2026-10-25T12:08:57.277Z"
     },
     {
       "id": "02b58954",
@@ -278,8 +283,9 @@
       "file": "tests/scenarios/lexforge-apply/re-review-the-whole-wave.md",
       "line": 20,
       "summary": "Setting line left unwrapped; same at tests/scenarios/lexforge-archive/merge-dev-into-main.md:45",
-      "state": "open",
-      "recordedAt": "2026-10-10T17:27:38.680Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T17:27:38.680Z",
+      "closedAt": "2026-10-25T12:08:57.452Z"
     },
     {
       "id": "07dc2553",
@@ -338,8 +344,9 @@
       "file": "src/core/execution/proofs.ts",
       "line": 29,
       "summary": "plannedState includes HEAD: committing outside files makes GREEN and review stale; committed outside edits are invisible to checkFinalScope",
-      "state": "open",
-      "recordedAt": "2026-10-10T17:44:14.677Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T17:44:14.677Z",
+      "closedAt": "2026-10-25T12:08:55.696Z"
     },
     {
       "id": "a4a84698",
@@ -358,8 +365,9 @@
       "file": "src/core/execution/context.ts",
       "line": 209,
       "summary": "On a migrated change an outside edit made between migrate and start is left out of the verify finding while a later outside edit is listed",
-      "state": "open",
-      "recordedAt": "2026-10-10T18:42:40.204Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T18:42:40.204Z",
+      "closedAt": "2026-10-25T12:08:55.868Z"
     },
     {
       "id": "88776ce5",
@@ -570,8 +578,9 @@
       "file": "src/core/execution/scope.ts",
       "line": 128,
       "summary": "checkRunScope treats a path added to the plan after the first cycle start as changed: it has no baseline entry, so every sibling run is refused until the owning cycle starts",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:22:05.130Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:22:05.130Z",
+      "closedAt": "2026-10-25T12:08:56.038Z"
     },
     {
       "id": "ccdf86b6",
@@ -660,8 +669,9 @@
       "file": "src/core/execution/plan.ts",
       "line": 311,
       "summary": "Context materials are outside context_digest, so an edited mockup does not stale the cycle contract",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:35:34.273Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:35:34.273Z",
+      "closedAt": "2026-10-25T12:08:56.212Z"
     },
     {
       "id": "5c8b44cb",
@@ -670,8 +680,9 @@
       "file": "src/core/execution/wave-review.ts",
       "line": 76,
       "summary": "A GREEN rerun without an edit counts as a fix round, so a fixes report is accepted against an empty fix patch",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:40:33.366Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:40:33.366Z",
+      "closedAt": "2026-10-25T12:08:56.386Z"
     },
     {
       "id": "b7fa0c98",
@@ -680,8 +691,9 @@
       "file": "src/core/execution/wave-review.ts",
       "line": 69,
       "summary": "A restarted cycle has no reviewFile, and the refusal of a later fixes report names the wrong cause",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:40:33.541Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:40:33.541Z",
+      "closedAt": "2026-10-25T12:08:56.556Z"
     },
     {
       "id": "a7792100",
@@ -690,8 +702,9 @@
       "file": "src/core/execution/wave-review.ts",
       "line": 105,
       "summary": "A full wave report does not reset reviewBase, so its patch can cover only the last fix round",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:40:33.715Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:40:33.715Z",
+      "closedAt": "2026-10-25T12:08:56.729Z"
     },
     {
       "id": "5c61b386",
@@ -930,8 +943,9 @@
       "file": "tests/cli/context-engineering-rules.test.ts",
       "line": 73,
       "summary": "The empty-array test uses tests/check.txt instead of the unchanged fixture of task 9.1, because the BE glob catches tests/check.cjs",
-      "state": "open",
-      "recordedAt": "2026-10-11T15:09:59.277Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:09:59.277Z",
+      "closedAt": "2026-10-25T12:08:57.625Z"
     },
     {
       "id": "91c4abd6",
@@ -940,8 +954,9 @@
       "file": "src/core/execution/context.ts",
       "line": 96,
       "summary": "engineering_rules in context applies neither MAX_SELECTED_RULES nor MAX_FILES, so a wide cycle hands the executor more than 60 rules",
-      "state": "open",
-      "recordedAt": "2026-10-11T15:09:59.453Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:09:59.453Z",
+      "closedAt": "2026-10-25T12:08:56.928Z"
     },
     {
       "id": "009ad2f2",
@@ -950,8 +965,9 @@
       "file": "tests/cli/context-engineering-rules.test.ts",
       "line": 57,
       "summary": "The test does not pin the entry keys to id, rule, sign and audience, so a leak of source or appliesTo would pass",
-      "state": "open",
-      "recordedAt": "2026-10-11T15:09:59.643Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:09:59.643Z",
+      "closedAt": "2026-10-25T12:08:57.802Z"
     },
     {
       "id": "98d0c1f9",
@@ -960,8 +976,9 @@
       "file": "tests/cli/cycle-review-rule-id.test.ts",
       "line": 70,
       "summary": "Only a 17-character rule_id is tested, not the accepted 16, so max(15) would pass the suite",
-      "state": "open",
-      "recordedAt": "2026-10-11T15:09:59.822Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:09:59.822Z",
+      "closedAt": "2026-10-25T12:08:57.978Z"
     },
     {
       "id": "6d289622",
@@ -1092,8 +1109,9 @@
       "file": "skills/lexforge-apply/reviewer-prompt.md",
       "line": 135,
       "summary": "The sample JSON finding in the answer form has no cycle field; a reviewer copying it sends a finding that blocks every cycle of the wave",
-      "state": "open",
-      "recordedAt": "2026-10-11T16:02:31.933Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T16:02:31.933Z",
+      "closedAt": "2026-10-25T12:08:58.855Z"
     },
     {
       "id": "9a1980cc",
@@ -1615,8 +1633,9 @@
       "file": "src/core/execution/scope.ts",
       "line": 129,
       "summary": "A cycle added to the plan after the baseline was taken, naming a file that does not exist yet, has no baseline entry; checkRunScope then reports that absent file as changed and refuses every other cycle's run",
-      "state": "open",
-      "recordedAt": "2026-10-12T06:05:44.292Z"
+      "state": "closed",
+      "recordedAt": "2026-10-12T06:05:44.292Z",
+      "closedAt": "2026-10-25T12:08:57.103Z"
     },
     {
       "id": "ea56f6fd",
