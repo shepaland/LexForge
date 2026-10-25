@@ -5,16 +5,39 @@ import { taskBranchName, taskWorktreePath } from "../tasks/paths.js";
 import { featureBranchName } from "./feature-branch.js";
 import { readGit, tryGit } from "./repository.js";
 
-const EXCLUDE_LINE = "/.lexforge/";
+/**
+ * Backslash-escapes the characters a gitignore pattern treats as special
+ * (`\`, `*`, `?`, `[`, `]`) plus a leading `#` or `!`, so a workspace
+ * directory name is matched literally rather than as a glob.
+ */
+function escapeGitignoreSegment(segment: string): string {
+  return segment.replace(/[\\*?[\]!#]/g, "\\$&");
+}
+
+/**
+ * The exclude line that hides `root`'s own `.lexforge/`, anchored to the
+ * repository's top so a `.lexforge/` the workspace does not own is left
+ * alone. `path.relative` can return `\`-separated segments on Windows; the
+ * split takes either separator so the written line always uses `/`, which is
+ * the only separator a gitignore pattern accepts.
+ */
+function worktreeExcludeLine(toplevel: string, root: string): string {
+  const relative = path.relative(toplevel, root);
+  const segments = relative.split(/[\\/]+/).filter((segment) => segment.length > 0);
+  if (segments.length === 0) return "/.lexforge/";
+  return `/${segments.map(escapeGitignoreSegment).join("/")}/.lexforge/`;
+}
 
 /** Keeps `.lexforge/` out of `git status` through the repository's own exclude file, so no tracked file changes. */
 export function ensureWorktreeExcluded(root: string): void {
   const common = readGit(root, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+  const toplevel = readGit(root, ["rev-parse", "--path-format=absolute", "--show-toplevel"]);
+  const line = worktreeExcludeLine(toplevel, root);
   const file = path.join(common, "info", "exclude");
   const text = existsSync(file) ? readFileSync(file, "utf8") : "";
-  if (text.split(/\r?\n/).includes(EXCLUDE_LINE)) return;
+  if (text.split(/\r?\n/).includes(line)) return;
   mkdirSync(path.dirname(file), { recursive: true });
-  appendFileSync(file, (text === "" || text.endsWith("\n") ? "" : "\n") + EXCLUDE_LINE + "\n");
+  appendFileSync(file, (text === "" || text.endsWith("\n") ? "" : "\n") + line + "\n");
 }
 
 export function createTaskWorktree(
