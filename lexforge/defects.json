@@ -38,8 +38,9 @@
       "file": "src/core/gates/red-run-store.ts",
       "line": 1,
       "summary": "red-run-store.ts duplicates evidence-store.ts's read/write/stabilize plumbing verbatim (schema parse, broken(), temp-file rename, stable sort); could be factored into one generic helper parameterized on schema and file name",
-      "state": "open",
-      "recordedAt": "2026-09-12T19:05:16.054Z"
+      "state": "closed",
+      "recordedAt": "2026-09-12T19:05:16.054Z",
+      "closedAt": "2026-10-25T12:02:42.375Z"
     },
     {
       "id": "3af74af7",
@@ -48,8 +49,9 @@
       "file": "src/core/gates/red-run-record.ts",
       "line": 64,
       "summary": "never-started refusal in red-run-record.ts duplicates evidence-record.ts's refusal almost verbatim; could share one helper",
-      "state": "open",
-      "recordedAt": "2026-09-12T19:08:02.458Z"
+      "state": "closed",
+      "recordedAt": "2026-09-12T19:08:02.458Z",
+      "closedAt": "2026-10-25T12:02:42.557Z"
     },
     {
       "id": "3cc5ba9c",
@@ -78,8 +80,9 @@
       "file": "skills/lexforge-apply/parallel-execution.md",
       "line": 7,
       "summary": "Relocated per-task merge/tidy-up paragraph sits right before the section-level merge ban in 'A wave is every section ready at once' and reads as a near-repeat on first pass; worth folding together if this file is touched again for the word-budget move task 3.15 already plans.",
-      "state": "open",
-      "recordedAt": "2026-09-13T06:34:01.428Z"
+      "state": "closed",
+      "recordedAt": "2026-09-13T06:34:01.428Z",
+      "closedAt": "2026-10-25T12:02:42.735Z"
     },
     {
       "id": "e46b63c1",
@@ -212,8 +215,9 @@
       "file": "src/core/gates/line-limit.ts",
       "line": 30,
       "summary": "isCovered compiles a picomatch matcher per pattern on every call; hoist compiled matchers if called over many files",
-      "state": "open",
-      "recordedAt": "2026-09-19T17:02:25.440Z"
+      "state": "closed",
+      "recordedAt": "2026-09-19T17:02:25.440Z",
+      "closedAt": "2026-10-25T12:02:43.095Z"
     },
     {
       "id": "6d4c9cc3",
@@ -222,8 +226,9 @@
       "file": "src/core/gates/line-limit.ts",
       "line": 53,
       "summary": "Exported LineCounts interface was not asked for by task 2.11; the task gave counts as an inline type",
-      "state": "open",
-      "recordedAt": "2026-09-19T17:04:51.479Z"
+      "state": "closed",
+      "recordedAt": "2026-09-19T17:04:51.479Z",
+      "closedAt": "2026-10-25T12:02:43.277Z"
     },
     {
       "id": "474d9030",
@@ -232,8 +237,9 @@
       "file": "skills/lexforge-apply/parallel-execution.md",
       "line": 96,
       "summary": "The brief list names the long_files path unconditionally; the requirement says when the change records one",
-      "state": "open",
-      "recordedAt": "2026-09-20T06:56:55.629Z"
+      "state": "closed",
+      "recordedAt": "2026-09-20T06:56:55.629Z",
+      "closedAt": "2026-10-25T12:02:42.917Z"
     },
     {
       "id": "a5d4c1be",
@@ -1679,8 +1685,9 @@
       "file": "tests/cli/context-cycles.test.ts",
       "line": 40,
       "summary": "Four CLI end-to-end tests (context-cycles, workflow-migration-gates, workflow-migration-review-fixes) hit the default 5000 ms timeout in a full-suite run under load and pass alone",
-      "state": "open",
-      "recordedAt": "2026-10-12T06:20:51.863Z"
+      "state": "closed",
+      "recordedAt": "2026-10-12T06:20:51.863Z",
+      "closedAt": "2026-10-25T12:02:43.452Z"
     },
     {
       "id": "f172408c",
@@ -2007,11 +2014,51 @@
       "id": "1f1b6431",
       "change": "plan-driven-execution",
       "level": "minor",
-      "file": "src/core/gates/verify-change.ts",
-      "line": 117,
-      "summary": "verify and resume (src/core/tasks/resume.ts:78 and :104) read the workflow without confirming the change exists first, so a change name the workspace does not have answers change-needs-migration with the next step lexforge migrate --change <that name>, a command that cannot work, where change-not-found and exit code 2 belong. The shared assertMigrated(root, change) of src/core/tasks/workflow-file.ts is the call these two sites want; neither file was in the scope of the task that introduced it.",
+      "file": "src/core/tasks/resume.ts",
+      "line": 104,
+      "summary": "resume reads the workflow without confirming the change exists first, so a change name the workspace does not have answers change-needs-migration with the next step lexforge migrate --change <that name>, a command that cannot work, where change-not-found and exit code 2 belong. archive misreports the same way in its own order, reaching the workflow only through verifyChange after readMerges (src/core/archive/archive-change.ts:104). verify itself is clean: it reads the plan, and with it the change config, at verify-change.ts:113 before the workflow at :117. The shared assertMigrated(root, change) of src/core/tasks/workflow-file.ts is the call both sites want; neither file was in the scope of the task that introduced it.",
       "state": "open",
       "recordedAt": "2026-10-25T11:53:27.737Z"
+    },
+    {
+      "id": "806e6c30",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/tasks/close.ts",
+      "line": 51,
+      "summary": "dirtyOutside is held word for word by close.ts:51-64 and plan-approve.ts:36-49, as are fenced by brief.ts:98 and final-review.ts:173, compareIds by records.ts:70 and byNumber by final-review.ts:143, and taskCommand by task-guards.ts:8 and resume.ts:51. Two tasks solved one problem twice each time.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:02:22.049Z"
+    },
+    {
+      "id": "7ff61e07",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/archive/archive-change.ts",
+      "line": 352,
+      "summary": "archive renames the whole change directory and evidence-store.ts:119 rewrites evidence.json inside it without taking the change lock, which task-execution 'The change lock names its owner' asks of every command that writes the state of a change. A task close writing its record while archive moves the directory is the race the lock exists for.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:02:22.234Z"
+    },
+    {
+      "id": "d88121b3",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/tasks/review.ts",
+      "line": 61,
+      "summary": "task review refuses a closed task that already carries an approving review with task-already-closed, pinned by tests/cli/task-review-closed.test.ts:54, while task-execution 'A review is registered by its reviewer after green' says a report registered on a task already closed SHALL be recorded against that task's green commit. The code keeps the narrower reading; narrowing the requirement instead needs the owner, since they approved its wording.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:02:22.414Z"
+    },
+    {
+      "id": "aceee92c",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/cli/task-refusals.test.ts",
+      "line": 38,
+      "summary": "The fixture writes Check: by hand over the task's Command: line, keeping vocabulary 6.0.0 removed in the suite now that task-files.ts no longer reads that marker at all.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:02:22.596Z"
     }
   ]
 }
