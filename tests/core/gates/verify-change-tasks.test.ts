@@ -12,12 +12,10 @@ import {
 } from "../../helpers/final-review-fixture.js";
 import { git, type GitWorkspace } from "../../helpers/git-workspace.js";
 import { CHANGE, commitOnChangeBranch as commitOn, expectOk, report } from "../../helpers/task-workspace.js";
-import { yieldEventLoop } from "./verify-change-fixtures.js";
 
 let ws: GitWorkspace | undefined;
 let root: string;
 afterEach(() => ws?.remove());
-afterEach(yieldEventLoop);
 
 beforeEach(async () => {
   ws = createTwoTaskChange();
