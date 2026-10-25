@@ -1882,6 +1882,56 @@
       "summary": "The rewrap splits the code span lexforge plan amend across a line break, so the phrase is not greppable in the source",
       "state": "open",
       "recordedAt": "2026-10-25T05:55:09.338Z"
+    },
+    {
+      "id": "8d6e8eea",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/helpers/workspace.ts",
+      "line": 53,
+      "summary": "The shared helper reads a fixture's .lexforge.yaml as { schema?: string } without the String() coercion the same read in src/core/tasks/migrate.ts:231 uses: broken YAML makes it throw during setup instead of letting the command answer, and a numeric schema writes a number into workflow.json, so every guarded command answers workflow-unreadable instead of the config error the test is after. No fixture does either today.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:26.762Z"
+    },
+    {
+      "id": "9e015ed9",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/helpers/workspace.ts",
+      "line": 47,
+      "summary": "The check reads match === undefined || match === null, but RegExp.exec returns RegExpExecArray | null, so the first half is dead and would be TS2367 if tests entered tsconfig.json. The repo writes the plain === null form, as in src/core/gates/task-list.ts:209.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:26.966Z"
+    },
+    {
+      "id": "95ee9019",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/cli/commands/validate.ts",
+      "line": 22,
+      "summary": "validate.ts:22-24, instructions.ts:23-25 and evidence.ts:37-39 repeat the three lines and the comment that check.ts:17-21 already keeps as assertMigrated; four copies of one guard drift apart when the order of the two reads changes.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:33.764Z"
+    },
+    {
+      "id": "2fcc6735",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/cli/commands/evidence.ts",
+      "line": 33,
+      "summary": "evidence.ts resolves --label through missingLabel before the migration guard, so evidence record on a 5.x change with no --label answers label-missing and names the migration only on the second call. The task's test always passes --label tests and the requirement's scenario names only status.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:33.951Z"
+    },
+    {
+      "id": "9690dc35",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/cli/task-short-path.test.ts",
+      "line": 62,
+      "summary": "The comment still says the task workspace has no workflow.json, so it stays on the full path; createTaskWorkspace now gets one with path: full, so the comment misstates the fixture. The assertion is unaffected, since isShortPath reads both a missing file and path: full as the full path.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:34.136Z"
     }
   ]
 }
