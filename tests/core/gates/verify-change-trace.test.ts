@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { verifyChange } from "../../../src/core/gates/verify-change.js";
 import { writeAt } from "../../helpers/git-workspace.js";
-import { AUTH_SPEC, CHANGE, created, workspace } from "./verify-change-fixtures.js";
+import { AUTH_SPEC, CHANGE, created, workspace, yieldEventLoop } from "./verify-change-fixtures.js";
 
 const PLAN_FILE = `lexforge/changes/${CHANGE}/tasks.md`;
 
@@ -11,6 +11,7 @@ afterEach(() => {
     created.pop()!.remove();
   }
 });
+afterEach(yieldEventLoop);
 
 /** Two requirements, so a check that reports nothing at all is visible as such. */
 const TWO_REQUIREMENTS = `${AUTH_SPEC}
