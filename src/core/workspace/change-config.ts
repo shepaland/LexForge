@@ -19,8 +19,6 @@ export interface ChangeConfig {
   schema: string;
   /** Artifact ids declared as skipped through `skip_<artifact id>: true`. */
   skippedArtifacts: string[];
-  /** Path recorded for covered files already over the line limit, or `null` if not recorded. */
-  longFilePath: "refactor" | "keep" | null;
 }
 
 /** Change directories under `lexforge/changes/`, `archive/` aside, alphabetically. */
@@ -60,6 +58,14 @@ export function readChangeConfig(root: string, name: string): ChangeConfig {
   }
 
   const raw = (parseYaml(readTextFile(file)) ?? {}) as Record<string, unknown>;
+  if ("long_files" in raw) {
+    throw new UsageError(
+      "long-files-removed",
+      `${file} still has the "long_files" key. LexForge no longer limits file length.`,
+      `lexforge migrate --change ${name}`,
+    );
+  }
+
   const parsed = ChangeConfigSchema.safeParse(raw);
   if (!parsed.success) {
     throw new UsageError(
@@ -91,17 +97,5 @@ export function readChangeConfig(root: string, name: string): ChangeConfig {
     }
   }
 
-  const rawLongFiles = raw["long_files"];
-  let longFilePath: "refactor" | "keep" | null = null;
-  if (rawLongFiles !== undefined) {
-    if (rawLongFiles !== "refactor" && rawLongFiles !== "keep") {
-      throw new UsageError(
-        "change-config-invalid",
-        `${file}: "long_files" must be "refactor" or "keep".`,
-      );
-    }
-    longFilePath = rawLongFiles;
-  }
-
-  return { name, schema: parsed.data.schema, skippedArtifacts, longFilePath };
+  return { name, schema: parsed.data.schema, skippedArtifacts };
 }

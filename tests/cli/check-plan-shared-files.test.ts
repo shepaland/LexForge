@@ -39,10 +39,13 @@ function sectionsWorkspace(tasks: string, requirementNames: string[]): string {
   return root;
 }
 
-function taskLine(number: string, file: string, requirement: string, groupLabel: string): string {
+function taskLine(number: string, file: string, requirement: string): string {
   return (
-    `- [ ] ${number} [${groupLabel}] Carry out the work this task exists for, editing \`${file}\`.\n` +
-    `      -> auth#${requirement}`
+    `- [ ] ${number} Carry out the work this task exists for, editing \`${file}\`.\n` +
+    `      -> auth#${requirement}\n` +
+    `      Files: \`${file}\`\n` +
+    `      Test: \`tests/t${number}.test.ts\`\n` +
+    "      Command: `npm test`"
   );
 }
 
@@ -75,204 +78,51 @@ function findingsOf(findings: SectionFinding[], rule: string): SectionFinding[] 
   return findings.filter((finding) => finding.rule === rule);
 }
 
-describe("lexforge check plan: два раздела none, общий файл", () => {
-  it("оба «none» и один файл в задачах — код 1, называет обе строкой с обоими разделами и файлом", async () => {
-    const tasks = [
-      "## 4. First",
+describe("lexforge check plan: общий файл у разделов", () => {
+  const sections = (secondDepends: string): string =>
+    [
+      "## 1. First",
       "",
       "Depends on: none",
       "",
-      taskLine("4.1", "src/shared.ts", "Req1", "A"),
+      taskLine("1.1", "src/shared.ts", "A"),
       "",
-      "## 6. Second",
+      "## 2. Second",
       "",
-      "Depends on: none",
+      `Depends on: ${secondDepends}`,
       "",
-      taskLine("6.1", "src/shared.ts", "Req2", "B"),
+      taskLine("2.1", "src/shared.ts", "B"),
       "",
     ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
 
+  it("оба раздела none и один файл в задачах: код 1, находка называет обе задачи и файл", async () => {
+    const root = sectionsWorkspace(sections("none"), ["A", "B"]);
     const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-    const concurrent = findingsOf(findings, "section-concurrent-file");
+    const found = findingsOf(await jsonFindings(root), "shared-file-without-order");
 
     expect(exitCode).toBe(1);
-    expect(concurrent).toHaveLength(1);
-    // Section 6's own heading inside the index tasks.md — now line 5, since
-    // the index carries only headings and links, not the tasks that used to
-    // sit between section 4's heading and section 6's.
-    expect(concurrent[0]!.line).toBe(5);
-    expect(concurrent[0]!.message).toContain("Section 4 and section 6 are concurrent");
-    expect(concurrent[0]!.message).toContain("src/shared.ts");
+    expect(found).toHaveLength(1);
+    expect(found[0]!.message).toContain("2.1");
+    expect(found[0]!.message).toContain("1.1");
+    expect(found[0]!.message).toContain("src/shared.ts");
   });
-});
 
-describe("lexforge check plan: два раздела ждут один и тот же третий, общий файл", () => {
-  it("оба ждут один и тот же раздел и делят файл — код 1, потому что он выпускает их разом", async () => {
-    const tasks = [
-      "## 9. Base",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("9.1", "src/base.ts", "Req1", "A"),
-      "",
-      "## 4. First waiter",
-      "",
-      "Depends on: section 9",
-      "",
-      taskLine("4.1", "src/shared.ts", "Req2", "B"),
-      "",
-      "## 6. Second waiter",
-      "",
-      "Depends on: section 9",
-      "",
-      taskLine("6.1", "src/shared.ts", "Req3", "C"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2", "Req3"]);
-
+  it("второй раздел ждёт первый: находки нет и код 0", async () => {
+    const root = sectionsWorkspace(sections("1"), ["A", "B"]);
     const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-    const concurrent = findingsOf(findings, "section-concurrent-file");
 
-    expect(exitCode).toBe(1);
-    expect(concurrent).toHaveLength(1);
-    expect(concurrent[0]!.message).toContain("Section 4 and section 6 are concurrent");
-    expect(concurrent[0]!.message).toContain("src/shared.ts");
-  });
-});
-
-describe("lexforge check plan: цепочка зависимостей защищает общий файл", () => {
-  it("6 ждёт 4, 4 ждёт 9, 9 и 6 делят файл — находки нет: 6 не начнётся раньше закрытия 9", async () => {
-    const tasks = [
-      "## 9. Base",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("9.1", "src/shared.ts", "Req1", "A"),
-      "",
-      "## 4. Middle",
-      "",
-      "Depends on: section 9",
-      "",
-      taskLine("4.1", "src/middle.ts", "Req2", "B"),
-      "",
-      "## 6. Top",
-      "",
-      "Depends on: section 4",
-      "",
-      taskLine("6.1", "src/shared.ts", "Req3", "C"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2", "Req3"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-
+    expect(await jsonFindings(root)).toEqual([]);
     expect(exitCode).toBe(0);
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
-  });
-});
-
-describe("lexforge check plan: направление проверки достижимости", () => {
-  it("более ранний по тексту раздел ждёт более поздний — общий файл всё равно не даёт находки", async () => {
-    const tasks = [
-      "## 4. Earlier in the file, waits for the later one",
-      "",
-      "Depends on: section 6",
-      "",
-      taskLine("4.1", "src/shared.ts", "Req1", "A"),
-      "",
-      "## 6. Later in the file, the one waited for",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("6.1", "src/shared.ts", "Req2", "B"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-
-    expect(exitCode).toBe(0);
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
-  });
-});
-
-describe("lexforge check plan: сравнение файлов по краткому и полному имени", () => {
-  it("полный путь в одном разделе и краткое имя того же файла в другом — конфликт находится", async () => {
-    const tasks = [
-      "## 4. First",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("4.1", "src/core/gates/plan-check.ts", "Req1", "A"),
-      "",
-      "## 6. Second",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("6.1", "plan-check.ts", "Req2", "B"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-    const concurrent = findingsOf(findings, "section-concurrent-file");
-
-    expect(exitCode).toBe(1);
-    expect(concurrent).toHaveLength(1);
-    expect(concurrent[0]!.message).toContain("Section 4 and section 6 are concurrent");
   });
 
-  it("два разных SKILL.md под разными каталогами не считаются одним файлом", async () => {
+  it("цепочка через третий раздел защищает общий файл", async () => {
     const tasks = [
-      "## 4. First",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("4.1", "skills/lexforge-apply/SKILL.md", "Req1", "A"),
-      "",
-      "## 6. Second",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("6.1", "skills/lexforge-verify/SKILL.md", "Req2", "B"),
-      "",
+      "## 1. First", "", "Depends on: none", "", taskLine("1.1", "src/shared.ts", "A"), "",
+      "## 2. Middle", "", "Depends on: 1", "", taskLine("2.1", "src/middle.ts", "B"), "",
+      "## 3. Last", "", "Depends on: 2", "", taskLine("3.1", "src/shared.ts", "A"), "",
     ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
+    const root = sectionsWorkspace(tasks, ["A", "B"]);
 
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-
-    expect(exitCode).toBe(0);
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
-  });
-
-  it("каталог, названный с завершающим /, не считается файлом", async () => {
-    const tasks = [
-      "## 4. First",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("4.1", "src/", "Req1", "A"),
-      "",
-      "## 6. Second",
-      "",
-      "Depends on: none",
-      "",
-      taskLine("6.1", "src/", "Req2", "B"),
-      "",
-    ].join("\n");
-    const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
-
-    const { exitCode } = await call(["check", "plan", "--change", "add-auth"], root);
-    const findings = await jsonFindings(root);
-
-    expect(exitCode).toBe(0);
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
+    expect(await jsonFindings(root)).toEqual([]);
   });
 });

@@ -1,54 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { pxSection } from "./helpers.js";
+import { bodyOf, epSection, section } from "./helpers.js";
 
-describe("A dispatched agent's token budget is held by reading discipline", () => {
-  it("the brief carries line numbers found once by the session, so the agent does not spend its own budget finding them again", () => {
-    const section = pxSection("What a dispatched agent is handed");
-
-    expect(section).toMatch(
-      /found once by the session before the agent starts, so the agent does not spend its own budget finding them again\./,
-    );
-  });
-
-  it("a dispatched agent does not read a large file whole: it finds its place with a line-numbered search and reads the range around it", () => {
-    const section = pxSection("What a dispatched agent is handed");
-
-    expect(section).toMatch(
-      /does not read a large file whole: it finds its place with a line-numbered search and reads the range around it instead\./,
-    );
-  });
-
-  it("while a cycle is being fixed, a run names the single test being fixed, and the whole file runs once, at the end of the cycle", () => {
-    const section = pxSection("What a dispatched agent is handed");
-
-    expect(section).toMatch(
-      /while a cycle is being fixed, a run names the single test being fixed rather than the whole file, and the whole file runs once, at the end of the cycle\./,
-    );
-  });
-
-  it("it runs only the checks its own tasks name, never the whole suite - a neighbour's half-finished edit, the budget its own output would cost, and the wave-boundary run that counts", () => {
-    const section = pxSection("What a dispatched agent is handed");
-
-    expect(section).toMatch(
-      /never the whole suite: a neighbour's half-finished edit would make a wider run mean nothing either way, its own output would cost the budget too, and the wave-boundary `lexforge evidence record` is the one full run that counts\./,
-    );
-  });
-
-  it("the size of a dispatched part is judged by the reading its tasks demand, not by the number of tasks it holds", () => {
-    const section = pxSection("What a dispatched agent is handed");
-
-    expect(section).toMatch(
-      /the size of a dispatched part is judged by the reading its tasks demand, not by the number of tasks it holds\./,
-    );
-  });
-});
-
-describe("раздел 16: бюджет в 300 000 токенов на диспетчируемого агента", () => {
+describe("раздел 16: бюджет в 300 000 токенов на исполнителя одной задачи", () => {
   it("называет бюджет ровно в 300 000 токенов, не приблизительно", () => {
-    const section = pxSection("The token budget");
+    const section = epSection("How you work");
 
-    expect(section).toMatch(/token budget of 300,000/);
+    expect(section).toMatch(/300,000 tokens/);
 
     for (const phrase of [
       "about 300,000",
@@ -64,27 +22,11 @@ describe("раздел 16: бюджет в 300 000 токенов на дисп�
     }
   });
 
-  it("секцию, которая не влезает, дробит на части, вплоть до одного агента на задачу", () => {
-    const section = pxSection("The token budget");
+  it("у предела бюджета останавливается, возвращает закоммиченное и называет недостигнутое", () => {
+    const section = epSection("How you work");
 
-    expect(section).toMatch(/dispatched in parts, each part small enough to fit/);
-    expect(section).toMatch(/down to one agent per task where nothing larger fits/);
-
-    for (const phrase of [
-      "where no part fits, a second agent may finish",
-      "a second agent may finish what the first could not",
-      "unless nothing smaller works, in which case a helper agent finishes it",
-    ]) {
-      expect(section, `«${phrase}» открывает второго агента на ту же секцию`).not.toContain(phrase);
-    }
-  });
-
-  it("агент у предела бюджета останавливается, возвращает зелёные задачи и называет недостигнутые", () => {
-    const section = pxSection("The token budget");
-
-    expect(section).toMatch(/stops, returns the tasks that are green and reviewed/);
-    expect(section).toMatch(/names the tasks it did not reach/);
-    expect(section).toMatch(/stay unticked/);
+    expect(section).toMatch(/stop, return what you committed/);
+    expect(section).toMatch(/name under questions what you did not reach/);
 
     for (const phrase of [
       "unless the remaining work is small enough to finish",
@@ -98,10 +40,9 @@ describe("раздел 16: бюджет в 300 000 токенов на дисп�
   });
 
   it("запрещает запускать агента, чтобы продолжить свою же работу, без исключения по бюджету", () => {
-    const section = pxSection("The token budget");
+    const section = epSection("How you work");
 
-    expect(section).toMatch(/starts no agent to carry on its own work/);
-    expect(section).toMatch(/reaching the budget is not a reason to/);
+    expect(section).toMatch(/not a reason to start an agent to carry the work on/);
 
     for (const phrase of [
       "unless the budget runs out",
@@ -113,3 +54,58 @@ describe("раздел 16: бюджет в 300 000 токенов на дисп�
   });
 });
 
+describe("дисциплина чтения держит бюджет исполнителя одной задачи", () => {
+  it("номера строк приходят рядом с брифом, найденные сессией заранее, а не внутри самого брифа", () => {
+    const section = epSection("How you work");
+
+    expect(section).toMatch(
+      /the line numbers of what you have to work on come beside the brief, found once by the session before you started/,
+    );
+    expect(section).toMatch(/do not search for them again/);
+
+    for (const phrase of [
+      "the brief carries the line numbers",
+      "the line numbers are inside the brief",
+      "find the line numbers yourself",
+    ]) {
+      expect(
+        section,
+        `«${phrase}» заставляет исполнителя искать номера строк самому`,
+      ).not.toContain(phrase);
+    }
+  });
+
+  it("большой файл находится построчным поиском вместо чтения целиком", () => {
+    const section = epSection("How you work");
+
+    expect(section).toMatch(
+      /find your place with a line-numbered search and read the range around it, never the whole file/,
+    );
+  });
+
+  it("правка называет единственный тест до зелёного; команда задачи целиком — только на red и green", () => {
+    const section = epSection("How you work");
+
+    expect(section).toMatch(/name the single test you are fixing in every run/);
+    expect(section).toMatch(/`command:` runs in full only at `task red` and `task green`/);
+  });
+
+  it("тело lexforge-apply поручает сессии находить места задачи один раз и передавать номера строк рядом с брифом", () => {
+    const order = section(bodyOf("lexforge-apply"), "Task order");
+
+    expect(order).toMatch(
+      /find its places once and hand it `brief\.md` whole beside their line numbers/,
+    );
+
+    for (const phrase of [
+      "the executor finds its own places",
+      "the executor searches for the line numbers",
+      "line numbers are optional",
+    ]) {
+      expect(
+        order,
+        `«${phrase}» снимает с сессии поиск номеров строк до запуска исполнителя`,
+      ).not.toContain(phrase);
+    }
+  });
+});

@@ -38,8 +38,9 @@
       "file": "src/core/gates/red-run-store.ts",
       "line": 1,
       "summary": "red-run-store.ts duplicates evidence-store.ts's read/write/stabilize plumbing verbatim (schema parse, broken(), temp-file rename, stable sort); could be factored into one generic helper parameterized on schema and file name",
-      "state": "open",
-      "recordedAt": "2026-09-12T19:05:16.054Z"
+      "state": "closed",
+      "recordedAt": "2026-09-12T19:05:16.054Z",
+      "closedAt": "2026-10-25T12:02:42.375Z"
     },
     {
       "id": "3af74af7",
@@ -48,8 +49,9 @@
       "file": "src/core/gates/red-run-record.ts",
       "line": 64,
       "summary": "never-started refusal in red-run-record.ts duplicates evidence-record.ts's refusal almost verbatim; could share one helper",
-      "state": "open",
-      "recordedAt": "2026-09-12T19:08:02.458Z"
+      "state": "closed",
+      "recordedAt": "2026-09-12T19:08:02.458Z",
+      "closedAt": "2026-10-25T12:02:42.557Z"
     },
     {
       "id": "3cc5ba9c",
@@ -58,8 +60,9 @@
       "file": "src/cli/commands/evidence.ts",
       "line": 74,
       "summary": "assertTaskKnown reads and parses the change config/schema via readChangeState, then recordRedRun reads it again via readChangeConfig; harmless but duplicate I/O per invocation",
-      "state": "open",
-      "recordedAt": "2026-09-12T19:13:05.669Z"
+      "state": "closed",
+      "recordedAt": "2026-09-12T19:13:05.669Z",
+      "closedAt": "2026-10-25T12:08:58.148Z"
     },
     {
       "id": "af2f4843",
@@ -68,8 +71,9 @@
       "file": "src/cli/commands/evidence.ts",
       "line": 126,
       "summary": "knownTaskIds collapses 'schema has no tasks artifact' and 'plan not written yet' into one empty-list case, unlike readPlan/checkPlan which give schema-no-plan its own UsageError code; loses a little precision in an unlikely case",
-      "state": "open",
-      "recordedAt": "2026-09-12T19:13:05.829Z"
+      "state": "closed",
+      "recordedAt": "2026-09-12T19:13:05.829Z",
+      "closedAt": "2026-10-25T12:08:58.320Z"
     },
     {
       "id": "d1cd1d3d",
@@ -78,8 +82,9 @@
       "file": "skills/lexforge-apply/parallel-execution.md",
       "line": 7,
       "summary": "Relocated per-task merge/tidy-up paragraph sits right before the section-level merge ban in 'A wave is every section ready at once' and reads as a near-repeat on first pass; worth folding together if this file is touched again for the word-budget move task 3.15 already plans.",
-      "state": "open",
-      "recordedAt": "2026-09-13T06:34:01.428Z"
+      "state": "closed",
+      "recordedAt": "2026-09-13T06:34:01.428Z",
+      "closedAt": "2026-10-25T12:02:42.735Z"
     },
     {
       "id": "e46b63c1",
@@ -98,8 +103,9 @@
       "file": "skills/lexforge-apply/reviewer-prompt.md",
       "line": 150,
       "summary": "Reading the answer: 'say the review ran the project itself' awkwardly attributes running to 'the review' rather than the reviewer's answer - unambiguous in context, not worth reopening the task for",
-      "state": "open",
-      "recordedAt": "2026-09-13T07:02:09.763Z"
+      "state": "closed",
+      "recordedAt": "2026-09-13T07:02:09.763Z",
+      "closedAt": "2026-10-25T12:08:58.677Z"
     },
     {
       "id": "37e0656b",
@@ -182,8 +188,9 @@
       "file": "src/core/gates/verify-change-evidence.ts",
       "line": 91,
       "summary": "The task.file || plan.file fallback in redRecordFindings is dead code in every production path, since readPlanSource always sets the file; if parsing ever left task.file empty it would silently re-create the index-path finding this cycle fixed instead of failing loudly",
-      "state": "open",
-      "recordedAt": "2026-09-13T18:13:35.774Z"
+      "state": "closed",
+      "recordedAt": "2026-09-13T18:13:35.774Z",
+      "closedAt": "2026-10-25T12:08:58.506Z"
     },
     {
       "id": "e94723cf",
@@ -212,8 +219,9 @@
       "file": "src/core/gates/line-limit.ts",
       "line": 30,
       "summary": "isCovered compiles a picomatch matcher per pattern on every call; hoist compiled matchers if called over many files",
-      "state": "open",
-      "recordedAt": "2026-09-19T17:02:25.440Z"
+      "state": "closed",
+      "recordedAt": "2026-09-19T17:02:25.440Z",
+      "closedAt": "2026-10-25T12:02:43.095Z"
     },
     {
       "id": "6d4c9cc3",
@@ -222,8 +230,9 @@
       "file": "src/core/gates/line-limit.ts",
       "line": 53,
       "summary": "Exported LineCounts interface was not asked for by task 2.11; the task gave counts as an inline type",
-      "state": "open",
-      "recordedAt": "2026-09-19T17:04:51.479Z"
+      "state": "closed",
+      "recordedAt": "2026-09-19T17:04:51.479Z",
+      "closedAt": "2026-10-25T12:02:43.277Z"
     },
     {
       "id": "474d9030",
@@ -232,8 +241,9 @@
       "file": "skills/lexforge-apply/parallel-execution.md",
       "line": 96,
       "summary": "The brief list names the long_files path unconditionally; the requirement says when the change records one",
-      "state": "open",
-      "recordedAt": "2026-09-20T06:56:55.629Z"
+      "state": "closed",
+      "recordedAt": "2026-09-20T06:56:55.629Z",
+      "closedAt": "2026-10-25T12:02:42.917Z"
     },
     {
       "id": "a5d4c1be",
@@ -262,8 +272,9 @@
       "file": "tests/skills/lean-cycles-scenarios.test.ts",
       "line": 72,
       "summary": "the violation check accepts any text containing 'any option but A', an inverted sentence included; anchor on 'Any option but A is a violation'",
-      "state": "open",
-      "recordedAt": "2026-10-10T17:25:58.409Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T17:25:58.409Z",
+      "closedAt": "2026-10-25T12:08:57.277Z"
     },
     {
       "id": "02b58954",
@@ -272,8 +283,9 @@
       "file": "tests/scenarios/lexforge-apply/re-review-the-whole-wave.md",
       "line": 20,
       "summary": "Setting line left unwrapped; same at tests/scenarios/lexforge-archive/merge-dev-into-main.md:45",
-      "state": "open",
-      "recordedAt": "2026-10-10T17:27:38.680Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T17:27:38.680Z",
+      "closedAt": "2026-10-25T12:08:57.452Z"
     },
     {
       "id": "07dc2553",
@@ -332,8 +344,9 @@
       "file": "src/core/execution/proofs.ts",
       "line": 29,
       "summary": "plannedState includes HEAD: committing outside files makes GREEN and review stale; committed outside edits are invisible to checkFinalScope",
-      "state": "open",
-      "recordedAt": "2026-10-10T17:44:14.677Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T17:44:14.677Z",
+      "closedAt": "2026-10-25T12:08:55.696Z"
     },
     {
       "id": "a4a84698",
@@ -352,8 +365,9 @@
       "file": "src/core/execution/context.ts",
       "line": 209,
       "summary": "On a migrated change an outside edit made between migrate and start is left out of the verify finding while a later outside edit is listed",
-      "state": "open",
-      "recordedAt": "2026-10-10T18:42:40.204Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T18:42:40.204Z",
+      "closedAt": "2026-10-25T12:08:55.868Z"
     },
     {
       "id": "88776ce5",
@@ -564,8 +578,9 @@
       "file": "src/core/execution/scope.ts",
       "line": 128,
       "summary": "checkRunScope treats a path added to the plan after the first cycle start as changed: it has no baseline entry, so every sibling run is refused until the owning cycle starts",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:22:05.130Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:22:05.130Z",
+      "closedAt": "2026-10-25T12:08:56.038Z"
     },
     {
       "id": "ccdf86b6",
@@ -654,8 +669,9 @@
       "file": "src/core/execution/plan.ts",
       "line": 311,
       "summary": "Context materials are outside context_digest, so an edited mockup does not stale the cycle contract",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:35:34.273Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:35:34.273Z",
+      "closedAt": "2026-10-25T12:08:56.212Z"
     },
     {
       "id": "5c8b44cb",
@@ -664,8 +680,9 @@
       "file": "src/core/execution/wave-review.ts",
       "line": 76,
       "summary": "A GREEN rerun without an edit counts as a fix round, so a fixes report is accepted against an empty fix patch",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:40:33.366Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:40:33.366Z",
+      "closedAt": "2026-10-25T12:08:56.386Z"
     },
     {
       "id": "b7fa0c98",
@@ -674,8 +691,9 @@
       "file": "src/core/execution/wave-review.ts",
       "line": 69,
       "summary": "A restarted cycle has no reviewFile, and the refusal of a later fixes report names the wrong cause",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:40:33.541Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:40:33.541Z",
+      "closedAt": "2026-10-25T12:08:56.556Z"
     },
     {
       "id": "a7792100",
@@ -684,8 +702,9 @@
       "file": "src/core/execution/wave-review.ts",
       "line": 105,
       "summary": "A full wave report does not reset reviewBase, so its patch can cover only the last fix round",
-      "state": "open",
-      "recordedAt": "2026-10-10T19:40:33.715Z"
+      "state": "closed",
+      "recordedAt": "2026-10-10T19:40:33.715Z",
+      "closedAt": "2026-10-25T12:08:56.729Z"
     },
     {
       "id": "5c61b386",
@@ -924,8 +943,9 @@
       "file": "tests/cli/context-engineering-rules.test.ts",
       "line": 73,
       "summary": "The empty-array test uses tests/check.txt instead of the unchanged fixture of task 9.1, because the BE glob catches tests/check.cjs",
-      "state": "open",
-      "recordedAt": "2026-10-11T15:09:59.277Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:09:59.277Z",
+      "closedAt": "2026-10-25T12:08:57.625Z"
     },
     {
       "id": "91c4abd6",
@@ -934,8 +954,9 @@
       "file": "src/core/execution/context.ts",
       "line": 96,
       "summary": "engineering_rules in context applies neither MAX_SELECTED_RULES nor MAX_FILES, so a wide cycle hands the executor more than 60 rules",
-      "state": "open",
-      "recordedAt": "2026-10-11T15:09:59.453Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:09:59.453Z",
+      "closedAt": "2026-10-25T12:08:56.928Z"
     },
     {
       "id": "009ad2f2",
@@ -944,8 +965,9 @@
       "file": "tests/cli/context-engineering-rules.test.ts",
       "line": 57,
       "summary": "The test does not pin the entry keys to id, rule, sign and audience, so a leak of source or appliesTo would pass",
-      "state": "open",
-      "recordedAt": "2026-10-11T15:09:59.643Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:09:59.643Z",
+      "closedAt": "2026-10-25T12:08:57.802Z"
     },
     {
       "id": "98d0c1f9",
@@ -954,8 +976,9 @@
       "file": "tests/cli/cycle-review-rule-id.test.ts",
       "line": 70,
       "summary": "Only a 17-character rule_id is tested, not the accepted 16, so max(15) would pass the suite",
-      "state": "open",
-      "recordedAt": "2026-10-11T15:09:59.822Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T15:09:59.822Z",
+      "closedAt": "2026-10-25T12:08:57.978Z"
     },
     {
       "id": "6d289622",
@@ -1086,8 +1109,9 @@
       "file": "skills/lexforge-apply/reviewer-prompt.md",
       "line": 135,
       "summary": "The sample JSON finding in the answer form has no cycle field; a reviewer copying it sends a finding that blocks every cycle of the wave",
-      "state": "open",
-      "recordedAt": "2026-10-11T16:02:31.933Z"
+      "state": "closed",
+      "recordedAt": "2026-10-11T16:02:31.933Z",
+      "closedAt": "2026-10-25T12:08:58.855Z"
     },
     {
       "id": "9a1980cc",
@@ -1609,8 +1633,9 @@
       "file": "src/core/execution/scope.ts",
       "line": 129,
       "summary": "A cycle added to the plan after the baseline was taken, naming a file that does not exist yet, has no baseline entry; checkRunScope then reports that absent file as changed and refuses every other cycle's run",
-      "state": "open",
-      "recordedAt": "2026-10-12T06:05:44.292Z"
+      "state": "closed",
+      "recordedAt": "2026-10-12T06:05:44.292Z",
+      "closedAt": "2026-10-25T12:08:57.103Z"
     },
     {
       "id": "ea56f6fd",
@@ -1679,8 +1704,9 @@
       "file": "tests/cli/context-cycles.test.ts",
       "line": 40,
       "summary": "Four CLI end-to-end tests (context-cycles, workflow-migration-gates, workflow-migration-review-fixes) hit the default 5000 ms timeout in a full-suite run under load and pass alone",
-      "state": "open",
-      "recordedAt": "2026-10-12T06:20:51.863Z"
+      "state": "closed",
+      "recordedAt": "2026-10-12T06:20:51.863Z",
+      "closedAt": "2026-10-25T12:02:43.452Z"
     },
     {
       "id": "f172408c",
@@ -1732,6 +1758,377 @@
       "summary": "inlineKeys drops the constraint name of 'col int CONSTRAINT name REFERENCES t (c)', so DROP CONSTRAINT name in down and ADD CONSTRAINT name in up give false findings against the named inline spelling",
       "state": "open",
       "recordedAt": "2026-10-12T06:35:17.386Z"
+    },
+    {
+      "id": "8f8346cd",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/cli/task-review-closed.test.ts",
+      "line": 51,
+      "summary": "The changes-requested case of a closed task does not assert that the report was written into the record; the sibling cases cover each half separately",
+      "state": "open",
+      "recordedAt": "2026-10-24T17:43:47.898Z"
+    },
+    {
+      "id": "febc77e5",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/short-path.test.ts",
+      "line": 61,
+      "summary": "The short-path copy of the verify-reads-task-records test asserts only that three identifiers occur, so an inverted rewrite of the exit-0 bullet still passes; verify-skill.test.ts already pins the full rule",
+      "state": "open",
+      "recordedAt": "2026-10-24T19:30:05.975Z"
+    },
+    {
+      "id": "4a180a55",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/e2e/migrate-docs.test.ts",
+      "line": 122,
+      "summary": "The comment claims the backtick anchor excludes a paragraph that warns against a command, but the same regex matches a warning; the comment overstates what the assertion proves",
+      "state": "open",
+      "recordedAt": "2026-10-24T20:02:57.060Z"
+    },
+    {
+      "id": "01e51465",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "docs/engineering-rules.md",
+      "line": 11,
+      "summary": "The shipped guide still says the rules command asks to split the cycle, while the command now names the task; no task of the plan declares this file",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:00:15.874Z"
+    },
+    {
+      "id": "c09b6bb4",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/token-budget.test.ts",
+      "line": 100,
+      "summary": "The negative phrase list runs against section(), which does not lowercase, so a contradiction that starts a line slips past it",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:07:09.592Z"
+    },
+    {
+      "id": "c4b7a170",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "skills/lexforge-apply/SKILL.md",
+      "line": 112,
+      "summary": "«find its places once» reads as the executor's places while the task's are meant",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:07:09.802Z"
+    },
+    {
+      "id": "4543b508",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/scenarios/lexforge-apply/parallel-shared-file.md",
+      "line": 57,
+      "summary": "The scenario still names task unlock for a stale lock; the command is lexforge unlock --change <name>",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:11:44.376Z"
+    },
+    {
+      "id": "7e8898e3",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/commands.ts",
+      "line": 18,
+      "summary": "The gap between command and subcommand accepts a run of newlines, so a command ending a paragraph can be joined to the first word of the next",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:21:38.343Z"
+    },
+    {
+      "id": "d553f204",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/commands.test.ts",
+      "line": 190,
+      "summary": "The WRAPPED_CALLS rows assert the pair exists rather than that it is wrapped, and one of them passes against the un-widened regex",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:21:38.525Z"
+    },
+    {
+      "id": "b201d5e1",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/skills/commands.ts",
+      "line": 96,
+      "summary": "The companion scan takes only .md files directly beside SKILL.md; a companion in a subdirectory is skipped with no signal",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:21:38.701Z"
+    },
+    {
+      "id": "292a2c54",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/e2e/templates-vocabulary.test.ts",
+      "line": 33,
+      "summary": "it.each puts the machine's absolute path into the test name, and the test pins only the absence of the old phrases",
+      "state": "open",
+      "recordedAt": "2026-10-24T21:21:38.877Z"
+    },
+    {
+      "id": "cbd636cc",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/e2e/migrate-docs.test.ts",
+      "line": 334,
+      "summary": "The dropped-promise claims are all negatives, so deleting the check plan paragraph passes them, and the positive text that replaced it is unpinned",
+      "state": "open",
+      "recordedAt": "2026-10-25T05:25:49.998Z"
+    },
+    {
+      "id": "a063a897",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/workspace/find-root.ts",
+      "line": 25,
+      "summary": "Inside a task worktree whose top holds a lexforge/ directory without config.yaml, the command now refuses workspace-incomplete instead of resolving the main worktree",
+      "state": "open",
+      "recordedAt": "2026-10-25T05:39:27.266Z"
+    },
+    {
+      "id": "84cef7bf",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/e2e/migrate-docs.test.ts",
+      "line": 360,
+      "summary": "The cause-to-fix regex excludes the semicolon but not the full stop, so a rewrite that swaps the fixes and ends the sentence earlier could bridge the boundary",
+      "state": "open",
+      "recordedAt": "2026-10-25T05:55:09.076Z"
+    },
+    {
+      "id": "99c84150",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "README.md",
+      "line": 131,
+      "summary": "The rewrap splits the code span lexforge plan amend across a line break, so the phrase is not greppable in the source",
+      "state": "open",
+      "recordedAt": "2026-10-25T05:55:09.338Z"
+    },
+    {
+      "id": "8d6e8eea",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/helpers/workspace.ts",
+      "line": 53,
+      "summary": "The shared helper reads a fixture's .lexforge.yaml as { schema?: string } without the String() coercion the same read in src/core/tasks/migrate.ts:231 uses: broken YAML makes it throw during setup instead of letting the command answer, and a numeric schema writes a number into workflow.json, so every guarded command answers workflow-unreadable instead of the config error the test is after. No fixture does either today.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:26.762Z"
+    },
+    {
+      "id": "9e015ed9",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/helpers/workspace.ts",
+      "line": 47,
+      "summary": "The check reads match === undefined || match === null, but RegExp.exec returns RegExpExecArray | null, so the first half is dead and would be TS2367 if tests entered tsconfig.json. The repo writes the plain === null form, as in src/core/gates/task-list.ts:209.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:26.966Z"
+    },
+    {
+      "id": "95ee9019",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/cli/commands/validate.ts",
+      "line": 22,
+      "summary": "validate.ts:22-24, instructions.ts:23-25 and evidence.ts:37-39 repeat the three lines and the comment that check.ts:17-21 already keeps as assertMigrated; four copies of one guard drift apart when the order of the two reads changes.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:33.764Z"
+    },
+    {
+      "id": "2fcc6735",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/cli/commands/evidence.ts",
+      "line": 33,
+      "summary": "evidence.ts resolves --label through missingLabel before the migration guard, so evidence record on a 5.x change with no --label answers label-missing and names the migration only on the second call. The task's test always passes --label tests and the requirement's scenario names only status.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:33.951Z"
+    },
+    {
+      "id": "9690dc35",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/cli/task-short-path.test.ts",
+      "line": 62,
+      "summary": "The comment still says the task workspace has no workflow.json, so it stays on the full path; createTaskWorkspace now gets one with path: full, so the comment misstates the fixture. The assertion is unaffected, since isShortPath reads both a missing file and path: full as the full path.",
+      "state": "open",
+      "recordedAt": "2026-10-25T08:28:34.136Z"
+    },
+    {
+      "id": "9ad0aaef",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/gates/verify-change.ts",
+      "line": 61,
+      "summary": "The dimension label reads 'the working tree holds no uncommitted change outside the change directory, the task worktrees and the defect ledger', while workScopes carves the change's own delta specs back in, so an uncommitted delta spec is a finding the label denies. The wording to use: outside the change directory save its delta specs, the task worktrees and the defect ledger. Nothing in the suite pins the list, so the next change that touches verify's output carries this.",
+      "state": "open",
+      "recordedAt": "2026-10-25T10:51:18.422Z"
+    },
+    {
+      "id": "f364ae45",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/gates/task-files.ts",
+      "line": 67,
+      "summary": "DECLARED_FIELD_LINE is character for character the regex task-list.ts:34 holds as FIELD_LINE, and task-list.ts already imports from task-files.ts, so one constant could serve both. A sixth field added to one copy and not the other would silently split the prose span loop from cleanText.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:39:20.508Z"
+    },
+    {
+      "id": "f791ae22",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/gates/task-list.ts",
+      "line": 93,
+      "summary": "The doc comment on namedFiles still says the field holds the files a Command: or Check: span runs and bare path-shaped spans when the task has no Files: line. The Check: reader is gone and the field is now fed by every command-shaped span of the prose. The comment is the only description of the field a caller reads.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:39:20.690Z"
+    },
+    {
+      "id": "3931d7a6",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/core/gates/task-list.test.ts",
+      "line": 104,
+      "summary": "The two bare prose spans left in the rewritten test are /api/auth and /etc/nginx/conf.d, both rejected by isCanonicalTaskFile whatever the span reader does, so no case pins that a canonical bare prose path stays out of namedFiles under a well-formed Files: line, which is what the amended requirement states. That branch is pinned only by the eight malformed-declaration cases of task-file-declarations.test.ts:20, where Files: is broken and files is empty.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:39:20.868Z"
+    },
+    {
+      "id": "8e4091ef",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/tasks/workflow-file.ts",
+      "line": 46,
+      "summary": "The docstring says the guard is called before anything of a change's state is read or written, but in changeStatus it runs after readChangeState has already read .lexforge.yaml, loaded the schema and probed the artifact files. The one placement that needed care is the one the comment describes wrongly.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:53:27.215Z"
+    },
+    {
+      "id": "03520514",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/status/change-status.ts",
+      "line": 95,
+      "summary": "assertMigrated re-reads the change's .lexforge.yaml and reloads its schema, which readChangeState just read, so every status --change parses the same file twice. The answer is right; it is one duplicated read the (root, change) signature forces.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:53:27.387Z"
+    },
+    {
+      "id": "82d9bcbc",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/cli/migration-refusal.test.ts",
+      "line": 46,
+      "summary": "assertRefused asserts before the caller's removeWorkspace, so a failing assertion aborts the test and leaves the temporary workspace on disk. The other tests of the file remove the workspace before their expects for that reason.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:53:27.561Z"
+    },
+    {
+      "id": "1f1b6431",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/tasks/resume.ts",
+      "line": 104,
+      "summary": "resume reads the workflow without confirming the change exists first, so a change name the workspace does not have answers change-needs-migration with the next step lexforge migrate --change <that name>, a command that cannot work, where change-not-found and exit code 2 belong. archive misreports the same way in its own order, reaching the workflow only through verifyChange after readMerges (src/core/archive/archive-change.ts:104). verify itself is clean: it reads the plan, and with it the change config, at verify-change.ts:113 before the workflow at :117. The shared assertMigrated(root, change) of src/core/tasks/workflow-file.ts is the call both sites want; neither file was in the scope of the task that introduced it.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:53:27.737Z"
+    },
+    {
+      "id": "806e6c30",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/tasks/close.ts",
+      "line": 51,
+      "summary": "dirtyOutside is held word for word by close.ts:51-64 and plan-approve.ts:36-49, as are fenced by brief.ts:98 and final-review.ts:173, compareIds by records.ts:70 and byNumber by final-review.ts:143, and taskCommand by task-guards.ts:8 and resume.ts:51. Two tasks solved one problem twice each time.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:02:22.049Z"
+    },
+    {
+      "id": "7ff61e07",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/archive/archive-change.ts",
+      "line": 352,
+      "summary": "archive renames the whole change directory and evidence-store.ts:119 rewrites evidence.json inside it without taking the change lock, which task-execution 'The change lock names its owner' asks of every command that writes the state of a change. A task close writing its record while archive moves the directory is the race the lock exists for.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:02:22.234Z"
+    },
+    {
+      "id": "d88121b3",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/tasks/review.ts",
+      "line": 61,
+      "summary": "task review refuses a closed task that already carries an approving review with task-already-closed, pinned by tests/cli/task-review-closed.test.ts:54, while task-execution 'A review is registered by its reviewer after green' says a report registered on a task already closed SHALL be recorded against that task's green commit. The code keeps the narrower reading; narrowing the requirement instead needs the owner, since they approved its wording.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:02:22.414Z"
+    },
+    {
+      "id": "aceee92c",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/cli/task-refusals.test.ts",
+      "line": 38,
+      "summary": "The fixture writes Check: by hand over the task's Command: line, keeping vocabulary 6.0.0 removed in the suite now that task-files.ts no longer reads that marker at all.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:02:22.596Z"
+    },
+    {
+      "id": "8da13cf2",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/core/suite-parallelism.test.ts",
+      "line": 1,
+      "summary": "The yield the seven verify suites hand back to the event loop, and the checks that pin it, rest on no requirement of the delta: the task that wrote them is the one task of the plan with no requirement link, because the suite's exit code is tooling that ships in no package. Writing a requirement for it now would describe code already written, which the implementation-loop requirement of this change forbids. The lawful close is a tooling change of its own under skip_specs: true.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:13:39.955Z"
+    },
+    {
+      "id": "2b27fa0a",
+      "change": "plan-driven-execution",
+      "level": "critical",
+      "file": "src/core/git/merge-feature.ts",
+      "line": 26,
+      "summary": "archive cannot run on any change that opened a task worktree. The merge stages the tree with git add --all -- . :(exclude).lexforge, and git refuses a negative pathspec naming an ignored path: 'The following paths are ignored by one of your .gitignore files: .lexforge', exit 1. task-worktree.ts:13 writes /.lexforge/ into the repository's own exclude file at task start, so the product itself creates the condition and every 6.0.0 change hits it at archive, after archive has already merged the delta into lexforge/specs/ and moved the change directory, leaving the work staged and the branch unmerged. Measured on git 2.50.1 in a throwaway repository: :(exclude).lexforge/, :(exclude,glob).lexforge/** and :!.lexforge all fail the same way, a plain git add --all succeeds and leaves .lexforge out by itself because the exclude file hides it, and with that exclude file emptied the same plain add stages .lexforge/w.txt, which is what the pathspec was there to prevent.",
+      "state": "closed",
+      "recordedAt": "2026-10-25T12:16:16.864Z",
+      "closedAt": "2026-10-25T13:50:29.338Z"
+    },
+    {
+      "id": "b36b6901",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/core/git/task-worktree.test.ts",
+      "line": 106,
+      "summary": "The guarded case bundles [, ], # and !, all legal in a Windows filename, with * and ?, which are not, so Windows has no coverage of the escaping for the characters it could have held. Splitting it into an unguarded weird[1]#!dir case and a guarded *? case would buy that coverage. escapeGitignoreSegment has no platform-dependent path and git's wildmatch behaves the same there, so this buys coverage rather than correctness.",
+      "state": "open",
+      "recordedAt": "2026-10-25T13:44:17.088Z"
+    },
+    {
+      "id": "8fd027cf",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/git/merge-feature.ts",
+      "line": 29,
+      "summary": "ensureWorktreeExcluded is a throwing call inside the window between archive's irreversible writes - the delta merged into lexforge/specs/ and the change directory moved - and the merge itself, where only merge-conflict has a resumable path. A failure writing the exclude file leaves the same half-archived state the pathspec defect left, with no command to resume from. The window, not this call, is the thing to close.",
+      "state": "open",
+      "recordedAt": "2026-10-25T13:50:29.530Z"
+    },
+    {
+      "id": "ee4a0941",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/tasks/close.ts",
+      "line": 51,
+      "summary": "verify and the stamp digest carve the defect ledger out of what they measure, but dirtyOutside in task close and plan approve excludes only the change directory, and specs/task-execution/spec.md:214 asks for exactly that. So on a change with a task still open, an uncommitted lexforge defect record refuses the next task close naming the ledger, while the apply skill tells the agent to record a minor finding mid-task. The two readings of what counts as work outside the change disagree.",
+      "state": "open",
+      "recordedAt": "2026-10-25T13:52:22.418Z"
     }
   ]
 }

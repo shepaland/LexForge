@@ -3,18 +3,14 @@ import { answerPath, workspacePath } from "../answer-path.js";
 import { readChangeState } from "../status/change-status.js";
 import type { CommandResult } from "../types.js";
 import { type Finding } from "../validation/finding.js";
-import { readChangeConfig } from "../workspace/change-config.js";
+import { readPlanState } from "../tasks/plan-state.js";
+import { readTaskRecord } from "../tasks/records.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { checkCoverage, readDeltaSpecs } from "./coverage-rules.js";
-import {
-  checkGroupCoverage,
-  checkGroupSharedFiles,
-  checkTaskGroupLabels,
-} from "./plan-check-groups.js";
 import { checkIdentifiers } from "./identifier-rules.js";
 import { checkMaterialReferences, readMaterialDelta } from "./plan-check-references.js";
-import { checkLongFiles } from "./plan-check-long-files.js";
+import { checkTaskFields } from "./plan-check-task-fields.js";
 import { checkTaskFileDeclarations } from "./plan-check-task-files.js";
 import { checkPlaceholders } from "./placeholder-rules.js";
 import { checkSectionDependencies, type PlanSection } from "./plan-check-sections.js";
@@ -37,14 +33,19 @@ const SECTION_RULES = [
   "section-missing-depends-on",
   "section-unknown-dependency",
   "section-dependency-cycle",
-  "section-concurrent-file",
   "section-depends-on-unreadable",
   "section-depends-on-repeated",
   "section-number-repeated",
   "section-tasks-inline",
-  "task-missing-group-label",
-  "section-group-coverage-mismatch",
-  "section-group-shared-file",
+  "task-missing-files",
+  "task-missing-test",
+  "task-missing-command",
+  "task-field-repeated",
+  "task-field-malformed",
+  "task-control-unknown",
+  "task-depends-on-unknown",
+  "task-depends-on-forward",
+  "shared-file-without-order",
   "task-file-declaration",
   "task-material-missing",
 ];
@@ -108,18 +109,14 @@ export function checkPlan(options: CheckPlanOptions): CommandResult<CheckPlanDat
   };
 
   const sections = source.sections.map((section) => displaySection(root, section));
-  const longFilePath = readChangeConfig(root, options.change).longFilePath;
 
   const findings = [
     ...checkPlaceholders(plan, config.planPlaceholders),
     ...checkCoverage(plan, readDeltaSpecs(root, options.change)),
     ...checkIdentifiers(plan),
     ...checkSectionDependencies(plan, sections),
-    ...checkTaskGroupLabels(plan),
-    ...checkGroupCoverage(sections),
-    ...checkGroupSharedFiles(sections),
+    ...checkTaskFields(plan, sections, historicalTasks(root, options.change, plan)),
     ...checkTaskFileDeclarations(plan),
-    ...checkLongFiles(root, plan, config.sizeLimit, longFilePath),
     ...checkMaterialReferences(plan, readMaterialDelta(root, options.change)),
   ].sort((left, right) => left.line - right.line);
 
@@ -194,4 +191,18 @@ function renderLines(data: CheckPlanData): string[] {
   }
 
   return lines;
+}
+
+/**
+ * Ticked tasks that `lexforge migrate` closed as history of LexForge 5.x. A record
+ * that says "historical" is trusted only on a plan that migrate marked as 5.x.
+ */
+function historicalTasks(root: string, change: string, plan: PlanTasks): Set<string> {
+  if (readPlanState(root, change).migratedFrom !== "5.x") return new Set();
+  return new Set(
+    plan.tasks
+      .filter((task) => task.done && task.number !== "")
+      .filter((task) => readTaskRecord(root, change, task.number)?.origin === "historical")
+      .map((task) => task.number),
+  );
 }

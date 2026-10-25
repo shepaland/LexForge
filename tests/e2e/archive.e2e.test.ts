@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 import { runCli } from "../helpers/run-cli.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -168,12 +169,16 @@ const PLAN = [
   "",
   "- [x] 1.1 Написать сброс пароля с ограничением частоты в `src/auth/reset.ts`",
   "      -> auth#Password reset is rate limited",
+  "      Files: `src/auth/reset.ts`",
   "- [x] 1.2 Переписать хеш пароля на argon2id в `src/auth/password.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/auth/password.ts`",
   "- [x] 1.3 Убрать истечение сессии из `src/auth/session.ts`",
   "      -> auth#Session expires",
+  "      Files: `src/auth/session.ts`",
   "- [x] 1.4 Написать выпуск счёта в `src/billing/invoice.ts`",
   "      -> billing#Invoice is issued per order",
+  "      Files: `src/billing/invoice.ts`",
   "",
 ].join("\n");
 
@@ -206,41 +211,16 @@ function changeFiles(): Record<string, string> {
   };
 }
 
-/**
- * Every task of the plan is ticked and names a file outside `tests/` and
- * outside the change directory, so the fifth measure of `verify` needs a red
- * record for each of them. Written through the CLI itself, the same way a
- * real change would produce one.
- */
-async function recordRed(root: string, task: string): Promise<void> {
-  const recorded = await runCli(
-    [
-      "evidence",
-      "red",
-      "--change",
-      CHANGE,
-      "--task",
-      task,
-      "--command",
-      'node -e "process.exit(1)"',
-    ],
-    { cwd: root },
-  );
-  expect(recorded.code, recorded.stderr).toBe(0);
-}
-
 /** A workspace with the change committed, the work on disk and a fresh stamp. */
 async function project(extra: Record<string, string> = {}): Promise<string> {
   const made = createGitWorkspace({ ...changeFiles(), ...extra });
+  sealForVerify(made.root, CHANGE);
   created.push(made);
 
   for (const [file, content] of Object.entries(WORK)) {
     writeAt(made.root, file, content);
   }
-
-  for (const task of ["1.1", "1.2", "1.3", "1.4"]) {
-    await recordRed(made.root, task);
-  }
+  commitWork(made.root, CHANGE);
 
   const recorded = await runCli(
     ["evidence", "record", "--change", CHANGE, "--label", "tests"],

@@ -72,65 +72,78 @@ user change the assignment in `lexforge/config.yaml`; do not change it yourself.
 
 ## Execution version
 
-Read the workflow pin in status. For workflow 2, follow [execution-v2.md](execution-v2.md)
-and [context.md](context.md): one behavioural cycle retains all task IDs and receives one
-independent review. The legacy task loop below applies only to workflow 1. Missing pins
-mean version 1; installing this skill does not authorize migration. Model, planning,
-scope, file-limit and final verification gates remain mandatory for both versions.
+Run a task the same way whatever the change's age. Installing LexForge 6.0.0 migrates no
+existing change by itself: a change from before it is refused with
+`change-needs-migration`. Run `lexforge migrate --change <name>`, name its historical
+and open tasks and any `missingFields`, then send the open part through plan review and
+owner approval. Run `lexforge journal session` at the start of a conversation. After a
+compaction run `lexforge resume --change <name>` and take progress, running tasks and
+the journal from it, never from what you remember of the chat.
 
-## The rule (workflow 1)
+## The rule
 
-**NEVER WRITE IMPLEMENTATION BEFORE A RUN YOU WATCHED FAIL.**
+**NEVER WRITE IMPLEMENTATION BEFORE A RED THE CLI RECORDED.**
 
-Violating the letter of this rule is violating its spirit.
+Violating the letter violates the spirit.
 
-The step before the implementation is `lexforge evidence red --change` naming this
-change, `--task` naming this task, `--command` naming the failing check: it runs the
-check itself and writes the record. Quote the failing line in your answer too, but the
-record is what lasts - a quoted line dies with the session, and `lexforge verify` refuses
-a ticked task naming a file outside the test tree with no record behind it. A test green
-on its first run is defective; rewrite it and run again. A run that dies on a missing
-module or a typo is no run: fix it and run until the assertion fails. Ten lines, a
-deadline and a green suite change none of it.
+Every step of a task is a command:
 
-The observer of the failure is whoever writes the implementation - not a failure
-reported by another agent, not one summarised from another agent's output, not one
-reasoned about from the code, and not the author of a run from an earlier session.
-Writing the implementation makes you the one who watched the test fail and ran the
-command that recorded it.
+1. `lexforge task start --change <name> --task <id> --executor <who>` opens the task's
+   worktree and writes `tasks/<id>/brief.md`.
+2. Commit the test alone, then `lexforge task red`.
+3. Commit the implementation, write `tasks/<id>/report.md`, then `lexforge task green`.
+   It writes the review package `tasks/<id>/review.md`.
+4. A reviewer reads the package; register the answer with `lexforge task review`.
+5. `lexforge task close` checks the task in git, merges it into the change branch and
+   ticks the checkbox.
 
-Implementation already in the tree? Take it out, get the red, put it back inside the
-same task. Told not to? That buys no tick: nobody turns an unwatched failure into a
-watched one; reasoning about old code is not a run. Offer two ways out: let the red
-happen, or strike the task. Struck means the task is dropped and its work with it,
-never that the work stands and the review is waived.
+Never edit `tasks/<id>.json`, `plan-state.json` or a checkbox by hand. Everything under
+`lexforge/changes/<name>/` except `report.md` is written by the CLI; a deadline changes
+nothing.
+
+A refusal is exit `2`. Read `error.code` and `error.message` to the end, then run the
+command `nextStep` names. A missing module the task declares as new is already red: no
+stub in the test commit; `task red` refuses one as `red-commit-touches-code`. A test
+green at red is rewritten.
 
 ## Task order
 
-Read [context.md](context.md) once for task extraction, cycle snapshots and the five-field
-executor response. Keep history and full logs in the linked execution journal.
+Take tasks in number order. Read [parallel.md](parallel.md)'s runtime check before the
+first task, whatever the plan says. Start a task when ready. The executor is you or a
+subagent; find its places once and hand it `brief.md` whole beside their line numbers,
+with [executor-prompt.md](executor-prompt.md), working only in the task's worktree.
+A task needing a later task's result is a plan defect: name it, never reorder.
 
-Read [parallel-execution.md](parallel-execution.md) before your first task, whatever
-the plan says and whether or not the change is already under way.
+Stop for the owner in four cases only:
 
-Work in number order, sections aside; close a task - test, red, implementation, green,
-review, checkbox - before opening the next. A task needing a later one's result is a
-plan defect: name it, never reorder. Merging and scope creep: see
-parallel-execution.md.
+- a task or a file the plan does not have;
+- a decision that changes what the user sees;
+- a task blocked with no way out;
+- the plan is done.
+
+Any other fork is yours: choose, run `lexforge journal add --kind ruling` with
+`--text "<choice>" --reason "<why>" --scope task:<id>`, and go on.
+
+A missing file or task is asked, never guessed. After the owner's answer run
+`lexforge plan amend --change <name> --quote "<owner's words>"`, then get the
+`amendment` angle reviewed with `lexforge plan review --change <name> --angle amendment
+--file <report.md>`.
 
 ## Review before the checkbox
 
-One reviewer per wave. Once every cycle of the section has current GREEN, the session
-sends one brief from [reviewer-prompt.md](reviewer-prompt.md) for the section's cycles
-together. A cycle with controls gets a reviewer of its own. Register each review with
-`lexforge cycle review --wave`; who sends it and what a dispatched executor
-does instead is in [parallel-execution.md](parallel-execution.md). Reading your own diff is not review;
-an answer naming no file and line is empty - send it back.
+Send `tasks/<id>/review.md` with [reviewer-prompt.md](reviewer-prompt.md) to a reviewer
+who did not carry the task out. Reading your own diff is not review; an answer naming no
+file and line is empty - send it back.
 
-CRITICAL and IMPORTANT close before the checkbox. MINOR is fixed now or recorded with
-`lexforge defect record`: a finding kept in your head dies at the next
-compaction. Disagreement takes evidence: the requirement, the test, the line. Silent
-agreement and silent skipping fail alike.
+CRITICAL and IMPORTANT are fixed in the worktree, committed, taken through `task green`
+and reviewed again. MINOR is fixed now or recorded with `lexforge defect record` now: a
+finding kept in your head dies at the next compaction. Disagreement takes evidence: the
+requirement, the test, the line. Silent agreement and silent skipping fail alike.
+
+A closed task that `verify` reports as `task-not-reviewed` gets its review the same way.
+If that review requests changes, the fix is a new task through `plan amend`; once it is
+closed, send the old task's `review.md` again, and only an approved `task review` of it
+clears the finding.
 
 ## Past the delta
 
@@ -143,18 +156,20 @@ only describes the code the gate never checked.
 
 ## Closing a task
 
-Tick `- [x]` when the run is green and the findings are closed; a batch blurs done and
-undone. Then run `lexforge evidence record --change <name> --label tests` on the wave
-boundary. Exit `1` is a red run: open no next task; the ticked boxes stay ticked, and
-the next step is failure. All boxes ticked: run `lexforge verify --change <name>`.
+`lexforge task close` runs one task at a time from the main worktree on the change
+branch. After the last close, send the package of `lexforge review final --change <name>`
+with [final-review-prompt.md](final-review-prompt.md), register the answer with
+`lexforge review final --change <name> --file <report>`, then run
+`lexforge verify --change <name>`.
 
 ## Red flags - stop
 
-- Implementation written before a run you watched fail.
-- A user instruction offered as the reason a run did not happen.
-- A checkbox ticked with no review, or a finding unanswered.
-- An edit outside the file the task names.
+- Implementation written before `task red` recorded a failure.
+- A stub of a declared file in the test commit.
+- A state file or a checkbox edited by hand.
+- A file outside `Files:` and `Test:` edited without `plan amend`.
+- The owner asked about a fork that changes nothing they see.
+- A refusal answered with anything but its `nextStep`.
 - An agent started to continue your work, whatever its type is called.
-- State in the tree you cannot account for.
 
 Stop and do the step you skipped.

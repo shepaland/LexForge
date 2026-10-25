@@ -44,10 +44,13 @@ function sectionsWorkspace(tasks: string, requirementNames: string[]): string {
  * floor on its own, so section-dependency fixtures trip no rule but the one
  * under test.
  */
-function taskLine(number: string, file: string, requirement: string, groupLabel: string): string {
+function taskLine(number: string, file: string, requirement: string): string {
   return (
-    `- [ ] ${number} [${groupLabel}] Carry out the work this task exists for, editing \`${file}\`.\n` +
-    `      -> auth#${requirement}`
+    `- [ ] ${number} Carry out the work this task exists for, editing \`${file}\`.\n` +
+    `      -> auth#${requirement}\n` +
+    `      Files: \`${file}\`\n` +
+    `      Test: \`tests/t${number}.test.ts\`\n` +
+    "      Command: `npm test`"
   );
 }
 
@@ -71,7 +74,7 @@ describe("lexforge check plan: раздел без «Depends on:»", () => {
     // A leading blank line so the heading is not on line 1 — a rule that
     // reported a hardcoded line 1 would otherwise pass this test by
     // accident, since that happens to be where this section's heading sits.
-    const tasks = ["", "## 9. Only section", "", taskLine("9.1", "src/a.ts", "Req1", "A"), ""].join(
+    const tasks = ["", "## 9. Only section", "", taskLine("9.1", "src/a.ts", "Req1"), ""].join(
       "\n",
     );
     const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -92,8 +95,11 @@ describe("lexforge check plan: summary считает находки разде�
     const tasks = [
       "## 9. Mixed",
       "",
-      taskLine("9.1", "src/a.ts", "Req1", "A"),
-      "- [ ] 9.2 [A] Too short",
+      taskLine("9.1", "src/a.ts", "Req1"),
+      "- [ ] 9.2 Too short",
+      "      Files: `src/b.ts`",
+      "      Test: `tests/b.test.ts`",
+      "      Command: `npm test`",
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -128,7 +134,7 @@ describe("lexforge check plan: «Depends on:» называет несущест
       "",
       "Depends on: section 42",
       "",
-      taskLine("5.1", "src/a.ts", "Req1", "A"),
+      taskLine("5.1", "src/a.ts", "Req1"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -152,13 +158,13 @@ describe("lexforge check plan: два раздела ждут друг друг�
       "",
       "Depends on: section 5",
       "",
-      taskLine("3.1", "src/a.ts", "Req1", "A"),
+      taskLine("3.1", "src/a.ts", "Req1"),
       "",
       "## 5. B",
       "",
       "Depends on: section 3",
       "",
-      taskLine("5.1", "src/b.ts", "Req2", "B"),
+      taskLine("5.1", "src/b.ts", "Req2"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
@@ -185,7 +191,7 @@ describe("lexforge check plan: раздел ждёт сам себя", () => {
       "",
       "Depends on: section 9",
       "",
-      taskLine("9.1", "src/a.ts", "Req1", "A"),
+      taskLine("9.1", "src/a.ts", "Req1"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -210,7 +216,7 @@ describe("lexforge check plan: значение «Depends on:» нечитаем
         "",
         `Depends on: ${value}`,
         "",
-        taskLine("9.1", "src/a.ts", "Req1", "A"),
+        taskLine("9.1", "src/a.ts", "Req1"),
         "",
       ].join("\n");
       const root = sectionsWorkspace(tasks, ["Req1"]);
@@ -233,14 +239,14 @@ describe("lexforge check plan: повторная строка «Depends on:»",
       "",
       "Depends on: none",
       "",
-      taskLine("9.1", "src/shared.ts", "Req1", "A"),
+      taskLine("9.1", "src/shared.ts", "Req1"),
       "",
       "## 4. Duplicate lines",
       "",
       "Depends on: none",
       "Depends on: section 9",
       "",
-      taskLine("4.1", "src/shared.ts", "Req2", "B"),
+      taskLine("4.1", "src/shared.ts", "Req2"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
@@ -250,7 +256,7 @@ describe("lexforge check plan: повторная строка «Depends on:»",
     expect(findingsOf(findings, "section-depends-on-repeated")).toHaveLength(1);
     // Had the second line been dropped, section 4 would look independent of
     // section 9, and sharing `src/shared.ts` would be a false conflict.
-    expect(findingsOf(findings, "section-concurrent-file")).toEqual([]);
+    expect(findingsOf(findings, "shared-file-without-order")).toEqual([]);
   });
 });
 
@@ -261,13 +267,13 @@ describe("lexforge check plan: повторный номер раздела", ()
       "",
       "Depends on: none",
       "",
-      taskLine("4.1", "src/a.ts", "Req1", "A"),
+      taskLine("4.1", "src/a.ts", "Req1"),
       "",
       "## 4. Also numbered four",
       "",
       "Depends on: none",
       "",
-      taskLine("4.2", "src/b.ts", "Req2", "B"),
+      taskLine("4.2", "src/b.ts", "Req2"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1", "Req2"]);
@@ -291,19 +297,19 @@ describe("lexforge check plan: план без нарушений раздела
       "",
       "Depends on: none",
       "",
-      taskLine("1.1", "src/one.ts", "Req1", "A"),
+      taskLine("1.1", "src/one.ts", "Req1"),
       "",
       "## 2. Second",
       "",
       "Depends on: section 1",
       "",
-      taskLine("2.1", "src/two.ts", "Req2", "B"),
+      taskLine("2.1", "src/two.ts", "Req2"),
       "",
       "## 3. Third",
       "",
       "Depends on: section 1",
       "",
-      taskLine("3.1", "src/three.ts", "Req3", "C"),
+      taskLine("3.1", "src/three.ts", "Req3"),
       "",
     ].join("\n");
     const root = sectionsWorkspace(tasks, ["Req1", "Req2", "Req3"]);

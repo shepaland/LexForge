@@ -54,6 +54,36 @@ export interface TaskFileScope {
 const FILES_LINE = /^Files:/;
 const FILES_DECLARATION = /^Files:\s*(`[^`]+`(?:\s*,\s*`[^`]+`)*)\s*$/;
 
+/**
+ * A field line of the task: `Files:`, `Test:`, `Command:`, `Depends on:` or
+ * `Controls:`. Each of these already reaches the task's named files through
+ * its own field - `Files:` and `Test:` through `declarations` and
+ * `readTaskFields`, `Command:` through `commandFiles` in `task-list.ts` -
+ * so the prose-span loop below leaves these lines out entirely. Sending a
+ * field line into that loop would split a declared path that holds a space,
+ * such as `tests/http/routes fixture.test.ts`, into a program and an
+ * operand, naming a file nobody wrote.
+ */
+const DECLARED_FIELD_LINE = /^(Files|Test|Command|Depends on|Controls):/;
+
+/** The task's lines with every field line left out: what the author wrote about the work, not its contract. */
+function proseLines(lines: string[]): string[] {
+  return lines.filter((line) => !DECLARED_FIELD_LINE.test(line.trim()));
+}
+
+/**
+ * The command-shaped spans of the given lines: backtick spans that split
+ * into more than one token. A bare, whitespace-less span is a plain file
+ * reference, not a command, and is left out here - when a `Files:` line is
+ * declared, a bare reference in the task's own prose is checked and named
+ * exactly as it is today: not at all. Only a command run in prose, such as
+ * the `Check:` wording a task written before 6.0.0 still carries, is read
+ * for the paths it operates on.
+ */
+function commandSpans(lines: string[]): string[] {
+  return inlineCodeSpans(lines).filter((span) => /\s/.test(span));
+}
+
 function declarations(lines: string[]): { present: boolean; values: string[]; problems: FileDeclarationProblem[] } {
   const declarations = lines.map((line) => line.trim()).filter((line) => FILES_LINE.test(line));
   if (declarations.length === 0) return { present: false, values: [], problems: [] };
@@ -75,9 +105,8 @@ function declarations(lines: string[]): { present: boolean; values: string[]; pr
 /**
  * The only programs `readNamedFiles` trusts to run a script handed to them
  * as their very next token. The list is short and closed on purpose: `node`,
- * `python`, `python3`, `ruby`, `sh` and `bash` are the interpreters this
- * gate's own red-run commands and the plans it checks actually invoke this
- * way. A test runner such as `pytest`, `jest` or `ruff` is never on it, even
+ * `python`, `python3`, `ruby`, `sh` and `bash` are the interpreters the
+ * plans this gate checks actually invoke this way. A test runner such as `pytest`, `jest` or `ruff` is never on it, even
  * though its own name is not path-shaped either - its first argument is the
  * file it operates on, not a script it runs, and dropping it reopens the
  * shared-file collision this gate exists to catch. The cost of keeping the
@@ -130,41 +159,34 @@ function unwrapCommandQuotes(tokens: string[]): string[] {
   return result;
 }
 
-/**
- * File paths the task writes. Only what stands in backticks is read, and of
- * that only what looks like a path: it holds a slash or ends in an extension.
- * A whole command is left out, so `npm test` is not taken for a file - this
- * is deliberately narrower than `namedFiles` below.
- */
+/** File paths the task writes: exactly the ones its `Files:` line declares. */
 export function readFiles(lines: string[]): string[] {
-  const declaration = declarations(lines);
-  if (declaration.present) return declaration.values;
-  const files: string[] = [];
-
-  for (const span of inlineCodeSpans(lines)) {
-    if (/\s/.test(span)) {
-      continue;
-    }
-
-    if (isPathShaped(span) && isCanonicalTaskFile(span)) {
-      files.push(span);
-    }
-  }
-
-  return [...new Set(files)];
+  return declarations(lines).values;
 }
 
 /**
- * Every file the task names, its `Check:` commands included. A backtick span
- * with no whitespace in it is a bare file reference - the case `readFiles`
- * above already handles - and is kept exactly as before, whether or not it
- * is path-shaped.
+ * Every file the task names, its `Files:` line and the commands of its own
+ * prose included. A field line - `Files:`, `Test:`, `Command:`, `Depends on:`
+ * or `Controls:` - never reaches the span loop below: `proseLines` leaves it
+ * out, and its paths reach the named files through its own field instead
+ * (`Files:` and `Test:` here through `declarations` and `readTaskFields`,
+ * `Command:` through `commandFiles` in `task-list.ts`, which calls back into
+ * this function with one synthesized span and no field line at all).
  *
- * A span with whitespace in it is a command, split on whitespace into
- * tokens, with a quoted `--command` value unwrapped by `unwrapCommandQuotes`
- * first. Its leading token is the program that runs it, dropped whether or
- * not it is path-shaped: `` `npx vitest run x.test.ts` `` drops `npx` even
- * though `npx` holds no slash and matches no extension anyway.
+ * Once a `Files:` line is declared, only command-shaped spans of what is left
+ * - a backtick span that splits into more than one token - are read for the
+ * paths they operate on; a bare, whitespace-less span in the task's own prose
+ * is checked and named exactly as it is today: not at all, the same as
+ * before a `Files:` line existed to read instead. Without a `Files:` line,
+ * every span of every line - field-shaped or not - is read exactly as
+ * `inlineCodeSpans` always has, bare references included, because nothing
+ * else names the task's files in that case.
+ *
+ * A command-shaped span is split on whitespace into tokens, with a quoted
+ * `--command` value unwrapped by `unwrapCommandQuotes` first. Its leading
+ * token is the program that runs it, dropped whether or not it is
+ * path-shaped: `` `npx vitest run x.test.ts` `` drops `npx` even though `npx`
+ * holds no slash and matches no extension anyway.
  *
  * The token right after the program is dropped too, as the script that
  * program runs, only when the program is one of `SCRIPT_INTERPRETERS` and
@@ -177,12 +199,11 @@ export function readFiles(lines: string[]): string[] {
  * tests/test_login.py` - drops nothing on the interpreter's account either,
  * since `-m` fails the path-shape test on its own.
  *
- * Every remaining token is checked and named exactly as `readFiles` checks a
- * bare span.
+ * Every remaining token is checked and named exactly as a bare span is.
  */
 export function readNamedFiles(lines: string[]): string[] {
   const declaration = declarations(lines);
-  const spans = declaration.present ? checkCommandSpans(lines) : inlineCodeSpans(lines);
+  const spans = declaration.present ? commandSpans(proseLines(lines)) : inlineCodeSpans(lines);
   const files: string[] = [];
 
   for (const span of spans) {
@@ -218,12 +239,4 @@ export function readTaskFileScope(lines: string[]): TaskFileScope {
     namedFiles: readNamedFiles(lines),
     fileDeclarationProblems: declaration.problems,
   };
-}
-
-/** The command span immediately following each Check: marker, excluding later prose spans. */
-function checkCommandSpans(lines: string[]): string[] {
-  return lines.flatMap((line) => {
-    const match = /Check:\s*`([^`]+)`/.exec(line);
-    return match ? [match[1]!.trim()] : [];
-  });
 }

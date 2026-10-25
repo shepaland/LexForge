@@ -60,6 +60,14 @@ Files under `lexforge/changes/` SHALL NOT count as uncommitted changes for this 
 moved change directory on that branch, switch to `dev` and merge with `--no-ff`. The
 feature branch SHALL stay.
 
+The task worktrees under `.lexforge/` SHALL NOT be committed by that merge, and the command
+SHALL keep them out the way `task start` does, by the repository's own exclude file, never by
+naming `.lexforge` in the pathspec it stages with: git refuses a negative pathspec that names
+an ignored path, so a command that names it there cannot stage anything at all once the
+exclude file is in place. What the merge stages SHALL stay within the workspace, so a
+workspace nested below the root of its repository commits its own subtree and not every
+change the repository happens to hold.
+
 On a merge conflict, the command SHALL abort the merge, switch back to `feature/<name>`,
 exit `1` and list the conflicting paths.
 
@@ -72,6 +80,16 @@ merge and SHALL say in its output that the change was not built on its feature b
   conflicting commits
 - **THEN** `dev` holds a merge commit whose second parent is the tip of `feature/add-login`,
   and `feature/add-login` still exists
+
+#### Scenario: A repository that already hides the task worktrees
+
+- **WHEN** `lexforge archive add-login` runs on `feature/add-login` in a repository whose
+  exclude file hides the workspace's `.lexforge/`, as `task start` leaves it, and, where the
+  workspace sits below the top, with a file changed above it
+- **THEN** the merge is made, `.lexforge/` is in no commit of it, the file changed above the
+  workspace root is in no commit of it either, and the command does not refuse over a path its
+  own worktrees live in - and this holds whether the workspace is the top of its repository or
+  a directory below it
 
 #### Scenario: A conflict
 

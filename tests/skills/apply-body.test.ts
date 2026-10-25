@@ -1,8 +1,20 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
-import { readSkills, type SkillFile } from "../helpers/read-skills.js";
+import type { SkillFile } from "../helpers/read-skills.js";
 import { checkSkillStructure } from "./checks.js";
-import { SKILLS, bodyOf, fixture, only, pxSection } from "./helpers.js";
+import { bodyOf, fixture, only, pxSection, section } from "./helpers.js";
+
+/** The text of parallel.md before its first `## ` heading - the file's own opening frame. */
+function parallelOpening(): string {
+  const path = fileURLToPath(new URL("../../skills/lexforge-apply/parallel.md", import.meta.url));
+  const raw = readFileSync(path, "utf8");
+  const firstHeading = raw.indexOf("\n## ");
+
+  return firstHeading === -1 ? raw : raw.slice(0, firstHeading);
+}
 
 describe("раздел 14: lexforge-apply получает свой предел слов тела — 800 против общих 650", () => {
   it("фикстура lexforge-apply на 748 слов не даёт находки body-length", () => {
@@ -26,18 +38,8 @@ describe("раздел 14: lexforge-apply получает свой предел
     expect(finding.message).toContain("800");
   });
 
-  it("SKILL.md lexforge-apply не велит исполнителю самому слать ревьюера — кто шлёт бриф и что делает вместо этого исполнитель названо в parallel-execution.md", () => {
-    const skill = readSkills(SKILLS).find((entry) => entry.dir === "lexforge-apply")!;
-
-    expect(skill.body).toMatch(
-      /who sends it and what a dispatched executor\s+does instead is in \[parallel-execution\.md\]\(parallel-execution\.md\)\./,
-    );
-    expect(skill.body).not.toMatch(/send a reviewer subagent the brief/);
-    expect(skill.body).not.toMatch(/Only a reviewer[^.]*banned by type/);
-  });
-
-  it("тело lexforge-apply ссылается на parallel-execution.md", () => {
-    expect(bodyOf("lexforge-apply")).toMatch(/\[parallel-execution\.md\]\(parallel-execution\.md\)/);
+  it("тело lexforge-apply ссылается на parallel.md", () => {
+    expect(bodyOf("lexforge-apply")).toMatch(/\[parallel\.md\]\(parallel\.md\)/);
   });
 
   it("MINOR из ревью попадает в lexforge defect record сейчас, а не в новую задачу плана потом", () => {
@@ -67,107 +69,13 @@ describe("раздел 14: lexforge-apply получает свой предел
   });
 });
 
-describe("раздел 15: lexforge-apply называет lexforge evidence red шагом перед реализацией", () => {
-  /**
-   * The `## The rule` section with whitespace runs (including a mid-sentence
-   * line wrap) collapsed to a single space, so a source line wrap cannot
-   * break a phrase match.
-   */
-  function ruleSection(): string {
-    const body = readSkills(SKILLS)
-      .find((entry) => entry.dir === "lexforge-apply")!
-      .body.replace(/\s+/g, " ");
-    const start = body.indexOf("## The rule");
-
-    expect(start, "раздел «The rule» не найден").toBeGreaterThan(-1);
-
-    const next = body.indexOf("## ", start + 3);
-    return next === -1 ? body.slice(start) : body.slice(start, next);
-  }
-
-  it("«The rule» называет lexforge evidence red шагом перед реализацией, без смягчения порядка", () => {
-    const rule = ruleSection();
-
-    expect(rule).toMatch(/lexforge evidence red --change/);
-    expect(rule).toMatch(/--task/);
-    expect(rule).toMatch(/--command/);
-    // The mandate as a whole - "is" the step, not merely a sentence that
-    // happens to contain the substring "before the implementation".
-    expect(rule).toMatch(
-      /The step before the implementation is `lexforge evidence red --change` naming this change, `--task` naming this task, `--command` naming the failing check: it runs the check itself and writes the record\./,
-    );
-
-    for (const phrase of [
-      "need not",
-      "not need to",
-      "no need to",
-      "optional",
-      "at some point",
-      "unless",
-      "if you can",
-      "doesn't have to",
-    ]) {
-      expect(rule, `«${phrase}» смягчает порядок шага`).not.toContain(phrase);
-    }
-  });
-
-  it("«The rule» называет наблюдателем провала того, кто пишет реализацию, и отказывает трём заменам", () => {
-    const rule = ruleSection();
-    const observerIndex = rule.indexOf(
-      "The observer of the failure is whoever writes the implementation",
-    );
-
-    expect(observerIndex, "«observer of the failure» не найдено").toBeGreaterThan(-1);
-
-    const window = rule.slice(observerIndex, observerIndex + 420);
-
-    // The requirement's three refusals (implementation-loop/spec.md: "A failure
-    // reported by another agent, summarised from another agent's output, or
-    // reasoned about from the code SHALL NOT count as observed") - each named,
-    // not just the headline clause.
-    expect(window).toMatch(/reported by another agent/);
-    expect(window).toMatch(/summarised from another agent's output/);
-    expect(window).toMatch(/reasoned about from the code/);
-
-    for (const phrase of [
-      "unless a subagent already ran it",
-      "unless it already ran",
-      "except when a subagent",
-      "as long as someone watched it",
-    ]) {
-      expect(window, `«${phrase}» открывает исключение наблюдателю`).not.toContain(phrase);
-    }
-  });
-
-  it("«The rule» говорит, что значит вычеркнуть задачу: работа снимается вместе с ней, а не остаётся без ревью", () => {
-    const rule = ruleSection();
-
-    expect(rule).toMatch(
-      /Struck means the task is dropped and its work with it, never that the work stands and the review is waived\./,
-    );
-
-    for (const phrase of [
-      "the work stays and the review is skipped",
-      "the code stays in the tree",
-      "strike just removes the checkbox",
-    ]) {
-      expect(rule, `«${phrase}» оставляет вычеркнутую работу в дереве`).not.toContain(phrase);
-    }
-  });
-});
-
-describe("parallel-execution.md: проверка рантайма на исполнителей и на ревью до первой задачи", () => {
-  it("parallel-execution.md реально проверяет рантайм на исполнителей и на ревью до первой задачи", () => {
+describe("parallel.md: проверка рантайма на исполнителей и на ревью до первой задачи", () => {
+  it("parallel.md реально проверяет рантайм на исполнителей и на ревью до первой задачи", () => {
     const text = pxSection("The runtime check");
 
     expect(text).toMatch(/before your first task|before task 1/);
     expect(text).toMatch(/executor subagent/);
     expect(text).toMatch(/sequential/);
-    // Round 6: "Whether an executor can review itself" is gone (see
-    // tests/skills/apply-waves.test.ts) and its runtime-dependent branch
-    // with it - the executor never starts a reviewer of its own regardless
-    // of what the runtime can reach, so the check no longer asks that
-    // question. It establishes two things now, not three.
     expect(text).toMatch(/establish two things:/);
     expect(text).toMatch(/whether it can reach any agent at all\./);
 
@@ -195,5 +103,110 @@ describe("parallel-execution.md: проверка рантайма на испо
       expect(text, `«${phrase}» рядом с проверкой рантайма`).not.toContain(phrase);
     }
   });
+
+  it("без агента вовсе кладёт на стол два законных выхода из недостижимого ревьюера", () => {
+    const text = pxSection("The runtime check");
+
+    expect(text).toMatch(/make a reviewer reachable/);
+    expect(text).toMatch(/strike the task from the plan with their word through\s*`lexforge plan amend`/);
+    expect(text).toMatch(
+      /struck meaning the task is dropped and its work with it, never\s*that the work stands and the review is waived/,
+    );
+    expect(text).toMatch(/reading your own diff does not stand\s*for the review|reading your own diff does not stand\s*in\s*for the review/);
+    expect(text).toMatch(/the absence of a reviewer is not a reason to run `task\s*close`/);
+
+    for (const phrase of [
+      "the work stands and the review follows later",
+      "approve it yourself this once",
+      "the review can wait until a reviewer turns up",
+    ]) {
+      expect(text, `«${phrase}» подменяет один из двух законных выходов`).not.toContain(phrase);
+    }
+  });
+
+  it("не пускает следующую задачу, пока эта стоит без ревью", () => {
+    const text = pxSection("The runtime check");
+
+    expect(text).toMatch(/no\s*further task starts while this one stands unreviewed/);
+
+    for (const phrase of [
+      "a later task may start if it touches no file of this one",
+      "the next task can start while this one waits on its reviewer",
+    ]) {
+      expect(text, `«${phrase}» открывает задачу поверх неревьюированной`).not.toContain(phrase);
+    }
+  });
+
+  it("проверка рантайма читается до первой задачи, не только когда задач несколько", () => {
+    const skillBody = bodyOf("lexforge-apply");
+    const order = section(skillBody, "Task order");
+
+    expect(order).toMatch(
+      /Read \[parallel\.md\]\(parallel\.md\)'s runtime check before the\s*first task, whatever the plan says/,
+    );
+
+    for (const phrase of [
+      "once several tasks are ready",
+      "only when more than one task is ready",
+      "when the plan has independent tasks",
+    ]) {
+      expect(order, `«${phrase}» обуславливает проверку рантайма числом готовых задач`).not.toContain(
+        phrase,
+      );
+    }
+  });
+
+  it("parallel.md не прячет проверку рантайма за «несколько готовых задач» своей вводной строкой", () => {
+    const opening = parallelOpening();
+
+    expect(opening).toMatch(
+      /before your first task of the change, whatever the plan\s*says and however many tasks it records as independent/,
+    );
+    expect(opening).toMatch(/the check and its answer are\s*owed either way/);
+
+    for (const phrase of [
+      "Read this when `lexforge status` shows more than one ready task.",
+      "only matters once several tasks are ready",
+      "skip the check when the plan has no independent tasks",
+    ]) {
+      expect(opening, `«${phrase}» вновь гейтит проверку рантайма числом готовых задач`).not.toContain(
+        phrase,
+      );
+    }
+  });
 });
 
+describe("раздел «Task order»: номер и запрет на перестановку задач", () => {
+  it("задачи идут в порядке номеров", () => {
+    const order = section(bodyOf("lexforge-apply"), "Task order");
+
+    expect(order).toMatch(/Take tasks in number order\./);
+
+    for (const phrase of [
+      "in any order",
+      "in whatever order suits",
+      "order does not matter",
+      "sections may run out of order",
+    ]) {
+      expect(order, `«${phrase}» снимает требование числового порядка`).not.toContain(phrase);
+    }
+  });
+
+  it("задача, которой нужен результат более позднего номера — дефект плана, который называют, а не повод переставить", () => {
+    const order = section(bodyOf("lexforge-apply"), "Task order");
+
+    expect(order).toMatch(
+      /A task needing a later task's result is a plan\s*defect: name it, never\s*reorder\./,
+    );
+
+    for (const phrase of [
+      "reorder them to fit",
+      "it is fine to run the later task first",
+      "move the later task ahead to unblock it",
+    ]) {
+      expect(order, `«${phrase}» разрешает переставлять задачи вместо того, чтобы назвать дефект`).not.toContain(
+        phrase,
+      );
+    }
+  });
+});

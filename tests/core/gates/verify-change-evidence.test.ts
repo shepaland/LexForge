@@ -5,20 +5,22 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { UsageError } from "../../../src/cli/errors.js";
 import { recordEvidence } from "../../../src/core/gates/evidence-record.js";
-import { putRedRun } from "../../../src/core/gates/red-run-store.js";
 import { verifyChange } from "../../../src/core/gates/verify-change.js";
 import { writeAt } from "../../helpers/git-workspace.js";
-import { CHANGE, created, RED_RECORD, SILENT, workspace } from "./verify-change-fixtures.js";
+import { commitWork } from "../../helpers/verify-seal.js";
+import { CHANGE, created, SILENT, workspace, yieldEventLoop } from "./verify-change-fixtures.js";
 
 afterEach(() => {
   while (created.length > 0) {
     created.pop()!.remove();
   }
 });
+afterEach(yieldEventLoop);
 
 /** The work of the change: a line the base commit does not carry. */
 function editApp(root: string): void {
   writeAt(root, "src/app.ts", "export function app(): string {\n  return \"hashed\";\n}\n");
+  commitWork(root, CHANGE);
 }
 
 /** Every task closed, the requirement named, the file it names edited. */
@@ -27,6 +29,7 @@ const COVERED_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -59,6 +62,7 @@ const ALL_THREE = [
   "",
   "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -77,7 +81,6 @@ describe("verifyChange: три измерения разом", () => {
   it("чистый change даёт код 0", async () => {
     const root = workspace(COVERED_PLAN).root;
     editApp(root);
-    putRedRun(root, CHANGE, "1.1", RED_RECORD);
     await recordEvidence({
       cwd: root,
       change: CHANGE,
@@ -117,7 +120,6 @@ describe("verifyChange: граница машинной проверки", () =>
   it("ответ несёт три непроверенных пункта, среди них design.md", async () => {
     const root = workspace(COVERED_PLAN).root;
     editApp(root);
-    putRedRun(root, CHANGE, "1.1", RED_RECORD);
     await recordEvidence({
       cwd: root,
       change: CHANGE,
@@ -141,8 +143,11 @@ const TWO_OPEN_ONE_TRACED = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "- [ ] 2.1 Написать проверку пароля при входе в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "- [ ] 2.2 Написать журнал неудачных входов в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -150,17 +155,20 @@ describe("verifyChange: счётчики", () => {
   it("summary считает находки каждого вида", () => {
     const root = workspace(TWO_OPEN_ONE_TRACED).root;
     editApp(root);
-    putRedRun(root, CHANGE, "1.1", RED_RECORD);
 
     const result = verifyChange({ cwd: root, change: CHANGE });
 
     expect(result.data.summary).toEqual({
       openTasks: 2,
+      tasksWithoutClosedRecord: 0,
+      tasksNotReviewed: 0,
+      missingCommits: 0,
       requirementsWithoutTrace: 0,
       staleLabels: 1,
       openDefects: 0,
-      unrecordedTasks: 0,
-      filesOverLimit: 0,
+      finalReview: 0,
+      uncommittedWork: 0,
+      shortPath: 0,
     });
     expect(result.data.findings).toHaveLength(3);
   });

@@ -17,7 +17,7 @@ afterEach(() => {
   }
 });
 
-// The newlines put the message on a line of its own, which the cycle runner matches whole.
+// The newlines put the message on a line of its own, so a red run is matched by that line whole.
 const EXPECTED = "\nThe engineering key is not read\n";
 
 type Engineering = { stacks: string[] | null; disabled: Record<string, string> };

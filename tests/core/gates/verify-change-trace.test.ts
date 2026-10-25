@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { verifyChange } from "../../../src/core/gates/verify-change.js";
 import { writeAt } from "../../helpers/git-workspace.js";
-import { AUTH_SPEC, CHANGE, created, workspace } from "./verify-change-fixtures.js";
+import { AUTH_SPEC, CHANGE, created, workspace, yieldEventLoop } from "./verify-change-fixtures.js";
 
 const PLAN_FILE = `lexforge/changes/${CHANGE}/tasks.md`;
 
@@ -11,6 +11,7 @@ afterEach(() => {
     created.pop()!.remove();
   }
 });
+afterEach(yieldEventLoop);
 
 /** Two requirements, so a check that reports nothing at all is visible as such. */
 const TWO_REQUIREMENTS = `${AUTH_SPEC}
@@ -30,6 +31,7 @@ const ONE_COVERED = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -67,6 +69,7 @@ const UNTOUCHED_FILE = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -76,6 +79,7 @@ const OPEN_TASK = [
   "",
   "- [ ] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -84,6 +88,7 @@ const NO_LINK = [
   "## 1. Вход",
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -162,6 +167,7 @@ const TWO_TASK_FIRST_SECTION = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -171,6 +177,7 @@ const TWO_TASK_SECOND_SECTION = [
   "",
   "- [ ] 2.1 Написать повторную проверку пароля в `src/other.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/other.ts`",
   "",
 ].join("\n");
 

@@ -15,6 +15,7 @@ import { run } from "../../src/cli/run.js";
 import { createCapture } from "../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 import { removeWorkspace } from "../helpers/workspace.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 
 const created: string[] = [];
 
@@ -149,6 +150,7 @@ const GATE_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Change carries a delta spec",
+  "      Files: `src/app.ts`",
   "- [ ] 1.2 TODO",
   "",
 ].join("\n");
@@ -171,6 +173,7 @@ function gateProject(): string {
     "lexforge/changes/add-auth/design.md": "## Context\n\nOne service, one database.\n",
     "lexforge/changes/add-auth/tasks.md": GATE_PLAN,
   });
+  sealForVerify(made.root, "add-auth");
   repositories.push(made);
   return made.root;
 }
@@ -249,6 +252,7 @@ const CLEAN_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Change carries a delta spec",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -268,9 +272,11 @@ async function archivableProject(): Promise<string> {
     "lexforge/changes/add-auth/design.md": "## Context\n\nOne service, one database.\n",
     "lexforge/changes/add-auth/tasks.md": CLEAN_PLAN,
   });
+  sealForVerify(made.root, "add-auth");
   repositories.push(made);
 
   writeAt(made.root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
+  commitWork(made.root, "add-auth");
   // Task 1.1 is ticked and names `src/app.ts`: the fifth measure of `verify`
   // needs a red record for it, written through the CLI's own writer.
   await call(

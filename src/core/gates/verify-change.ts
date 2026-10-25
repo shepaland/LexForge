@@ -1,29 +1,35 @@
-import { migrationFreshness } from "../execution/migration-freshness.js";
-import { executionPlan } from "../execution/plan.js";
-import { effectiveCompletion } from "../execution/effective-completion.js";
-import { readMigrationState } from "../execution/migration-state.js";
-import path from "node:path";
-import { cycleProblems } from "../execution/context.js";
-import { workflow } from "../execution/plan.js";
-
 import { UsageError } from "../../cli/errors.js";
 import { answerPath, workspacePath } from "../answer-path.js";
-import { changeBase, changedFiles } from "../git/change-base.js";
+import { changedFiles } from "../git/change-base.js";
 import { assertRepository } from "../git/repository.js";
 import { readChangeState } from "../status/change-status.js";
+import { finalReviewBase } from "../tasks/final-review.js";
+import { readWorkflowFile } from "../tasks/workflow-file.js";
 import type { CommandResult } from "../types.js";
 import { makeFinding, type Finding } from "../validation/finding.js";
-import { readChangeConfig } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
 import { readProjectConfig } from "../workspace/project-config.js";
 import { readDeltaSpecs, requirementKey, type DeltaSpecs } from "./coverage-rules.js";
 import { DEFECT_OPEN_RULE, defectFindings } from "./defect-dimension.js";
-import { lineLimitFindings } from "./line-limit-findings.js";
 import { PLAN_ARTIFACT } from "./plan-check.js";
 import { readPlanSource } from "./plan-source.js";
 import type { PlanTask, PlanTasks } from "./task-list.js";
 import { describedLabels, verificationEmpty } from "./verification-labels.js";
-import { evidenceFindings, redRecordFindings } from "./verify-change-evidence.js";
+import { evidenceFindings } from "./verify-change-evidence.js";
+import {
+  COMMIT_MISSING,
+  FINAL_MISSING,
+  FINAL_OPEN,
+  FINAL_STALE,
+  NOT_REVIEWED,
+  RECORD_NOT_CLOSED,
+  SHORT_PATH_OUTGROWN,
+  SPECS_BEFORE_CODE,
+  TICKED_WITHOUT_RECORD,
+  UNCOMMITTED,
+  taskFindings,
+  withHistoricalFiles,
+} from "./verify-change-tasks.js";
 
 /**
  * What this command does not measure. Exit code 0 is the most dangerous line
@@ -45,11 +51,15 @@ export const NOT_CHECKED = [
  */
 export const CHECKED_DIMENSIONS = [
   "every checkbox in tasks.md is ticked",
-  "every ticked task naming production work carries its own red record",
+  "every ticked task has a closed task record",
+  "every closed task record carries an approved review of its green commit",
+  "every commit a task record names is in the history of the change branch",
   "every delta-spec requirement has a trace in the code",
   "every label described in verification carries a fresh stamp",
   "no critical or important defect naming this change is open",
-  "every covered file the change touched keeps to the line limit of its path",
+  "a change on the short path still fits it, and its delta passes validate --strict",
+  "the working tree holds no uncommitted change outside the change directory, the task worktrees and the defect ledger",
+  "an approved final review covers the tip of the change branch",
 ];
 
 export interface VerifyChangeOptions {
@@ -60,13 +70,15 @@ export interface VerifyChangeOptions {
 
 export interface VerifyChangeSummary {
   openTasks: number;
+  tasksWithoutClosedRecord: number;
+  tasksNotReviewed: number;
+  missingCommits: number;
   requirementsWithoutTrace: number;
   staleLabels: number;
   openDefects: number;
-  unrecordedTasks: number;
-  unclosedCycles?: number;
-  filesOverLimit: number;
-  migration?: {confirmed:number;open:number;freshnessFindings:number};
+  finalReview: number;
+  uncommittedWork: number;
+  shortPath: number;
 }
 
 export interface VerifyChangeData {
@@ -74,7 +86,7 @@ export interface VerifyChangeData {
   workspaceRoot: string;
   change: string;
   findings: Finding[];
-  /** The six dimensions folded into `findings`; the same list every time. */
+  /** The dimensions folded into `findings`; the same list every time. */
   dimensions: string[];
   /** What this command leaves to a person; the same list every time. */
   notChecked: string[];
@@ -101,37 +113,21 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
   const plan = readPlan(root, options.change);
 
   assertRepository(root);
-  const base = changeBase(root, options.change);
+  // A change below workflow version 3 is refused with the migrate command.
+  readWorkflowFile(root, options.change);
+  const base = finalReviewBase(root, options.change, `lexforge verify --change ${options.change}`);
   const changed = changedFiles(root, base);
-  const longFilePath = readChangeConfig(root, options.change).longFilePath;
 
-  const workflow2 = workflow(root, options.change).version === 2;
-  let migrationSummary;
-  if (workflow2) {
-    try {
-      if (readMigrationState(root, options.change)) {
-        const completion = effectiveCompletion(root, options.change);
-        for (const task of plan.tasks) task.done = completion.completed.includes(task.number);
-        migrationSummary = {confirmed: completion.completed.length, open: completion.open.length, freshnessFindings: migrationFreshness(root, options.change, executionPlan(root, options.change, true), completion.ledger!).length};
-      }
-    } catch { /* cycleProblems reports corrupt migration state as a gate finding */ }
-  }
-  const cycleFindings = cycleProblems(root, options.change).map(message => makeFinding(plan.file, 1, "cycle-not-closed", message));
   const findings = [
-    ...cycleFindings,
     ...openTaskFindings(plan),
-    ...traceFindings(plan, readDeltaSpecs(root, options.change), changed),
+    ...taskFindings(root, options.change),
+    ...traceFindings(withHistoricalFiles(root, options.change, plan), readDeltaSpecs(root, options.change), changed),
     ...evidenceFindings(root, options.change, labels),
     ...defectFindings(root, options.change),
-    ...redRecordFindings(root, options.change, plan),
-    ...lineLimitFindings(root, base, changed, config.sizeLimit, longFilePath),
   ];
 
-  const outsideEdits = cycleFindings.some(finding =>
-    finding.message.startsWith("Unreviewed changes outside the execution plan:"));
-  const nextStep = outsideEdits
-    ? `revert these edits, or add a task that owns them, then run lexforge verify --change ${options.change}`
-    : findings.length === 0
+  const nextStep =
+    findings.length === 0
       ? "go through the list above by hand: read design.md against the code, " +
         "then judge the requirements yourself"
       : `fix the findings above, then run: lexforge verify --change ${options.change}`;
@@ -141,13 +137,9 @@ export function verifyChange(options: VerifyChangeOptions): CommandResult<Verify
     workspaceRoot: answerPath(root),
     change: options.change,
     findings,
-    dimensions: workflow2
-      ? CHECKED_DIMENSIONS.map(dimension => dimension.includes("own red record")
-        ? "every behavioural cycle has valid RED/GREEN (or declared move regression), independent review and current reviewed files"
-        : dimension)
-      : CHECKED_DIMENSIONS,
+    dimensions: CHECKED_DIMENSIONS,
     notChecked: NOT_CHECKED,
-    summary: { ...summarise(findings), ...(migrationSummary ? {migration:migrationSummary} : {}), ...(workflow2 ? { unclosedCycles: cycleFindings.length } : {}) },
+    summary: summarise(findings),
     nextStep,
   };
 
@@ -283,7 +275,7 @@ function missingTrace(
   if (files.length === 0) {
     return {
       reason:
-        `${listTasks(tasks)} names no file in backticks, so there is nothing to ` +
+        `${listTasks(tasks)} has no Files line, so there is nothing to ` +
         "compare against the base commit of the change",
       anchor: tasks[0],
     };
@@ -318,11 +310,15 @@ function summarise(findings: Finding[]): VerifyChangeSummary {
 
   return {
     openTasks: count("task-not-done"),
+    tasksWithoutClosedRecord: count(TICKED_WITHOUT_RECORD) + count(RECORD_NOT_CLOSED),
+    tasksNotReviewed: count(NOT_REVIEWED),
+    missingCommits: count(COMMIT_MISSING),
     requirementsWithoutTrace: count("requirement-without-trace"),
     staleLabels: count("evidence-not-fresh"),
     openDefects: count(DEFECT_OPEN_RULE),
-    unrecordedTasks: count("task-no-red-record"),
-    filesOverLimit: count("file-over-line-limit"),
+    finalReview: count(FINAL_MISSING) + count(FINAL_STALE) + count(FINAL_OPEN),
+    uncommittedWork: count(UNCOMMITTED),
+    shortPath: count(SHORT_PATH_OUTGROWN) + count(SPECS_BEFORE_CODE),
   };
 }
 

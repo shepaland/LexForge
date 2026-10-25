@@ -1,5 +1,3 @@
-<!-- Workflow 2: add execution-plan.json mapping every original task ID to one behavioural cycle, with acceptance criteria, scoped sources, test command/files, material inputs/environment, dependencies and specialist controls. Test/RED/GREEN are cycle states. Workflow 1 remains unchanged until explicit migration. -->
-
 <!-- Delete every comment and every angle placeholder before you hand this in. -->
 
 # <change name> - implementation plan
@@ -10,33 +8,33 @@
 
 <!-- tasks.md is an index. Each heading below links to a file one path
      segment below it, holding that section's own "Depends on:" line and
-     its tasks, numbered and labelled the same way this comment is:
+     its tasks, numbered and written the same way this comment is:
 
      Depends on: none
 
-     - [ ] 1.1 [A] <task: the file it touches and the check that proves it works>
+     - [ ] 1.1 <what the task does, in a sentence or two>
            -> <capability>#<requirement name>
-     - [ ] 1.2 [A] <write the failing test>
-     - [ ] 1.3 [A] <run the test and watch it fail>
-     - [ ] 1.4 [A] <write the implementation>
-     - [ ] 1.5 [A] <run the test and watch it pass> -->
+           Files: `<path the task writes>`, `<test file the task writes>`
+           Test: `<test file>`
+           Command: `<the one command that runs the test>`
+           Depends on: <number of an earlier task, if it needs one>
+           Controls: <authorization, cryptography, tenant-isolation or migrations, if the task touches one> -->
 
-<!-- Keep requirements, acceptance checks, scope and links in each task. Put execution
-     history in execution/<cycle>/journal.md and full output in linked log files.
-     Link task -> journal -> evidence; preserve task IDs and evidence records. -->
+<!-- One task is one behaviour with its own test: the test is written and
+     watched to fail first, then the implementation makes it pass, all inside
+     the one task. Files lists every file the task writes. Test names the test
+     file and Command the one command that runs it. A task that only carries
+     code between files declares it with (move) right after its number and
+     needs no Test. Depends on names earlier tasks by number; two tasks that
+     write one file need an order between them. Controls is optional. -->
+
+<!-- Keep requirements, acceptance checks, scope and links in each task. Decisions,
+     questions, promises, permissions and rulings go into the change journal with
+     `lexforge journal add`, never into the plan. -->
 
 <!-- A task that carries out a requirement of a delta spec ends with a line
      "-> <capability>#<requirement name>", the name copied from the heading
      "### Requirement:" word for word. -->
-
-<!-- The bracket right after the number is a group label, one to eight
-     letters, digits or hyphens - "[A]", "[store]". Every task carries
-     exactly one. Tasks sharing a label may run in one agent; a task with
-     no label, or with two, is a finding the plan gate catches on its own.
-     A TDD triple - the failing test, watching it fail, the implementation -
-     names the same file in all three tasks, so all three keep the same
-     label: two groups of one section may not name the same file, and
-     splitting the triple across labels would trip that rule. -->
 
 ## 1. <section name>
 

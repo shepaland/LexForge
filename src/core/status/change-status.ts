@@ -1,6 +1,6 @@
-import { effectiveCompletion } from "../execution/effective-completion.js";
-import { readMigrationState } from "../execution/migration-state.js";
-import { workflow } from "../execution/plan.js";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { computeProgress, percentClosed, type Progress } from "../tasks/progress.js";
 import {
   computeChangeState,
   type ArtifactState,
@@ -16,6 +16,7 @@ import {
 } from "../models/assignment.js";
 import { nextStepForChange } from "../next-step.js";
 import { loadSchema } from "../schemas/load-schema.js";
+import { assertMigrated } from "../tasks/workflow-file.js";
 import type { CommandResult } from "../types.js";
 import { readChangeConfig } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
@@ -37,9 +38,7 @@ export interface StatusArtifact extends ArtifactState {
 }
 
 export interface ChangeStatusData {
-  completion?: { completed: string[]; open: string[]; origins: Record<string, string>; details: string | null };
   outputVersion: 1;
-  workflow: ReturnType<typeof workflow>;
   workspaceRoot: string;
   change: string;
   schema: string;
@@ -52,6 +51,8 @@ export interface ChangeStatusData {
   stages: StageAssignment[];
   /** The stacks the project named, or `missing` while the config has no `engineering.stacks`. */
   engineeringStacks: string[] | "missing";
+  /** Progress over the plan; `null` while the plan is not written. */
+  tasks: Progress | null;
   nextStep: string;
 }
 
@@ -86,6 +87,12 @@ export function readChangeState(root: string, change: string): ReadChangeState {
 export function changeStatus(options: ChangeStatusOptions): CommandResult<ChangeStatusData> {
   const root = findWorkspaceRoot(options.cwd);
   const { schema, state } = readChangeState(root, options.change);
+  // The change is resolved by the line above; a workflow below version 3 is
+  // refused here, before progress is counted with pre-6.0.0 semantics. The
+  // guard belongs on this path alone: `readChangeState` also serves the
+  // workspace listing in workspace-status.ts, where one change below version
+  // 3 must not refuse the whole listing.
+  assertMigrated(root, options.change);
   const projectConfig = readProjectConfig(root);
   const models = projectConfig.models;
 
@@ -93,12 +100,9 @@ export function changeStatus(options: ChangeStatusOptions): CommandResult<Change
 
   const nextStep = nextStepForChange(options.change, state);
 
-  const completion = workflow(root, options.change).version === 2 && readMigrationState(root, options.change)
-    ? effectiveCompletion(root, options.change) : undefined;
+  const planWritten = existsSync(path.join(workspacePaths(root).changeDir(options.change), "tasks.md"));
   const data: ChangeStatusData = {
-    ...(completion ? { completion: {completed: completion.completed, open: completion.open, origins: completion.origins, details: completion.details} } : {}),
     outputVersion: 1,
-    workflow: workflow(root, options.change),
     workspaceRoot: answerPath(root),
     change: options.change,
     schema,
@@ -114,6 +118,7 @@ export function changeStatus(options: ChangeStatusOptions): CommandResult<Change
     }),
     stages: resolveStages(models, tool),
     engineeringStacks: projectConfig.engineering.stacks ?? "missing",
+    tasks: planWritten ? computeProgress(root, options.change) : null,
     nextStep,
   };
 
@@ -144,7 +149,14 @@ function renderLines(data: ChangeStatusData): string[] {
     lines.push("Planning is complete: every artifact is written or skipped.");
   }
 
-  if (data.completion) lines.push(`Completion: ${data.completion.completed.length} confirmed, ${data.completion.open.length} open; history: ${data.completion.details}`);
+  if (data.tasks !== null && data.tasks.total > 0) {
+    const { tasks } = data;
+    lines.push(
+      `Tasks: ${tasks.closed}/${tasks.total} closed (${percentClosed(tasks)}%)`,
+      `Running: ${tasks.inProgress}`,
+      `Waiting: ${tasks.waiting}, blocked: ${tasks.blocked}`,
+    );
+  }
   return lines;
 }
 

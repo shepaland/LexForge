@@ -6,6 +6,7 @@ import {
   type GitWorkspace,
 } from "../helpers/git-workspace.js";
 import { runCli } from "../helpers/run-cli.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -36,6 +37,7 @@ const PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -56,6 +58,7 @@ function project(): GitWorkspace {
     [`lexforge/changes/${CHANGE}/design.md`]: "## Context\n\nOne service, one database.\n",
     [`lexforge/changes/${CHANGE}/tasks.md`]: PLAN,
   });
+  sealForVerify(made.root, CHANGE);
   created.push(made);
   return made;
 }
@@ -93,12 +96,7 @@ describe("машинный вывод ворот", () => {
   it("verify --json кладёт на стандартный вывод один документ, строки для человека — в stderr", async () => {
     const root = project().root;
     writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
-    // Task 1.1 is ticked and names `src/app.ts`: the fifth measure of `verify`
-    // needs a red record for it, written through the CLI's own writer.
-    await runCli(
-      ["evidence", "red", "--change", CHANGE, "--task", "1.1", "--command", 'node -e "process.exit(1)"'],
-      { cwd: root },
-    );
+    commitWork(root, CHANGE);
     await runCli(["evidence", "record", "--change", CHANGE, "--label", "tests"], { cwd: root });
 
     const result = await runCli(["verify", "--change", CHANGE, "--json"], { cwd: root });

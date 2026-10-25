@@ -158,211 +158,6 @@ Findings SHALL print grouped by file, in ascending line-number order.
 - **WHEN** the self-check is called on a change with no `tasks.md` written
 - **THEN** the command exits with code `2` and names the command for getting plan instructions
 
-### Requirement: A section records what it depends on
-
-Every numbered section of `tasks.md` SHALL carry a `Depends on:` line naming the sections that
-have to be closed before it starts, or the word `none`.
-
-`lexforge check plan --change <name>` SHALL report a finding on a section carrying no such line,
-and the finding SHALL name the section's number. A plan with such a finding SHALL end the
-command with exit code `1`.
-
-Two sections SHALL count as concurrent when neither names the other in its `Depends on:` line,
-directly or through the sections that line leads to. Two concurrent sections whose tasks name
-the same file SHALL be a finding: both become ready at the same moment, both are dispatched, and
-each agent loses the other's work. Naming one and the same dependency is no protection - two
-sections that both wait for section 2 are released together the instant it closes.
-
-A `Depends on:` line naming a section that is not in the plan SHALL be a finding, and so SHALL a
-cycle: two sections that wait for each other are never ready.
-
-#### Scenario: A section says nothing
-
-- **WHEN** section 3 carries no `Depends on:` line
-- **THEN** the command ends with exit code `1` and names section 3
-
-#### Scenario: Two independent sections on one file
-
-- **WHEN** sections 5 and 6 both say `Depends on: none` and tasks in both name
-  `src/core/run.ts`
-- **THEN** the command ends with exit code `1` and names both sections and the file
-
-#### Scenario: One dependency shared by two sections
-
-- **WHEN** sections 3 and 4 both say `Depends on: section 2` and tasks in both name
-  `src/cli/commands/defect.ts`
-- **THEN** the command ends with exit code `1` and names both sections and the file, because
-  closing section 2 releases them together
-
-#### Scenario: A shared file on a chain
-
-- **WHEN** section 4 says `Depends on: section 3`, section 3 says `Depends on: section 2`, and
-  tasks in sections 2 and 4 name one file
-- **THEN** the dimension adds no finding: section 4 cannot start until section 2 is closed
-
-#### Scenario: A dependency that does not exist
-
-- **WHEN** section 4 says `Depends on: section 9` and the plan has six sections
-- **THEN** the command ends with exit code `1` and names section 4 and the missing section
-
-#### Scenario: A cycle
-
-- **WHEN** section 3 says `Depends on: section 5` and section 5 says `Depends on: section 3`
-- **THEN** the command ends with exit code `1` and names both sections
-
-#### Scenario: A plan that answers
-
-- **WHEN** every section carries the line, no cycle exists, and no two concurrent sections share
-  a file
-- **THEN** the dimension adds no finding
-
-### Requirement: A section's group labels are checked for presence, exact coverage, and shared files
-
-`lexforge check plan --change <name>` SHALL raise a finding, and SHALL NOT merely warn, on
-each of three counts:
-
-- a task carrying no group label;
-- a section whose group labels do not cover its own tasks exactly once - the count reads
-  against the labels each task carries, so a task whose labels cover it twice fails this
-  count the same way a task whose labels cover it zero times does;
-- two groups of one section naming the same file in backticks.
-
-The third count is what keeps a TDD triple from being split across two agents without a
-rule of its own: the task that writes the test, the task that runs it and watches it fail,
-and the task that writes the implementation all name the same file somewhere in their own
-line or their `Check:` command, so the shared-file count already refuses landing them in
-different groups. No separate rule about triples exists, and none is needed.
-
-Every finding of these three counts SHALL carry a rule id and a line number, in the shape
-every other finding of this capability carries.
-
-#### Scenario: A task with no label
-
-- **WHEN** section 4 carries a task written as `- [ ] 4.2 Run the test and watch it fail`,
-  with no bracket after the id
-- **THEN** the command reports a finding naming task 4.2 and its line, and exits `1`
-
-#### Scenario: A bracketed word in a task's own text
-
-- **WHEN** section 4 carries a task written as `- [ ] 4.5 [reference] task text...`, whose
-  bracketed word is nine letters long and therefore not a label
-- **THEN** `[reference]` stays part of task 4.5's text and the command reports a finding
-  naming task 4.5 for carrying no group label at all, the same finding a task with no bracket
-  at all would get
-
-#### Scenario: A task double-covered
-
-- **WHEN** section 4 holds tasks 4.1 through 4.4 and task 4.3 is written
-  `- [ ] 4.3 [A] [B] Write the implementation`, carrying two labels
-- **THEN** the command reports a finding naming section 4 and task 4.3, because task 4.3's
-  labels cover it twice, not once
-
-#### Scenario: A TDD triple split across groups
-
-- **WHEN** task 5.1, labelled `[A]`, writes the failing test in
-  `tests/core/gates/plan-check.test.ts`; task 5.2, labelled `[A]`, runs it with
-  `Check: npx vitest run tests/core/gates/plan-check.test.ts`; and task 5.3, labelled `[B]`,
-  writes the implementation with the same `Check:` command naming
-  `tests/core/gates/plan-check.test.ts`
-- **THEN** the command reports a finding naming section 5, groups `A` and `B`, and the file
-  `tests/core/gates/plan-check.test.ts`, and exits `1`
-
-#### Scenario: A plan whose labels answer all three counts
-
-- **WHEN** every task of every section carries exactly one label, every section's labels
-  cover its own tasks exactly once, and no two groups of one section name the same file
-- **THEN** the command adds no finding for any of the three counts
-
-### Requirement: A command's own program is not a file the task names
-
-`namedFiles` SHALL read the paths a `Check:` command operates on, and SHALL NOT read the
-program that runs it. A command is a backtick span that splits into more than one token; a
-span with no whitespace at all is a bare file reference, not a command, and this requirement
-does not touch it - it is still checked and named exactly as it is today. Of a command's
-tokens, the leading one is the program, dropped whether or not it is path-shaped.
-
-The token right after the program is dropped too, as the script that program runs, only when
-both hold: the leading token is one of a short, closed list of interpreters that run a script
-handed to them - `node`, `python`, `python3`, `ruby`, `sh`, `bash` - and the token right after
-it is itself path-shaped. A program outside that list - `pytest`, `jest`, `ruff`, `perl` - is
-never assumed to run a script, so nothing past its own leading token is dropped on its
-account, whether or not that program's name happens to be path-shaped itself. An interpreter
-from the list followed by a flag rather than a script - the flag failing the path-shape test -
-also drops nothing beyond the leading token: the flag is checked like any other token, fails
-on its own account, and whatever path-shaped token follows it is still named.
-
-Every remaining token past whatever the program drops is still checked and named exactly as
-it is today. A command whose every token past the program fails the path-shape test names
-nothing from that command: the program itself is never counted as a stand-in subject.
-
-This narrowing has a cost, written down rather than left for the next reader to rediscover:
-an interpreter outside the recognised list, invoked with a script as its first argument -
-`perl script.pl`, `tsx app.ts` - still has that script named as a target, the same way any
-other program's first path-shaped argument is named. That ambiguity is not new and is not
-made worse here - it is the same one every other command already carries, such as `cp
-a.txt b.txt` naming both arguments without telling which is read and which is written. This
-requirement only stops the short, closed list of common interpreters from swallowing the
-file that follows them; it does not, and cannot, tell a script from an ordinary argument for
-every program a task might invoke.
-
-#### Scenario: A bare file reference is not a command and keeps naming itself
-
-- **WHEN** a task's own line names `tests/core/gates/x.test.ts` in a backtick span outside
-  any `Check:` command, the span holding no whitespace at all
-- **THEN** the task's `namedFiles` still holds `tests/core/gates/x.test.ts` - a single-token
-  span carries no program to drop
-
-#### Scenario: The program of a red-run command is not a named file
-
-- **WHEN** a task's `Check:` command is `node bin/lexforge.js evidence red --change c --task
-  1.2 --command "npx vitest run tests/core/gates/x.test.ts"`
-- **THEN** the task's `namedFiles` holds `tests/core/gates/x.test.ts` and does not hold
-  `bin/lexforge.js`
-
-#### Scenario: A command whose first argument is the target file
-
-- **WHEN** a task's `Check:` command is `pytest tests/test_login.py`
-- **THEN** the task's `namedFiles` holds `tests/test_login.py` - `pytest` is not one of the
-  interpreters this requirement drops a second token for, so only `pytest` itself is dropped
-
-#### Scenario: A flag right after a recognised interpreter does not hide the file that follows it
-
-- **WHEN** a task's `Check:` command is `python3 -m pytest tests/test_login.py`
-- **THEN** the task's `namedFiles` holds `tests/test_login.py` and does not hold `-m` -
-  `python3` is a recognised interpreter, but `-m` is not path-shaped, so nothing past
-  `python3` is dropped on the interpreter's account and `tests/test_login.py` is still
-  checked and named like any other token
-
-#### Scenario: An interpreter outside the recognised list still has its script named
-
-- **WHEN** a task's `Check:` command is `perl script.pl`
-- **THEN** the task's `namedFiles` holds `script.pl` - `perl` is outside the short list of
-  interpreters this requirement recognises, so the token after it is named like any other
-  operand, carrying the cost this requirement writes down rather than resolves
-
-#### Scenario: Every path a command operates on is still named
-
-- **WHEN** a task's `Check:` command is `npx vitest run tests/core/gates/a.test.ts
-  tests/core/gates/b.test.ts`
-- **THEN** the task's `namedFiles` holds both `tests/core/gates/a.test.ts` and
-  `tests/core/gates/b.test.ts`
-
-#### Scenario: A command naming only its program names nothing
-
-- **WHEN** a task's only `Check:` command is `node scripts/build.js`, with no argument past
-  the program that names a path
-- **THEN** that command contributes nothing to the task's `namedFiles`
-
-#### Scenario: A TDD triple sharing a test file still shares it under evidence red
-
-- **WHEN** task 6.1, labelled `[A]`, writes the failing test in `tests/core/gates/x.test.ts`;
-  task 6.2, labelled `[A]`, records the red run with `Check: node bin/lexforge.js evidence
-  red --change c --task 6.3 --command "npx vitest run tests/core/gates/x.test.ts"`; and task
-  6.3, labelled `[B]`, writes the implementation with `Check: npx vitest run
-  tests/core/gates/x.test.ts`
-- **THEN** the command reports a finding naming section 6, groups `A` and `B`, and the file
-  `tests/core/gates/x.test.ts`, exactly as the plain `Check:` command already would
-
 ### Requirement: The plan parses whether it is written as one file or as an index of files
 
 `lexforge check plan --change <name>`, and every other gate that reads the plan, SHALL
@@ -433,44 +228,6 @@ keeping the link as the section's only content under its heading.
 - **THEN** the command reports a finding naming section 5 and instructing the author to
   remove the `Depends on:` line and tasks left behind the link, and exits `1`
 
-### Requirement: A long file named without a recorded path is a finding
-
-`check plan` SHALL report a finding for each existing covered file named by a task that is
-over the line limit when the change's `.lexforge.yaml` holds no `long_files`.
-
-The finding SHALL name the file, its line count, the limit, and the two values `long_files`
-accepts.
-
-#### Scenario: A long file with no path fails the plan
-
-- **WHEN** a task of `add-refunds` names `src/billing.ts`, 612 lines, the limit is 400, and
-  `.lexforge.yaml` holds no `long_files`
-- **THEN** `check plan --change add-refunds` reports a finding naming `src/billing.ts`, 612
-  lines, the limit 400, and `refactor` and `keep`, and exits `1`
-
-#### Scenario: A recorded path clears the finding
-
-- **WHEN** the same plan runs with `long_files: keep` in `.lexforge.yaml`
-- **THEN** `check plan` reports no finding about `src/billing.ts`
-
-### Requirement: On the refactor path a long file is split before other work on it
-
-On the `refactor` path, `check plan` SHALL report a finding for each long file whose first
-naming task is not declared `(move)`.
-
-#### Scenario: Feature work before the split fails the plan
-
-- **WHEN** `long_files: refactor` is recorded and the first task naming `src/billing.ts`, 612
-  lines, adds a refund method to it without `(move)`
-- **THEN** `check plan` reports a finding naming `src/billing.ts` and that task, and exits
-  `1`
-
-#### Scenario: A split placed first passes
-
-- **WHEN** `long_files: refactor` is recorded and the first task naming `src/billing.ts` is
-  declared `(move)`
-- **THEN** `check plan` reports no finding about the order of work on `src/billing.ts`
-
 ### Requirement: A task traced to a diagram or a mockup names it
 
 A task that names a requirement carrying an `Interaction:` or a `Mockup:` line SHALL name,
@@ -480,8 +237,8 @@ in its text, the diagram anchor or the mockup path of that requirement, in the f
 A task without that reference SHALL be a finding of `lexforge check plan` naming the task
 and the requirement.
 
-`lexforge context` SHALL include the referenced diagram, contract table or mockup in the
-cycle's output.
+The brief that `lexforge task start` writes SHALL include the referenced diagram, contract
+table or mockup.
 
 #### Scenario: A UI task without its mockup
 
@@ -492,11 +249,77 @@ cycle's output.
 #### Scenario: The executor receives the mockup
 
 - **WHEN** task 2.1 names `specs/web/mockups/login.html`
-- **THEN** `lexforge context --task 2.1` includes that mockup and its CSS file
+- **THEN** the brief of `lexforge task start --change <name> --task 2.1 --executor <id>`
+  includes that mockup and its CSS file
 
-### Requirement: A task may declare its exact writable file scope
+### Requirement: A task records what it depends on
 
-The plan parser SHALL accept at most one `Files:` continuation line on a task, containing one or more comma-separated backtick spans, and SHALL use those spans as the task's exact `files` value instead of inferring writable files from the rest of that task. Every declared value SHALL be a canonical path relative to the workspace root: it is non-empty, uses forward slashes, is not absolute, has no URL scheme or colon, and has no empty, `.` or `..` segment. `lexforge check plan --change <name>` SHALL report a finding at the task when the field is repeated, empty, malformed, or contains an unsafe value; it SHALL NOT silently omit an invalid declaration.
+A task MAY carry one `Depends on:` continuation line naming task ids. A task SHALL be ready when
+the sections named in its section's `Depends on:` line and the tasks named in its own line are
+closed; a task without the line depends on its section's dependencies only.
+`lexforge check plan --change <name>` SHALL report `task-depends-on-unknown` for an id the plan
+lacks and `task-depends-on-forward` for an id that comes later in the plan.
+
+#### Scenario: A dependency on a missing task
+
+- **WHEN** task `1.1` says `Depends on: 9.9` and the plan has no task `9.9`
+- **THEN** `check plan` reports `task-depends-on-unknown` on task `1.1` and exits `1`
+
+#### Scenario: A dependency on a later task
+
+- **WHEN** task `1.2` says `Depends on: 1.3`
+- **THEN** `check plan` reports `task-depends-on-forward` on task `1.2` and exits `1`
+
+### Requirement: Tasks that write one file are ordered by their dependencies
+
+Two tasks whose `Files:` share a file SHALL be ordered: one of them depends on the other,
+directly or through the tasks and sections its dependencies lead to. Otherwise
+`lexforge check plan --change <name>` SHALL report `shared-file-without-order` and name both
+tasks and the file.
+
+#### Scenario: Two unordered tasks on one file
+
+- **WHEN** tasks `1.1` and `1.2` both declare `src/a.ts` and neither depends on the other
+- **THEN** `check plan` reports `shared-file-without-order` and exits `1`
+
+#### Scenario: The same tasks ordered
+
+- **WHEN** task `1.2` says `Depends on: 1.1`
+- **THEN** the shared file adds no finding
+
+#### Scenario: Two sections in order
+
+- **WHEN** section 2 says `Depends on: 1` and a task in each section declares `src/a.ts`
+- **THEN** the shared file adds no finding
+
+### Requirement: A task names a test and a command
+
+Every task SHALL carry one `Test:` line with backtick paths, except a task declared `(move)`,
+and one `Command:` line with one backtick command. `lexforge check plan --change <name>` SHALL
+report `task-missing-test` and `task-missing-command` for a missing line, `task-field-repeated`
+for a second line of one field, `task-field-malformed` for text outside the backtick spans, and
+`task-control-unknown` for a `Controls:` value outside `authorization`, `cryptography`,
+`tenant-isolation` and `migrations`.
+
+#### Scenario: A task with no fields
+
+- **WHEN** task `1.1` carries no continuation lines
+- **THEN** `check plan` reports `task-missing-files`, `task-missing-test` and
+  `task-missing-command` on it
+
+#### Scenario: A move task
+
+- **WHEN** task `1.1` is declared `(move)` and carries `Files:` and `Command:`
+- **THEN** no field finding is reported on it
+
+#### Scenario: An unknown control
+
+- **WHEN** task `2.1` says `Controls: payments`
+- **THEN** `check plan` reports `task-control-unknown` naming `payments`
+
+### Requirement: A task declares its writable files
+
+Every task SHALL carry exactly one `Files:` continuation line, containing one or more comma-separated backtick spans, and the plan parser SHALL use those spans as the task's exact `files` value. Writable files SHALL NOT be inferred from the rest of the task's text. Every declared value SHALL be a canonical path relative to the workspace root: it is non-empty, uses forward slashes, is not absolute, has no URL scheme or colon, and has no empty, `.` or `..` segment. `lexforge check plan --change <name>` SHALL report `task-missing-files` on a task without the line, and a finding at the task when the field is repeated, empty, malformed, or contains an unsafe value; it SHALL NOT silently omit an invalid declaration.
 
 #### Scenario: Explicit scope wins over path-shaped prose
 
@@ -518,40 +341,132 @@ The plan parser SHALL accept at most one `Files:` continuation line on a task, c
 - **WHEN** a task has an empty `Files:` line, text outside the comma-separated backtick spans, or a second `Files:` line
 - **THEN** `lexforge check plan --change <name>` reports a file declaration finding on that task and exits with code `1`
 
-### Requirement: Tasks without Files keep safe legacy inference
+#### Scenario: A task without the line
 
-When a task has no `Files:` field, the plan parser SHALL continue to infer `files` from single-token backtick spans with a slash or a recognised file extension, preserving their order and removing duplicates. It SHALL exclude any inferred candidate that cannot be a canonical workspace-relative path under the same lexical rules used for explicit declarations. Excluded inferred values SHALL not produce a finding because incidental routes, URLs, and external paths are ordinary task prose.
+- **WHEN** a task carries no `Files:` line
+- **THEN** `lexforge check plan --change <name>` reports `task-missing-files` on that task and exits with code `1`
 
-#### Scenario: A legacy repository path remains a file
+### Requirement: A section records the sections it waits for
 
-- **WHEN** a task without `Files:` names `src/http/routes.ts` and `README.md` in backticks
-- **THEN** its inferred `files` contains `src/http/routes.ts` and `README.md` as before
+Every numbered section of `tasks.md` SHALL carry a `Depends on:` line naming the sections that
+have to be closed before its tasks start, or the word `none`.
 
-#### Scenario: Absolute external values are excluded
+`lexforge check plan --change <name>` SHALL report a finding on a section carrying no such line,
+and the finding SHALL name the section's number. A plan with such a finding SHALL end the
+command with exit code `1`.
 
-- **WHEN** a task without `Files:` mentions `/api/auth`, `/etc/nginx/conf.d`, and `https://example.test/health` in backticks
-- **THEN** none of those values enters `files` or causes an unsafe project-path failure while an independently named root-relative repository file still does
+A `Depends on:` line naming a section that is not in the plan SHALL be a finding, and so SHALL a
+cycle: two sections that wait for each other are never ready.
 
-#### Scenario: Traversal and noncanonical values are excluded from inference
+Files shared between tasks are checked task by task, by "Tasks that write one file are ordered
+by their dependencies", and not section by section.
 
-- **WHEN** a task without `Files:` mentions `../outside.ts`, `src//routes.ts`, `src/./routes.ts`, a backslash path, or a colon-bearing path in backticks
-- **THEN** none of those values enters the task's inferred `files`
+#### Scenario: A section says nothing
 
-### Requirement: Check command operands stay separate from writable scope
+- **WHEN** section 3 carries no `Depends on:` line
+- **THEN** the command ends with exit code `1` and names section 3
 
-The parser SHALL continue to expose canonical root-relative file operands of `Check:` commands through `namedFiles` for shared-file and long-file checks, while those command operands SHALL NOT enter the task's writable `files` merely because the command names them. When `Files:` is present, `namedFiles` SHALL include both its declared files and valid file operands from `Check:` commands. Unsafe or external command operands SHALL be excluded from `namedFiles`; the execution-plan path boundary SHALL continue to reject any unsafe value declared directly in cycle `files`, `testFiles`, `inputs`, or design paths.
+#### Scenario: A dependency that does not exist
 
-#### Scenario: A check names the test without enlarging writable scope
+- **WHEN** section 4 says `Depends on: section 9` and the plan has six sections
+- **THEN** the command ends with exit code `1` and names section 4 and the missing section
 
-- **WHEN** a task declares `Files: `src/http/routes.ts`` and checks it with `npx vitest run tests/http/routes.test.ts`
-- **THEN** `files` contains only `src/http/routes.ts`, while `namedFiles` contains both `src/http/routes.ts` and `tests/http/routes.test.ts`
+#### Scenario: A cycle
 
-#### Scenario: Shared-file collision still sees command operands
+- **WHEN** section 3 says `Depends on: section 5` and section 5 says `Depends on: section 3`
+- **THEN** the command ends with exit code `1` and names both sections
 
-- **WHEN** two groups in one section each name `tests/http/routes.test.ts` only through their `Check:` commands
-- **THEN** the plan check reports the existing shared-file finding for those groups
+#### Scenario: A plan that answers
 
-#### Scenario: Cycle file validation remains strict
+- **WHEN** every section carries the line and no cycle exists
+- **THEN** the dimension adds no finding
 
-- **WHEN** an execution plan declares `/etc/nginx/conf.d`, `../outside.ts`, or another unsafe value in a cycle path field
-- **THEN** execution-plan validation rejects that value as an unsafe project path exactly as before
+### Requirement: The program of a task's command is not a file the task names
+
+`namedFiles` SHALL read the paths a command of a task operates on - the command of its
+`Command:` line and a command the task names on any other line of its own - and SHALL NOT read
+the program that runs it. A command is a backtick span that splits into more than one token; a
+span with no whitespace at all is a bare file reference, not a command, and this requirement
+does not touch it - it is still checked and named exactly as it is today. Of a command's
+tokens, the leading one is the program, dropped whether or not it is path-shaped.
+
+The token right after the program is dropped too, as the script that program runs, only when
+both hold: the leading token is one of a short, closed list of interpreters that run a script
+handed to them - `node`, `python`, `python3`, `ruby`, `sh`, `bash` - and the token right after
+it is itself path-shaped. A program outside that list - `pytest`, `jest`, `ruff`, `perl` - is
+never assumed to run a script, so nothing past its own leading token is dropped on its
+account, whether or not that program's name happens to be path-shaped itself. An interpreter
+from the list followed by a flag rather than a script - the flag failing the path-shape test -
+also drops nothing beyond the leading token: the flag is checked like any other token, fails
+on its own account, and whatever path-shaped token follows it is still named.
+
+Every remaining token past whatever the program drops is still checked and named exactly as
+it is today. A command whose every token past the program fails the path-shape test names
+nothing from that command: the program itself is never counted as a stand-in subject.
+
+The paths of `Command:` enter `namedFiles` and SHALL NOT enter the task's `files`, which only
+`Files:` writes.
+
+This narrowing has a cost, written down rather than left for the next reader to rediscover:
+an interpreter outside the recognised list, invoked with a script as its first argument -
+`perl script.pl`, `tsx app.ts` - still has that script named as a target, the same way any
+other program's first path-shaped argument is named. That ambiguity is not new and is not
+made worse here - it is the same one every other command already carries, such as `cp
+a.txt b.txt` naming both arguments without telling which is read and which is written. This
+requirement only stops the short, closed list of common interpreters from swallowing the
+file that follows them; it does not, and cannot, tell a script from an ordinary argument for
+every program a task might invoke.
+
+#### Scenario: A bare file reference is not a command and keeps naming itself
+
+- **WHEN** a task carrying no `Files:` line names `tests/core/gates/x.test.ts` in a backtick
+  span outside its `Command:`, the span holding no whitespace at all
+- **THEN** the task's `namedFiles` still holds `tests/core/gates/x.test.ts` - a single-token
+  span carries no program to drop, and a task that does carry a `Files:` line names the paths
+  of its three fields and of the commands it writes, its prose giving no scope of its own
+
+#### Scenario: The program of a node command is not a named file
+
+- **WHEN** a task's `Command:` is `node scripts/run-tests.js tests/core/gates/x.test.ts`
+- **THEN** the task's `namedFiles` holds `tests/core/gates/x.test.ts` and does not hold
+  `scripts/run-tests.js`
+
+#### Scenario: A command whose first argument is the target file
+
+- **WHEN** a task's `Command:` is `pytest tests/test_login.py`
+- **THEN** the task's `namedFiles` holds `tests/test_login.py` - `pytest` is not one of the
+  interpreters this requirement drops a second token for, so only `pytest` itself is dropped
+
+#### Scenario: A flag right after a recognised interpreter does not hide the file that follows it
+
+- **WHEN** a task's `Command:` is `python3 -m pytest tests/test_login.py`
+- **THEN** the task's `namedFiles` holds `tests/test_login.py` and does not hold `-m` -
+  `python3` is a recognised interpreter, but `-m` is not path-shaped, so nothing past
+  `python3` is dropped on the interpreter's account and `tests/test_login.py` is still
+  checked and named like any other token
+
+#### Scenario: An interpreter outside the recognised list still has its script named
+
+- **WHEN** a task's `Command:` is `perl script.pl`
+- **THEN** the task's `namedFiles` holds `script.pl` - `perl` is outside the short list of
+  interpreters this requirement recognises, so the token after it is named like any other
+  operand, carrying the cost this requirement writes down rather than resolves
+
+#### Scenario: Every path a command operates on is still named
+
+- **WHEN** a task's `Command:` is `npx vitest run tests/core/gates/a.test.ts
+  tests/core/gates/b.test.ts`
+- **THEN** the task's `namedFiles` holds both `tests/core/gates/a.test.ts` and
+  `tests/core/gates/b.test.ts`
+
+#### Scenario: A command naming only its program names nothing
+
+- **WHEN** a task's only `Command:` is `node scripts/build.js`, with no argument past the
+  program that names a path
+- **THEN** that command contributes nothing to the task's `namedFiles`
+
+#### Scenario: Command paths stay out of the writable files
+
+- **WHEN** task 6.1 carries `Files: `src/a.ts`` and `Command: `npx vitest run tests/a.test.ts``
+- **THEN** its `namedFiles` holds `tests/a.test.ts` and its `files` holds only `src/a.ts`
+

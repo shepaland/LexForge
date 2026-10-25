@@ -2,6 +2,8 @@ import type { Command } from "commander";
 
 import { checkEvidence } from "../../core/gates/check-evidence.js";
 import { checkPlan } from "../../core/gates/plan-check.js";
+import { assertMigrated } from "../../core/tasks/workflow-file.js";
+import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { renderResult } from "../render.js";
 import type { CliContext } from "../run.js";
 import { refuseWithoutSubcommand } from "../subcommand-group.js";
@@ -25,6 +27,7 @@ export function registerCheck(program: Command, context: CliContext): void {
     .requiredOption("--change <name>", "change whose plan is checked")
     .option("--json", "print one JSON document instead of human output")
     .action((options: { change: string; json?: boolean }) => {
+      assertMigrated(findWorkspaceRoot(context.cwd), options.change);
       const result = checkPlan({ cwd: context.cwd, change: options.change });
 
       renderResult(result, {
@@ -43,6 +46,7 @@ export function registerCheck(program: Command, context: CliContext): void {
     .option("--require <labels>", "check only these labels, separated by commas")
     .option("--json", "print one JSON document instead of human output")
     .action((options: { change: string; require?: string; json?: boolean }) => {
+      assertMigrated(findWorkspaceRoot(context.cwd), options.change);
       const result = checkEvidence({
         cwd: context.cwd,
         change: options.change,
