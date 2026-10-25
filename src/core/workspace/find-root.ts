@@ -8,18 +8,18 @@ import { CONFIG_FILE, WORKSPACE_DIR } from "./paths.js";
 /**
  * Walks up from `cwd` looking for `lexforge/config.yaml`. The marker is the
  * file, not the directory: an empty `lexforge/` left by a failed run must not
- * pass for a workspace.
+ * pass for a workspace. The nearest one below the top of a task worktree
+ * wins, including a nested project's own; only the copy carried at the top
+ * of the worktree itself redirects to the main worktree.
  */
 export function findWorkspaceRoot(cwd: string): string {
   let dir = path.resolve(cwd);
-  const main = mainOfTaskWorktree(dir);
-  if (main !== null) return main;
 
   for (;;) {
     const workspace = path.join(dir, WORKSPACE_DIR);
 
     if (existsSync(path.join(workspace, CONFIG_FILE))) {
-      return dir;
+      return mainOfTaskWorktree(dir) ?? dir;
     }
 
     if (existsSync(workspace)) {
@@ -60,12 +60,14 @@ function linkedWorktreeOf(dir: string): string | null {
 }
 
 /**
- * A task worktree carries its own copy of `lexforge/config.yaml`, but the
- * state of a change lives in the main worktree. git names the main worktree:
- * the parent of `--git-common-dir`. A linked worktree that git places under
- * `<main>/.lexforge/worktrees/` resolves to `<main>` when `<main>` is a
- * workspace, however the path to it was spelled. Other linked worktrees keep
- * their own root.
+ * A task worktree carries its own copy of `lexforge/config.yaml` at its top,
+ * but the state of a change lives in the main worktree. This only redirects
+ * that top-of-worktree copy: `dir` must be the worktree's own top, not a
+ * directory below it, so a nested project's `lexforge/` of its own is never
+ * overridden. git names the main worktree: the parent of `--git-common-dir`.
+ * A linked worktree that git places under `<main>/.lexforge/worktrees/`
+ * resolves to `<main>` when `<main>` is a workspace, however the path to it
+ * was spelled. Other linked worktrees keep their own root.
  */
 function mainOfTaskWorktree(dir: string): string | null {
   const linked = linkedWorktreeOf(dir);
@@ -82,6 +84,7 @@ function mainOfTaskWorktree(dir: string): string | null {
   }
   const [commonDir, top] = output.trim().split("\n");
   if (commonDir === undefined || top === undefined || path.basename(commonDir) !== ".git") return null;
+  if (realpathSync(dir) !== realpathSync(top)) return null;
   const main = path.dirname(commonDir);
   if (main === top) return null;
   const worktrees = `${path.join(realpathSync(main), TASK_WORKTREES)}${path.sep}`;
