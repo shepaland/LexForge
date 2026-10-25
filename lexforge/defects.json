@@ -2078,6 +2078,36 @@
       "summary": "The fixture writes Check: by hand over the task's Command: line, keeping vocabulary 6.0.0 removed in the suite now that task-files.ts no longer reads that marker at all.",
       "state": "open",
       "recordedAt": "2026-10-25T12:02:22.596Z"
+    },
+    {
+      "id": "8da13cf2",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/core/suite-parallelism.test.ts",
+      "line": 1,
+      "summary": "The yield the seven verify suites hand back to the event loop, and the checks that pin it, rest on no requirement of the delta: the task that wrote them is the one task of the plan with no requirement link, because the suite's exit code is tooling that ships in no package. Writing a requirement for it now would describe code already written, which the implementation-loop requirement of this change forbids. The lawful close is a tooling change of its own under skip_specs: true.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:13:39.955Z"
+    },
+    {
+      "id": "2b27fa0a",
+      "change": "plan-driven-execution",
+      "level": "critical",
+      "file": "src/core/git/merge-feature.ts",
+      "line": 26,
+      "summary": "archive cannot run on any change that opened a task worktree. The merge stages the tree with git add --all -- . :(exclude).lexforge, and git refuses a negative pathspec naming an ignored path: 'The following paths are ignored by one of your .gitignore files: .lexforge', exit 1. task-worktree.ts:13 writes /.lexforge/ into the repository's own exclude file at task start, so the product itself creates the condition and every 6.0.0 change hits it at archive, after archive has already merged the delta into lexforge/specs/ and moved the change directory, leaving the work staged and the branch unmerged. Measured on git 2.50.1 in a throwaway repository: :(exclude).lexforge/, :(exclude,glob).lexforge/** and :!.lexforge all fail the same way, a plain git add --all succeeds and leaves .lexforge out by itself because the exclude file hides it, and with that exclude file emptied the same plain add stages .lexforge/w.txt, which is what the pathspec was there to prevent.",
+      "state": "open",
+      "recordedAt": "2026-10-25T12:16:16.864Z"
+    },
+    {
+      "id": "b36b6901",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/core/git/task-worktree.test.ts",
+      "line": 106,
+      "summary": "The guarded case bundles [, ], # and !, all legal in a Windows filename, with * and ?, which are not, so Windows has no coverage of the escaping for the characters it could have held. Splitting it into an unguarded weird[1]#!dir case and a guarded *? case would buy that coverage. escapeGitignoreSegment has no platform-dependent path and git's wildmatch behaves the same there, so this buys coverage rather than correctness.",
+      "state": "open",
+      "recordedAt": "2026-10-25T13:44:17.088Z"
     }
   ]
 }
