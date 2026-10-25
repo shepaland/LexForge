@@ -98,12 +98,14 @@ describe("parseTaskList: ссылки на требования", () => {
 });
 
 describe("parseTaskList: имена файлов", () => {
-  it("явный Files задаёт точный writable scope, а Check остаётся только в namedFiles", () => {
+  it("форма Files/Test/Command c командой в прозе называет каждый путь, а writable scope остаётся только Files", () => {
     const tasks = parseTaskList(
       [
-        "- [ ] 1.1 Изменить маршрут `/api/auth` и не считать `/etc/nginx/conf.d` файлом",
+        "- [ ] 1.1 Изменить маршрут `/api/auth`, сослаться на `cat docs/routes.md` и не считать",
+        "      `/etc/nginx/conf.d` файлом",
         "      Files: `src/http/routes.ts`, `tests/http/routes fixture.test.ts`",
-        "      Check: `npx vitest run tests/http/routes.test.ts`",
+        "      Test: `tests/http/routes.test.ts`",
+        "      Command: `npx vitest run tests/http/routes.command.test.ts`",
       ].join("\n"),
     );
 
@@ -120,7 +122,9 @@ describe("parseTaskList: имена файлов", () => {
     expect(tasks[0]!.namedFiles, "TASK_FILE_SCOPE_NOT_DISTINGUISHED").toEqual([
       "src/http/routes.ts",
       "tests/http/routes fixture.test.ts",
+      "docs/routes.md",
       "tests/http/routes.test.ts",
+      "tests/http/routes.command.test.ts",
     ]);
   });
 
@@ -275,7 +279,7 @@ describe("parseTaskList: namedFiles не путает программу ком�
 
   it("программа обёрнутого evidence red не попадает в namedFiles, а файл под ней попадает", () => {
     const tasks = parseTaskList(
-      '- [ ] 1.1 Check: `node bin/lexforge.js evidence red --change c --task 1.2 --command "npx vitest run tests/core/gates/x.test.ts"`\n',
+      '- [ ] 1.1 Command: `node bin/lexforge.js evidence red --change c --task 1.2 --command "npx vitest run tests/core/gates/x.test.ts"`\n',
     );
 
     expect(tasks[0]!.namedFiles).toEqual(["tests/core/gates/x.test.ts"]);
@@ -284,7 +288,7 @@ describe("parseTaskList: namedFiles не путает программу ком�
 
   it("каждый путь, которым командует программа, остаётся именованным", () => {
     const tasks = parseTaskList(
-      "- [ ] 1.1 Check: `npx vitest run tests/core/gates/a.test.ts tests/core/gates/b.test.ts`\n",
+      "- [ ] 1.1 Command: `npx vitest run tests/core/gates/a.test.ts tests/core/gates/b.test.ts`\n",
     );
 
     expect(tasks[0]!.namedFiles).toEqual([
@@ -294,7 +298,7 @@ describe("parseTaskList: namedFiles не путает программу ком�
   });
 
   it("команда без единого аргумента после программы не именует ничего", () => {
-    const tasks = parseTaskList("- [ ] 1.1 Check: `node scripts/build.js`\n");
+    const tasks = parseTaskList("- [ ] 1.1 Command: `node scripts/build.js`\n");
 
     expect(tasks[0]!.namedFiles).toEqual([]);
   });
