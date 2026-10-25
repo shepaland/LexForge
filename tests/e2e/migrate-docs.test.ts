@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { readTextFile } from "../../src/core/read-text.js";
+import { projectConfigText } from "../../src/core/init/config-template.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -292,12 +293,13 @@ describe("CHANGELOG.md: верхняя запись одна называет м
   );
 });
 
-describe("README на двух языках: командная таблица несёт те же одиннадцать команд", () => {
-  const TABLE_HEADING: Record<string, string> = {
-    "README.md": "## Commands and exit codes",
-    "README.ru.md": "## Команды и коды возврата",
-  };
+/** The heading of the command table, one per language. */
+const TABLE_HEADING: Record<string, string> = {
+  "README.md": "## Commands and exit codes",
+  "README.ru.md": "## Команды и коды возврата",
+};
 
+describe("README на двух языках: командная таблица несёт те же одиннадцать команд", () => {
   it.each(Object.entries(TABLE_HEADING))("таблица %s содержит каждую из одиннадцати команд строкой", (file, heading) => {
     const text = file === "README.md" ? README_EN : README_RU;
     const table = section(text, heading);
@@ -308,5 +310,84 @@ describe("README на двух языках: командная таблица �
       const escaped = command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       expect(table, `в таблице команд ${file} нет строки «${command}»`).toMatch(new RegExp("\\| `" + escaped + "\\b"));
     }
+  });
+});
+
+/** The three commands 6.0.0 adds, which the two README command tables must gain a row for. */
+const NEW_COMMANDS = ["migrate", "journal", "unlock"];
+
+describe("README на двух языках: командная таблица несёт три новые команды", () => {
+  it.each(Object.entries(TABLE_HEADING))("таблица %s содержит каждую из трёх новых команд строкой", (file, heading) => {
+    const text = file === "README.md" ? README_EN : README_RU;
+    const table = section(text, heading);
+
+    expect(table, `в ${file} нет раздела «${heading}»`).not.toBe("");
+
+    for (const command of NEW_COMMANDS) {
+      const escaped = command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      expect(table, `в таблице команд ${file} нет строки «${command}»`).toMatch(new RegExp("\\| `" + escaped + "\\b"));
+    }
+  });
+});
+
+/** Claims 6.0.0 drops from the READMEs because the behaviour they described is gone. One shape, tabled. */
+const REMOVED_README_CLAIMS: ReadonlyArray<{ file: string; text: string; phrase: string }> = [
+  { file: "README.md", text: README_EN_FLAT.toLowerCase(), phrase: "group labels" },
+  { file: "README.md", text: README_EN_FLAT.toLowerCase(), phrase: "shared by groups" },
+  { file: "README.md", text: README_EN_FLAT.toLowerCase(), phrase: "files of a cycle" },
+  { file: "README.md", text: README_EN_FLAT.toLowerCase(), phrase: "cycle prerequisites" },
+  { file: "README.ru.md", text: README_RU_FLAT, phrase: "метки групп" },
+  { file: "README.ru.md", text: README_RU_FLAT, phrase: "общие файлы у групп" },
+  { file: "README.ru.md", text: README_RU_FLAT, phrase: "файлам цикла" },
+  { file: "README.ru.md", text: README_RU_FLAT, phrase: "условия цикла" },
+];
+
+describe("README на двух языках: обещание меток групп снято, файлы задачи не зовутся файлами цикла", () => {
+  it.each(REMOVED_README_CLAIMS)("$file не несёт «$phrase»", ({ file, text, phrase }) => {
+    expect(text, `${file} всё ещё несёт «${phrase}»`).not.toContain(phrase);
+  });
+});
+
+/**
+ * What a reader needs about `worktree.setup`: what it holds, that `task start`
+ * runs it in the new worktree, and - since `red-run-broken` names two different
+ * fixes - which of its two causes each fix answers.
+ */
+const WORKTREE_SETUP_FACTS: ReadonlyArray<{ label: string; en: RegExp; ru: RegExp }> = [
+  { label: "ключ держит команду оболочки", en: /`worktree\.setup`: a shell command/, ru: /`worktree\.setup`: команду оболочки/ },
+  { label: "task start запускает её один раз в новом рабочем дереве", en: /that `task start` runs once in the new worktree/, ru: /которую `task start` один раз запускает в новом рабочем дереве/ },
+  { label: "ненулевой код завершения убирает дерево кодом worktree-setup-failed", en: /a non-zero exit removes the worktree and refuses with `worktree-setup-failed`/, ru: /при ненулевом коде завершения `task start` удаляет рабочее дерево и отказывает кодом `worktree-setup-failed`/ },
+  { label: "red-run-broken называет worktree.setup следующим шагом при нехватке зависимостей", en: /refuses with `red-run-broken`: when the worktree is missing what `worktree\.setup` installs, the fix is `worktree\.setup`/, ru: /не хватает того, что ставит `worktree\.setup`[^;]*`task red` называет следующим шагом `worktree\.setup`/ },
+  { label: "red-run-broken называет plan amend следующим шагом при незаявленном модуле", en: /when the break names a module the task never declared, the fix is `lexforge plan amend` instead/, ru: /не объявила в `Files:`, `task red` называет следующим шагом `lexforge plan amend`/ },
+];
+
+describe("README.md объясняет worktree.setup по-английски", () => {
+  it.each(WORKTREE_SETUP_FACTS)("$label", ({ en }) => {
+    expect(README_EN_FLAT).toMatch(en);
+  });
+});
+
+const RU_DOCS_WITH_WORKTREE_SETUP: ReadonlyArray<readonly [string, string]> = [
+  ["README.ru.md", README_RU_FLAT],
+  ["docs/task-execution.md", GUIDE_FLAT],
+];
+
+describe.each(RU_DOCS_WITH_WORKTREE_SETUP)("%s объясняет worktree.setup по-русски", (name, text) => {
+  it.each(WORKTREE_SETUP_FACTS)("$label", ({ ru }) => {
+    expect(text, `${name} не говорит это по-русски`).toMatch(ru);
+  });
+});
+
+describe("src/core/init/config-template.ts: закомментированный пример worktree.setup попадает в каждый новый config.yaml", () => {
+  const template = projectConfigText();
+
+  it("объясняет, что ключ — команда, которую `task start` запускает в новом рабочем дереве задачи", () => {
+    expect(template).toContain(
+      "# worktree.setup: the command `task start` runs in a new task worktree",
+    );
+  });
+
+  it("несёт закомментированный пример `worktree: setup: npm ci`", () => {
+    expect(template).toMatch(/^# worktree:\n# {2}setup: npm ci$/m);
   });
 });
