@@ -7,9 +7,11 @@ import { createMigratedChangeAllClosed, createTwoTaskChange } from "../../helper
 import { git, writeAt, type GitWorkspace } from "../../helpers/git-workspace.js";
 import { createShortWorkspace } from "../../helpers/short-workspace.js";
 import { CHANGE } from "../../helpers/task-workspace.js";
+import { yieldEventLoop } from "./verify-change-fixtures.js";
 
 let ws: GitWorkspace | undefined;
 afterEach(() => ws?.remove());
+afterEach(yieldEventLoop);
 
 function withChecks(created: GitWorkspace): string {
   ws = created;
