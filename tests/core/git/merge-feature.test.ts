@@ -134,4 +134,19 @@ describe("mergeFeature", () => {
     expect(git(root, "show", "dev:examples/notes/app.txt")).toBe("notes changed");
     expect(git(root, "status", "--porcelain")).toBe(" M a.txt");
   });
+
+  it("keeps a nested workspace's .lexforge/ out of the merge when its own exclude line already hides it", async () => {
+    const { mergeFeature } = await load();
+    const { root } = featureWorkspace({ "examples/notes/app.txt": "notes\n" });
+    const nested = path.join(root, "examples/notes");
+
+    ensureWorktreeExcluded(nested);
+    writeAt(nested, ".lexforge/worktrees/demo/2.1/note.txt", "task worktree\n");
+    writeAt(nested, "app.txt", "notes changed\n");
+
+    expect(mergeFeature(nested, "add-auth")).toEqual({ merged: true });
+
+    expect(git(root, "ls-tree", "-r", "--name-only", "dev")).not.toContain(".lexforge");
+    expect(git(root, "status", "--porcelain")).toBe("");
+  });
 });

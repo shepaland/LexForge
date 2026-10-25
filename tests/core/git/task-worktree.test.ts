@@ -79,6 +79,20 @@ describe("task worktree", () => {
     expect(status).not.toContain("examples/notes/.lexforge");
     expect(status).toContain("?? .lexforge/");
   });
+  it("keeps a literal backslash in the workspace's own directory name, rather than reading it as a path separator", () => {
+    const nested = join(root, "a\\b");
+    mkdirSync(nested, { recursive: true });
+
+    ensureWorktreeExcluded(nested);
+
+    const exclude = git(root, "rev-parse", "--git-path", "info/exclude");
+    const text = readFileSync(join(root, exclude), "utf8");
+    expect(text).toContain("/a\\\\b/.lexforge/");
+
+    writeAt(nested, ".lexforge/worktrees/demo/2.1/note.txt", "nested task worktree\n");
+
+    expect(git(root, "status", "--short")).toBe("");
+  });
   it("escapes gitignore-special characters in the workspace's own path segment", () => {
     const nested = join(root, "weird[1]*?#!dir");
     mkdirSync(nested, { recursive: true });
