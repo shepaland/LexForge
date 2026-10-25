@@ -30,20 +30,6 @@ export const SILENT = { write: () => true };
 /** Workspaces `workspace` has made, removed in each file's own `afterEach`. */
 export const created: GitWorkspace[] = [];
 
-/**
- * Hands control back to the event loop. Every case here drives git through
- * `execFileSync`, which blocks the worker's event loop for its whole call;
- * run back to back across a file with dozens of cases, that adds up past
- * the minute vitest's own runner gives a queued `onTaskUpdate` to be
- * acknowledged, and the file times out on that exchange even though every
- * test in it passed. Called from each file's own `afterEach`, one macrotask
- * after the test is enough for that queued call to be acknowledged before
- * its clock runs out.
- */
-export function yieldEventLoop(): Promise<void> {
-  return new Promise((resolve) => setImmediate(resolve));
-}
-
 export function workspace(tasks: string, files: Record<string, string> = {}): GitWorkspace {
   const made = createGitWorkspace({
     "lexforge/config.yaml": CONFIG,

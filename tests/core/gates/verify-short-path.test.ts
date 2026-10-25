@@ -4,7 +4,6 @@ import { taskFindings } from "../../../src/core/gates/verify-change-tasks.js";
 import { writeAt, type GitWorkspace } from "../../helpers/git-workspace.js";
 import { createShortWorkspace, spoil } from "../../helpers/short-workspace.js";
 import { CHANGE, taskSteps } from "../../helpers/task-workspace.js";
-import { yieldEventLoop } from "./verify-change-fixtures.js";
 
 let ws: GitWorkspace;
 beforeEach(async () => {
@@ -12,7 +11,6 @@ beforeEach(async () => {
   await taskSteps(ws.root).redDone("1.1");
 }, 60_000);
 afterEach(() => ws.remove());
-afterEach(yieldEventLoop);
 
 /** The delta edits below are left uncommitted on purpose; uncommitted-work has tests of its own. */
 const shortPathOnly = () => taskFindings(ws.root, CHANGE).filter((f) => f.rule !== "uncommitted-work");

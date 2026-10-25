@@ -8,14 +8,13 @@ import { recordEvidence } from "../../../src/core/gates/evidence-record.js";
 import { verifyChange } from "../../../src/core/gates/verify-change.js";
 import { writeAt } from "../../helpers/git-workspace.js";
 import { commitWork } from "../../helpers/verify-seal.js";
-import { CHANGE, created, SILENT, workspace, yieldEventLoop } from "./verify-change-fixtures.js";
+import { CHANGE, created, SILENT, workspace } from "./verify-change-fixtures.js";
 
 afterEach(() => {
   while (created.length > 0) {
     created.pop()!.remove();
   }
 });
-afterEach(yieldEventLoop);
 
 /** The work of the change: a line the base commit does not carry. */
 function editApp(root: string): void {
