@@ -4,6 +4,7 @@ import { amendPlan } from "../../core/tasks/plan-amend.js";
 import { approvePlan } from "../../core/tasks/plan-approve.js";
 import { registerPlanReview } from "../../core/tasks/plan-review.js";
 import { escalate } from "../../core/tasks/short-path.js";
+import { assertMigrated } from "../../core/tasks/workflow-file.js";
 import type { CommandResult } from "../../core/types.js";
 import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { renderResult } from "../render.js";
@@ -51,6 +52,7 @@ export function registerPlan(program: Command, context: CliContext): void {
     .option("--json", "print one JSON document instead of human output")
     .action((options: Flags & { angle?: string; file: string }) => {
       const root = findWorkspaceRoot(context.cwd);
+      assertMigrated(root, options.change);
       const result = registerPlanReview(root, options.change, options.angle ?? "", options.file);
       const found = result.findings.length;
       respond(context, options.json, {
@@ -68,6 +70,7 @@ export function registerPlan(program: Command, context: CliContext): void {
     .option("--json", "print one JSON document instead of human output")
     .action((options: Flags & { quote?: string }) => {
       const root = findWorkspaceRoot(context.cwd);
+      assertMigrated(root, options.change);
       const result = approvePlan(root, options.change, options.quote);
       respond(context, options.json, {
         ...result,
@@ -84,6 +87,7 @@ export function registerPlan(program: Command, context: CliContext): void {
     .option("--json", "print one JSON document instead of human output")
     .action((options: Flags & { quote?: string }) => {
       const root = findWorkspaceRoot(context.cwd);
+      assertMigrated(root, options.change);
       const result = amendPlan(root, options.change, options.quote);
       respond(context, options.json, {
         ...result,
@@ -99,6 +103,11 @@ export function registerPlan(program: Command, context: CliContext): void {
     .option("--json", "print one JSON document instead of human output")
     .action((options: Flags) => {
       const root = findWorkspaceRoot(context.cwd);
+      // Before the lock of `escalate` below, which creates the change
+      // directory on the way to taking it: a name the workspace does not
+      // have must keep change-not-found, not answer change-needs-migration
+      // out of a directory it never had.
+      assertMigrated(root, options.change);
       const result = escalate(root, options.change);
       respond(context, options.json, {
         ...result,

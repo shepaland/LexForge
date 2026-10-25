@@ -2,8 +2,7 @@ import type { Command } from "commander";
 
 import { recordEvidence } from "../../core/gates/evidence-record.js";
 import { labelMissing } from "../../core/gates/verification-labels.js";
-import { readWorkflowFile } from "../../core/tasks/workflow-file.js";
-import { readChangeConfig } from "../../core/workspace/change-config.js";
+import { assertMigrated } from "../../core/tasks/workflow-file.js";
 import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { readProjectConfig } from "../../core/workspace/project-config.js";
 import { renderResult } from "../render.js";
@@ -32,11 +31,7 @@ export function registerEvidence(program: Command, context: CliContext): void {
     .action(async (options: { change: string; label?: string; stream?: boolean; json?: boolean }) => {
       const label = options.label ?? missingLabel(context.cwd);
 
-      // The change is confirmed to exist before its workflow is read, so a
-      // name the workspace does not have keeps change-not-found.
-      const root = findWorkspaceRoot(context.cwd);
-      readChangeConfig(root, options.change);
-      readWorkflowFile(root, options.change);
+      assertMigrated(findWorkspaceRoot(context.cwd), options.change);
 
       const result = await recordEvidence({
         cwd: context.cwd,
