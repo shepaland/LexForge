@@ -1942,6 +1942,36 @@
       "summary": "The dimension label reads 'the working tree holds no uncommitted change outside the change directory, the task worktrees and the defect ledger', while workScopes carves the change's own delta specs back in, so an uncommitted delta spec is a finding the label denies. The wording to use: outside the change directory save its delta specs, the task worktrees and the defect ledger. Nothing in the suite pins the list, so the next change that touches verify's output carries this.",
       "state": "open",
       "recordedAt": "2026-10-25T10:51:18.422Z"
+    },
+    {
+      "id": "f364ae45",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/gates/task-files.ts",
+      "line": 67,
+      "summary": "DECLARED_FIELD_LINE is character for character the regex task-list.ts:34 holds as FIELD_LINE, and task-list.ts already imports from task-files.ts, so one constant could serve both. A sixth field added to one copy and not the other would silently split the prose span loop from cleanText.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:39:20.508Z"
+    },
+    {
+      "id": "f791ae22",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/gates/task-list.ts",
+      "line": 93,
+      "summary": "The doc comment on namedFiles still says the field holds the files a Command: or Check: span runs and bare path-shaped spans when the task has no Files: line. The Check: reader is gone and the field is now fed by every command-shaped span of the prose. The comment is the only description of the field a caller reads.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:39:20.690Z"
+    },
+    {
+      "id": "3931d7a6",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/core/gates/task-list.test.ts",
+      "line": 104,
+      "summary": "The two bare prose spans left in the rewritten test are /api/auth and /etc/nginx/conf.d, both rejected by isCanonicalTaskFile whatever the span reader does, so no case pins that a canonical bare prose path stays out of namedFiles under a well-formed Files: line, which is what the amended requirement states. That branch is pinned only by the eight malformed-declaration cases of task-file-declarations.test.ts:20, where Files: is broken and files is empty.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:39:20.868Z"
     }
   ]
 }
