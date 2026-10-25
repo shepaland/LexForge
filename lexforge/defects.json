@@ -1862,6 +1862,26 @@
       "summary": "Inside a task worktree whose top holds a lexforge/ directory without config.yaml, the command now refuses workspace-incomplete instead of resolving the main worktree",
       "state": "open",
       "recordedAt": "2026-10-25T05:39:27.266Z"
+    },
+    {
+      "id": "84cef7bf",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/e2e/migrate-docs.test.ts",
+      "line": 360,
+      "summary": "The cause-to-fix regex excludes the semicolon but not the full stop, so a rewrite that swaps the fixes and ends the sentence earlier could bridge the boundary",
+      "state": "open",
+      "recordedAt": "2026-10-25T05:55:09.076Z"
+    },
+    {
+      "id": "99c84150",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "README.md",
+      "line": 131,
+      "summary": "The rewrap splits the code span lexforge plan amend across a line break, so the phrase is not greppable in the source",
+      "state": "open",
+      "recordedAt": "2026-10-25T05:55:09.338Z"
     }
   ]
 }
