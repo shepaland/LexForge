@@ -1932,6 +1932,16 @@
       "summary": "The comment still says the task workspace has no workflow.json, so it stays on the full path; createTaskWorkspace now gets one with path: full, so the comment misstates the fixture. The assertion is unaffected, since isShortPath reads both a missing file and path: full as the full path.",
       "state": "open",
       "recordedAt": "2026-10-25T08:28:34.136Z"
+    },
+    {
+      "id": "9ad0aaef",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/gates/verify-change.ts",
+      "line": 61,
+      "summary": "The dimension label reads 'the working tree holds no uncommitted change outside the change directory, the task worktrees and the defect ledger', while workScopes carves the change's own delta specs back in, so an uncommitted delta spec is a finding the label denies. The wording to use: outside the change directory save its delta specs, the task worktrees and the defect ledger. Nothing in the suite pins the list, so the next change that touches verify's output carries this.",
+      "state": "open",
+      "recordedAt": "2026-10-25T10:51:18.422Z"
     }
   ]
 }
