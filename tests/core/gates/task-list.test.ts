@@ -98,10 +98,10 @@ describe("parseTaskList: ссылки на требования", () => {
 });
 
 describe("parseTaskList: имена файлов", () => {
-  it("форма Files/Test/Command c прозой называет каждый путь, а writable scope остаётся только Files", () => {
+  it("форма Files/Test/Command c командой в прозе называет каждый путь, а writable scope остаётся только Files", () => {
     const tasks = parseTaskList(
       [
-        "- [ ] 1.1 Изменить маршрут `/api/auth`, сослаться на `docs/routes.md` и не считать",
+        "- [ ] 1.1 Изменить маршрут `/api/auth`, сослаться на `cat docs/routes.md` и не считать",
         "      `/etc/nginx/conf.d` файлом",
         "      Files: `src/http/routes.ts`, `tests/http/routes fixture.test.ts`",
         "      Test: `tests/http/routes.test.ts`",
