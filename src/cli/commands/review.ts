@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 
 import { finalPackageStep, registerFinalReview, writeFinalPackage } from "../../core/tasks/final-review.js";
+import { assertMigrated } from "../../core/tasks/workflow-file.js";
 import type { CommandResult } from "../../core/types.js";
 import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { renderResult } from "../render.js";
@@ -31,6 +32,7 @@ export function registerReview(program: Command, context: CliContext): void {
     .option("--json", "print one JSON document instead of human output")
     .action((options: { change: string; file?: string; json?: boolean }) => {
       const root = findWorkspaceRoot(context.cwd);
+      assertMigrated(root, options.change);
       if (options.file === undefined) {
         const file = writeFinalPackage(root, options.change);
         respond(context, options.json, {

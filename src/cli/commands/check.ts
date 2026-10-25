@@ -2,23 +2,11 @@ import type { Command } from "commander";
 
 import { checkEvidence } from "../../core/gates/check-evidence.js";
 import { checkPlan } from "../../core/gates/plan-check.js";
-import { readWorkflowFile } from "../../core/tasks/workflow-file.js";
-import { readChangeConfig } from "../../core/workspace/change-config.js";
+import { assertMigrated } from "../../core/tasks/workflow-file.js";
 import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { renderResult } from "../render.js";
 import type { CliContext } from "../run.js";
 import { refuseWithoutSubcommand } from "../subcommand-group.js";
-
-/**
- * Confirms the change exists (`change-not-found` otherwise) before asking
- * whether its workflow is below version 3, so a name the workspace does not
- * have never reads as a change that merely needs migrating.
- */
-function assertMigrated(cwd: string, change: string): void {
-  const root = findWorkspaceRoot(cwd);
-  readChangeConfig(root, change);
-  readWorkflowFile(root, change);
-}
 
 export const CHECK_DESCRIPTION = "Run a gate over a change: the plan or the evidence";
 export const CHECK_PLAN_DESCRIPTION = "Check the plan of a change for unwritten work";
@@ -39,7 +27,7 @@ export function registerCheck(program: Command, context: CliContext): void {
     .requiredOption("--change <name>", "change whose plan is checked")
     .option("--json", "print one JSON document instead of human output")
     .action((options: { change: string; json?: boolean }) => {
-      assertMigrated(context.cwd, options.change);
+      assertMigrated(findWorkspaceRoot(context.cwd), options.change);
       const result = checkPlan({ cwd: context.cwd, change: options.change });
 
       renderResult(result, {
@@ -58,6 +46,7 @@ export function registerCheck(program: Command, context: CliContext): void {
     .option("--require <labels>", "check only these labels, separated by commas")
     .option("--json", "print one JSON document instead of human output")
     .action((options: { change: string; require?: string; json?: boolean }) => {
+      assertMigrated(findWorkspaceRoot(context.cwd), options.change);
       const result = checkEvidence({
         cwd: context.cwd,
         change: options.change,

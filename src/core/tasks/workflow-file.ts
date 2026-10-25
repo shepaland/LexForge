@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { UsageError } from "../../cli/errors.js";
+import { readChangeConfig } from "../workspace/change-config.js";
 import { readJson, save } from "./files.js";
 import { changeDir } from "./paths.js";
 
@@ -40,6 +41,19 @@ export function readWorkflowFile(root: string, change: string): WorkflowFile {
 
 export function writeWorkflowFile(root: string, change: string, file: WorkflowFile): void {
   save(workflowPath(root, change), workflowSchema.parse(file));
+}
+
+/**
+ * Confirms a change exists, then confirms its workflow is at version 3, in
+ * that order: a name the workspace does not have keeps `change-not-found`
+ * rather than reading as a change that merely needs migrating. Called at the
+ * top of every command that reads the state of a change, before anything of
+ * that state is read or written, so a lock taken past it never creates a
+ * directory for a change this guard would have refused.
+ */
+export function assertMigrated(root: string, change: string): void {
+  readChangeConfig(root, change);
+  readWorkflowFile(root, change);
 }
 
 function needsMigration(change: string, reason: string): UsageError {

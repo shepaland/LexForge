@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 
 import { ENTRY_KINDS, addEntry, openSession, resolveEntry, type EntryKind } from "../../core/tasks/journal.js";
+import { assertMigrated } from "../../core/tasks/workflow-file.js";
 import type { CommandResult } from "../../core/types.js";
 import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { UsageError } from "../errors.js";
@@ -54,6 +55,7 @@ export function registerJournal(program: Command, context: CliContext): void {
         );
       }
       const root = findWorkspaceRoot(context.cwd);
+      assertMigrated(root, options.change);
       const entry = addEntry(root, options.change, { ...options, kind: options.kind as EntryKind });
       respond(context, options.json, {
         entry,
@@ -67,6 +69,7 @@ export function registerJournal(program: Command, context: CliContext): void {
     .requiredOption("--note <words>", "how the entry was settled")
     .action((options: Common & { id: string; note: string }) => {
       const root = findWorkspaceRoot(context.cwd);
+      assertMigrated(root, options.change);
       const entry = resolveEntry(root, options.change, options.id, options.note);
       respond(context, options.json, {
         entry,
@@ -77,6 +80,7 @@ export function registerJournal(program: Command, context: CliContext): void {
 
   subcommand(group, "session", "Open a new session; permissions of the last session expire").action((options: Common) => {
     const root = findWorkspaceRoot(context.cwd);
+    assertMigrated(root, options.change);
     const result = openSession(root, options.change);
     respond(context, options.json, {
       ...result,

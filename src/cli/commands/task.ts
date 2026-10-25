@@ -9,6 +9,7 @@ import { UsageError } from "../errors.js";
 import { unlockChange } from "../../core/tasks/lock.js";
 import { startTask } from "../../core/tasks/start.js";
 import type { CommandResult } from "../../core/types.js";
+import { assertMigrated } from "../../core/tasks/workflow-file.js";
 import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { renderResult } from "../render.js";
 import type { CliContext } from "../run.js";
@@ -90,6 +91,11 @@ export function registerTask(program: Command, context: CliContext): void {
     .action((options: Flags & { executor: string }) =>
       naming(again("start", options), () => {
         const root = findWorkspaceRoot(context.cwd);
+        // Before the lock of `startTask` below, which creates the change
+        // directory on the way to taking it: a name the workspace does not
+        // have must keep change-not-found, not answer change-needs-migration
+        // out of a directory it never had.
+        assertMigrated(root, options.change);
         const result = startTask(root, options.change, options.task, options.executor);
         respond(context, options.json, {
           ...result,
@@ -102,6 +108,7 @@ export function registerTask(program: Command, context: CliContext): void {
     (options: Flags) =>
       naming(again("red", options), () => {
         const root = findWorkspaceRoot(context.cwd);
+        assertMigrated(root, options.change);
         const result = recordRed(root, options.change, options.task);
         respond(context, options.json, {
           ...result,
@@ -114,6 +121,7 @@ export function registerTask(program: Command, context: CliContext): void {
     (options: Flags) =>
       naming(again("green", options), () => {
         const root = findWorkspaceRoot(context.cwd);
+        assertMigrated(root, options.change);
         const result = recordGreen(root, options.change, options.task);
         respond(context, options.json, {
           ...result,
@@ -127,6 +135,7 @@ export function registerTask(program: Command, context: CliContext): void {
     .action((options: Flags & { file: string }) =>
       naming(again("review", options), () => {
         const root = findWorkspaceRoot(context.cwd);
+        assertMigrated(root, options.change);
         const result = registerTaskReview(root, options.change, options.task, path.resolve(context.cwd, options.file));
         respond(context, options.json, {
           ...result,
@@ -139,6 +148,7 @@ export function registerTask(program: Command, context: CliContext): void {
     (options: Flags) =>
       naming(again("close", options), () => {
         const root = findWorkspaceRoot(context.cwd);
+        assertMigrated(root, options.change);
         const result = closeTask(root, options.change, options.task);
         respond(context, options.json, {
           ...result,
@@ -153,6 +163,7 @@ export function registerTask(program: Command, context: CliContext): void {
     (options: Flags) =>
       naming(again("abandon", options), () => {
         const root = findWorkspaceRoot(context.cwd);
+        assertMigrated(root, options.change);
         const result = abandonTask(root, options.change, options.task);
         respond(context, options.json, {
           ...result,

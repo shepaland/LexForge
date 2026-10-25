@@ -16,7 +16,7 @@ import {
 } from "../models/assignment.js";
 import { nextStepForChange } from "../next-step.js";
 import { loadSchema } from "../schemas/load-schema.js";
-import { readWorkflowFile } from "../tasks/workflow-file.js";
+import { assertMigrated } from "../tasks/workflow-file.js";
 import type { CommandResult } from "../types.js";
 import { readChangeConfig } from "../workspace/change-config.js";
 import { findWorkspaceRoot } from "../workspace/find-root.js";
@@ -88,8 +88,11 @@ export function changeStatus(options: ChangeStatusOptions): CommandResult<Change
   const root = findWorkspaceRoot(options.cwd);
   const { schema, state } = readChangeState(root, options.change);
   // The change is resolved by the line above; a workflow below version 3 is
-  // refused here, before progress is counted with pre-6.0.0 semantics.
-  readWorkflowFile(root, options.change);
+  // refused here, before progress is counted with pre-6.0.0 semantics. The
+  // guard belongs on this path alone: `readChangeState` also serves the
+  // workspace listing in workspace-status.ts, where one change below version
+  // 3 must not refuse the whole listing.
+  assertMigrated(root, options.change);
   const projectConfig = readProjectConfig(root);
   const models = projectConfig.models;
 

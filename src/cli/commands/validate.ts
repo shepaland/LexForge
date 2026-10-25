@@ -1,8 +1,7 @@
 import type { Command } from "commander";
 
-import { readWorkflowFile } from "../../core/tasks/workflow-file.js";
+import { assertMigrated } from "../../core/tasks/workflow-file.js";
 import { validateChange } from "../../core/validation/validate-change.js";
-import { readChangeConfig } from "../../core/workspace/change-config.js";
 import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { renderResult } from "../render.js";
 import type { CliContext } from "../run.js";
@@ -17,11 +16,7 @@ export function registerValidate(program: Command, context: CliContext): void {
     .option("--strict", "add the completeness checks: purpose, placeholders, artifacts")
     .option("--json", "print one JSON document instead of human output")
     .action((change: string, options: { strict?: boolean; json?: boolean }) => {
-      // The change is confirmed to exist before its workflow is read, so a
-      // name the workspace does not have keeps change-not-found.
-      const root = findWorkspaceRoot(context.cwd);
-      readChangeConfig(root, change);
-      readWorkflowFile(root, change);
+      assertMigrated(findWorkspaceRoot(context.cwd), change);
 
       const result = validateChange({
         cwd: context.cwd,
