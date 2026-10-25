@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { UsageError } from "../../../src/cli/errors.js";
 import { verifyChange } from "../../../src/core/gates/verify-change.js";
 import { createGitWorkspace } from "../../helpers/git-workspace.js";
-import { AUTH_SPEC, CHANGE, CONFIG, created, workspace } from "./verify-change-fixtures.js";
+import { AUTH_SPEC, CHANGE, CONFIG, created, workspace, yieldEventLoop } from "./verify-change-fixtures.js";
 
 const PLAN_FILE = `lexforge/changes/${CHANGE}/tasks.md`;
 
@@ -23,6 +23,7 @@ afterEach(() => {
     created.pop()!.remove();
   }
 });
+afterEach(yieldEventLoop);
 
 describe("verifyChange: незакрытые задачи", () => {
   it("две задачи - [ ] дают две находки с номерами задач и номерами строк", () => {
