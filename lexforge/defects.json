@@ -2096,8 +2096,9 @@
       "file": "src/core/git/merge-feature.ts",
       "line": 26,
       "summary": "archive cannot run on any change that opened a task worktree. The merge stages the tree with git add --all -- . :(exclude).lexforge, and git refuses a negative pathspec naming an ignored path: 'The following paths are ignored by one of your .gitignore files: .lexforge', exit 1. task-worktree.ts:13 writes /.lexforge/ into the repository's own exclude file at task start, so the product itself creates the condition and every 6.0.0 change hits it at archive, after archive has already merged the delta into lexforge/specs/ and moved the change directory, leaving the work staged and the branch unmerged. Measured on git 2.50.1 in a throwaway repository: :(exclude).lexforge/, :(exclude,glob).lexforge/** and :!.lexforge all fail the same way, a plain git add --all succeeds and leaves .lexforge out by itself because the exclude file hides it, and with that exclude file emptied the same plain add stages .lexforge/w.txt, which is what the pathspec was there to prevent.",
-      "state": "open",
-      "recordedAt": "2026-10-25T12:16:16.864Z"
+      "state": "closed",
+      "recordedAt": "2026-10-25T12:16:16.864Z",
+      "closedAt": "2026-10-25T13:50:29.338Z"
     },
     {
       "id": "b36b6901",
@@ -2108,6 +2109,26 @@
       "summary": "The guarded case bundles [, ], # and !, all legal in a Windows filename, with * and ?, which are not, so Windows has no coverage of the escaping for the characters it could have held. Splitting it into an unguarded weird[1]#!dir case and a guarded *? case would buy that coverage. escapeGitignoreSegment has no platform-dependent path and git's wildmatch behaves the same there, so this buys coverage rather than correctness.",
       "state": "open",
       "recordedAt": "2026-10-25T13:44:17.088Z"
+    },
+    {
+      "id": "8fd027cf",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/git/merge-feature.ts",
+      "line": 29,
+      "summary": "ensureWorktreeExcluded is a throwing call inside the window between archive's irreversible writes - the delta merged into lexforge/specs/ and the change directory moved - and the merge itself, where only merge-conflict has a resumable path. A failure writing the exclude file leaves the same half-archived state the pathspec defect left, with no command to resume from. The window, not this call, is the thing to close.",
+      "state": "open",
+      "recordedAt": "2026-10-25T13:50:29.530Z"
+    },
+    {
+      "id": "ee4a0941",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/tasks/close.ts",
+      "line": 51,
+      "summary": "verify and the stamp digest carve the defect ledger out of what they measure, but dirtyOutside in task close and plan approve excludes only the change directory, and specs/task-execution/spec.md:214 asks for exactly that. So on a change with a task still open, an uncommitted lexforge defect record refuses the next task close naming the ledger, while the apply skill tells the agent to record a minor finding mid-task. The two readings of what counts as work outside the change disagree.",
+      "state": "open",
+      "recordedAt": "2026-10-25T13:52:22.418Z"
     }
   ]
 }

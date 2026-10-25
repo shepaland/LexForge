@@ -166,21 +166,23 @@ stops.
 
 ### Requirement: Archive requires a complete and current migrated change
 
-`lexforge archive` SHALL recompute final verification before writes and SHALL refuse a migrated
-change with open tasks, migration gaps or conflicts, invalid migration integrity, unresolved
-cycle dependencies, partial cycles, or stale current evidence. A successful archive SHALL move
-the historical ledger and its detailed report with the rest of the change.
+`lexforge archive` SHALL recompute final verification before writes and SHALL refuse a change
+with an open task, a ticked task without a closed record, a recorded commit missing from the
+change branch, or a missing, stale or blocking final review. A change migrated from 5.x SHALL
+pass the same checks, with its historical records counted as closed tasks. A successful archive
+SHALL move the task records, the plan state and the journal with the rest of the change.
 
 #### Scenario: Historical tasks are complete but checks are stale
 
-- **WHEN** every task is historically confirmed and a later code change has no fresh evidence
-- **THEN** archive writes no spec, moves no change directory, and reports the freshness blocker
+- **WHEN** every task is historical and a commit landed on the change branch after the final
+  review
+- **THEN** archive writes no spec, moves no change directory, and reports `final-review-stale`
 
 #### Scenario: Complete migrated change is archived
 
-- **WHEN** migrated task state, native cycle state, current evidence, and all existing archive
-  checks pass
-- **THEN** archive proceeds and the archived change retains the migration audit record
+- **WHEN** historical and native task records are closed, the final review covers the tip and
+  all existing archive checks pass
+- **THEN** archive proceeds and the archived change keeps its task records and plan state
 
 ### Requirement: Archival moves schemas, migrations and service documents into the project
 
@@ -207,3 +209,20 @@ with that name SHALL end the command with exit code `2` before any file is writt
 
 - **WHEN** a change holding `services/notifications/service.md` is archived
 - **THEN** `lexforge/services/notifications/service.md` equals that document
+
+### Requirement: A capability whose every requirement is removed loses its spec file
+
+When the delta of a change removes every requirement of a capability, `lexforge archive` SHALL
+delete `lexforge/specs/<capability>/spec.md` and the capability directory when it is left empty.
+When at least one requirement stays, the file SHALL be kept with the requirements that stay.
+
+#### Scenario: Every requirement removed
+
+- **WHEN** `lexforge/specs/old/spec.md` holds two requirements and the delta removes both
+- **THEN** archive deletes `lexforge/specs/old`
+
+#### Scenario: One requirement stays
+
+- **WHEN** the delta removes one of the two requirements
+- **THEN** `lexforge/specs/old/spec.md` keeps the other requirement
+

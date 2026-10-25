@@ -56,16 +56,17 @@ a partial write is not allowed.
 
 ### Requirement: Creating a change
 
-The command that creates a change SHALL create the `lexforge/changes/<name>/` directory
-and a `.lexforge.yaml` file with a `schema` field. The change name is written in
-kebab-case.
+The command that creates a change SHALL create the `lexforge/changes/<name>/` directory,
+a `.lexforge.yaml` file with a `schema` field, and a `workflow.json` file with `version: 3` and
+`path: "full"`. With `--short` the command SHALL write `path: "short"`. The change name is
+written in kebab-case.
 
 #### Scenario: Name is free
 
 - **WHEN** a change is created with a name that isn't among the active changes or in the
   archive
-- **THEN** the change directory is created with `.lexforge.yaml`, the command prints the
-  path and names the next step
+- **THEN** the change directory is created with `.lexforge.yaml` and `workflow.json` version 3,
+  the command prints the path and names the next step
 
 #### Scenario: Name is taken by an active change
 
@@ -77,6 +78,11 @@ kebab-case.
 - **WHEN** the given name contains spaces, uppercase letters, or characters outside
   `[a-z0-9-]`
 - **THEN** the command exits with code `2` and shows the corrected spelling of the name
+
+#### Scenario: A short change
+
+- **WHEN** `lexforge new change fix --short` runs
+- **THEN** `workflow.json` of `fix` holds `version: 3` and `path: "short"`
 
 ### Requirement: Declaring a specs skip
 
@@ -96,6 +102,13 @@ doesn't write it by default.
 Every command SHALL search up the tree from the current directory for the nearest
 `lexforge/` directory, and work relative to the root it finds.
 
+A command run inside a task worktree SHALL resolve the state of the change in the main
+worktree, because the state of a change lives there and not in the copy the worktree carries.
+A directory below the top of a task worktree that holds a `lexforge/` of its own SHALL keep
+that workspace: the nearest one below the top wins, the copy at the top of the worktree does
+not, and a nested project answers for itself whether the command runs in the main worktree or
+in a task worktree.
+
 #### Scenario: Command run from a subdirectory
 
 - **WHEN** a command is called from a nested project directory that has `lexforge/`
@@ -108,6 +121,18 @@ Every command SHALL search up the tree from the current directory for the neares
 - **WHEN** there's no `lexforge/` in the current directory or anywhere above it in the
   tree
 - **THEN** the command exits with code `2` and suggests running init
+
+#### Scenario: The top of a task worktree
+
+- **WHEN** a command runs at the top of a task worktree, which carries its own copy of
+  `lexforge/config.yaml`
+- **THEN** the command resolves the main worktree as the workspace root
+
+#### Scenario: A nested project inside a task worktree
+
+- **WHEN** a command runs in `examples/notes` below the top of a task worktree, and that
+  directory holds its own `lexforge/`
+- **THEN** the command resolves that directory as the workspace root, not the main worktree
 
 ### Requirement: Artifact language is set in configuration
 
@@ -152,21 +177,3 @@ project is an edit its owner makes by hand.
 - **THEN** the file stays byte for byte as it was, and the pipeline keeps running with an
   empty assignment
 
-### Requirement: A change records its path for long files
-
-A change SHALL record its path for covered files already over the line limit in its
-`.lexforge.yaml` as `long_files: refactor` or `long_files: keep`.
-
-Any other value of `long_files` SHALL be refused by every command that reads it, with an
-error naming the field and the two values it accepts.
-
-#### Scenario: The refactor path is recorded
-
-- **WHEN** the `.lexforge.yaml` of `add-refunds` holds `long_files: refactor`
-- **THEN** `check plan` and `verify` for `add-refunds` read the `refactor` path
-
-#### Scenario: An unknown value is refused
-
-- **WHEN** the `.lexforge.yaml` of `add-refunds` holds `long_files: split`
-- **THEN** `check plan --change add-refunds` exits `2` with an error naming `long_files` and
-  the values `refactor` and `keep`

@@ -190,24 +190,25 @@ losing someone else's stamp is worse than stopping.
 - **WHEN** a label's record has no exit code
 - **THEN** the command exits with code `2` and names the label and the missing field
 
-### Requirement: A label stamp does not close a task
+### Requirement: A label stamp and a task record stand apart
 
 A stamp written by `lexforge evidence record --label <label>` SHALL confirm the state of the
-whole tree at the wave boundary and SHALL NOT stand in for the red record of any task.
+whole tree and SHALL NOT close any task.
 
-A red record SHALL NOT stand in for a label stamp either: the two live in separate files and
-are read by separate dimensions of the check before completion.
+A closed task record SHALL NOT stand in for a label stamp either: the two live in separate files
+and are read by separate dimensions of `lexforge verify`.
 
 `evidence record` SHALL keep taking no task id: a stamp belongs to a label, not to a task.
 
-#### Scenario: A green stamp and an unrecorded task
+#### Scenario: A green stamp and a task without a record
 
-- **WHEN** the label `tests` carries a fresh green stamp and task 1.6 is ticked with no red
+- **WHEN** the label `tests` carries a fresh green stamp and task 1.6 is ticked with no task
   record
-- **THEN** the stamp does not close task 1.6, and the check before completion still raises
-  the finding
+- **THEN** the stamp does not close task 1.6, and `lexforge verify` still reports
+  `ticked-task-without-record`
 
-#### Scenario: A red record and no stamp
+#### Scenario: Closed task records and no stamp
 
-- **WHEN** every task of a wave carries a red record and no label stamp has been taken
+- **WHEN** every task carries a closed task record and no label stamp has been taken
 - **THEN** the stamp dimension still reports the missing stamp
+

@@ -10,24 +10,24 @@ skill does when a task pulls in work that no delta requirement describes.
 
 ### Requirement: Tasks run one at a time in plan order
 
-The skill `lexforge-apply` SHALL take tasks in order of number and SHALL NOT start the next
-one until the current one is closed: test written, failure seen, implementation written,
-run green, review passed, checkbox marked.
+The skill `lexforge-apply` SHALL take tasks in order of number and SHALL start each task with
+`lexforge task start`. A task SHALL be closed only by `lexforge task close`: red run recorded on
+the test commit, green run recorded, review registered, checks passed, branch merged and
+checkbox marked by the CLI.
 
-Sections that `tasks.md` records as independent of one another SHALL be exempt from the order,
-and only from the order: every task of such a section SHALL still be closed through the whole
-loop, one at a time, before its checkbox is marked. A section whose dependencies are not closed
-SHALL wait its turn in plan order.
+Tasks whose dependencies are closed and whose declared files do not overlap SHALL be exempt from
+the order, and only from the order: each of them SHALL run in its own worktree opened by
+`task start`, through the whole loop. Two tasks SHALL NOT run in one worktree. A task whose
+dependencies are not closed SHALL wait its turn.
 
 Merging tasks into one pass SHALL NOT be allowed. A task's small size, a shared file, and
-matching wording between neighboring tasks are not grounds for merging them, and neither is
-running two of them at once.
+matching wording between neighboring tasks are not grounds for merging them.
 
 #### Scenario: Three small tasks in a row
 
 - **WHEN** tasks 2.1, 2.2, and 2.3 touch one file and together add twenty lines
-- **THEN** the plan does not record them as independent, the skill goes through them one at a
-  time and closes three checkboxes with three separate marks
+- **THEN** their files overlap, so the skill goes through them one at a time and the CLI closes
+  three checkboxes with three separate `task close` runs
 
 #### Scenario: A task needs the result of a later one
 
@@ -37,69 +37,63 @@ running two of them at once.
 
 #### Scenario: Two independent sections
 
-- **WHEN** the plan records sections 4 and 5 as independent of each other and the runtime can
-  start executor agents
-- **THEN** each runs in its own executor agent, its tasks one at a time through the whole loop,
-  and each checkbox is marked when that task's own run is green and its own review is closed
+- **WHEN** sections 4 and 5 both say `Depends on: none`, their tasks 4.1 and 5.1 share no file,
+  and the runtime can start executor agents
+- **THEN** each starts with its own `task start`, runs in its own worktree with its own executor,
+  and is closed by its own `task close`
 
 #### Scenario: A section with no concurrent neighbour
 
-- **WHEN** no other section is ready at the same moment as section 3
-- **THEN** section 3 runs in the session that read the plan, task by task, and no executor agent
-  is dispatched for it
+- **WHEN** no task of another section is ready at the same moment as task 3.1
+- **THEN** task 3.1 runs alone, and no second task is started beside it
 
 ### Requirement: A failing test is observed before the implementation
 
-Before the implementation of a task is written, the skill SHALL run the test and SHALL quote
-the failing line of that run in its answer.
+Before the implementation of a task is written, the executor SHALL commit the test alone and the
+red run SHALL be recorded by `lexforge task red` on that commit. The record holds the commit,
+the exit code and the tail of the output; a line quoted in an answer SHALL NOT replace it.
 
-The observer SHALL be whoever writes the implementation of that task. A failure reported by
-another agent, summarised from another agent's output, or reasoned about from the code SHALL
-NOT count as observed, and SHALL NOT let the task close.
+The implementation SHALL be committed after the red commit. A failure reported by another
+agent, summarised from another agent's output, or reasoned about from the code SHALL NOT count
+as red, and SHALL NOT let the task close.
 
-The run SHALL be recorded with `lexforge evidence red`, taking this change, this task id and
-the command, before the implementation is written: the record is what the check before
-completion reads, and a line quoted in an answer dies with the session.
+A test green on its first run SHALL be treated as defective: it is rewritten, committed and run
+again. A run that ends on an infrastructure error SHALL NOT count as the failure, except a
+missing module the task declares as new.
 
-A test green on its first run SHALL be treated as defective: it is rewritten and run again. A
-run that ends on a missing module, an import error, or a typo SHALL NOT count as the failure:
-it is fixed and run until the assertion fails.
-
-Implementation already standing in the tree SHALL be taken out, the failure observed, and the
-implementation put back inside the same task. Where the user forbids that, the skill SHALL
-put two ways out - let the failure happen, or strike the task - and SHALL NOT tick the
-checkbox either way.
+Implementation already standing in the tree SHALL NOT be committed before the red run: the
+task's worktree starts from the change branch, the test is committed first, and the
+implementation follows in a later commit.
 
 #### Scenario: The failure comes from another agent
 
 - **WHEN** a task's implementation is written by an agent whose only evidence of the red run
   is a line quoted in another agent's report
-- **THEN** the failure is not observed, no red record exists for that task, and the checkbox
-  stays open
+- **THEN** no red run is recorded for that task, and `task green` refuses with `red-missing`
 
 #### Scenario: The implementation is already written
 
 - **WHEN** a thousand lines of implementation sit in the tree with no red run behind them
-- **THEN** the work is taken out, the red is observed and recorded per task, and the work is
-  put back inside the task it belongs to
+- **THEN** the test is committed alone in the task worktree, `task red` records the failure on
+  that commit, and the implementation is committed after it
 
 #### Scenario: The test passed right away
 
-- **WHEN** a newly written test comes back green
-- **THEN** the test is treated as defective, rewritten, and run again before any
+- **WHEN** a newly committed test comes back green
+- **THEN** `task red` refuses with `red-run-passed`, and the test is rewritten before any
   implementation is written
 
 #### Scenario: A failure for the wrong reason
 
-- **WHEN** a test fails with a message about a module that cannot be found
-- **THEN** the skill fixes the call, runs it again, and waits for a failure on the test's
-  assertion
+- **WHEN** a test fails with a message about a module that the task does not declare
+- **THEN** `task red` refuses with `red-run-broken`, the call is fixed, and the run is repeated
+  until the test's assertion fails
 
 #### Scenario: A ten-line change
 
 - **WHEN** a task changes one line of a function and the user is pushing to hurry
-- **THEN** the skill still runs the test, shows the failure before the change, and records it
-  with `lexforge evidence red`
+- **THEN** the test is still committed alone and `task red` records the failure before the
+  change is committed
 
 ### Requirement: The implementation is written to the minimum the observed failure requires
 
@@ -119,32 +113,11 @@ NOT be added along the way.
 - **WHEN** code nearby is found that deserves a rewrite
 - **THEN** the change is not made inside this task
 
-### Requirement: The reviewer's context is assembled by hand
-
-The reviewer's assignment SHALL include: the task text with links to requirements, the
-actual requirements from the change's delta specs, the decisions in `design.md`, the commit
-range from the task's base to the current state, the command that confirms the task and its
-output, and the project rules from `lexforge/config.yaml`.
-
-The assignment SHALL NOT include: the session's history, the implementer's reasoning, the
-user's messages about deadline and scope, previous reviews' replies, or the analysis of
-neighboring tasks.
-
-#### Scenario: A deadline in the reviewer's context
-
-- **WHEN** the user is pushing to finish today
-- **THEN** that line is absent from the reviewer's assignment: the deadline is not the
-  reviewer's call
-
-#### Scenario: The reviewer asks for the conversation history
-
-- **WHEN** the reviewer replies that it needs the session's history
-- **THEN** it is given the requirements, the decisions, and the commit range instead of the
-  history
-
 ### Requirement: Review findings close before the checkbox
 
-Findings at levels CRITICAL and IMPORTANT SHALL close before the checkbox is marked.
+Findings at levels CRITICAL and IMPORTANT SHALL close before the checkbox is marked:
+`task close` SHALL refuse with `findings-open` while the latest review holds one. The checkbox
+SHALL be marked only by `task close`, never by hand.
 
 A finding at level MINOR SHALL either be fixed now or be recorded in the defect ledger with
 `lexforge defect record`. Findings SHALL NOT stay only in the agent's memory.
@@ -161,53 +134,20 @@ equally unacceptable.
 #### Scenario: The reviewer is wrong
 
 - **WHEN** a CRITICAL finding rests on a misreading of a requirement
-- **THEN** the skill quotes the requirement, shows the test, and explains why the finding is
-  dismissed
-
-### Requirement: The checkbox closes right away; the stamp is taken at the wave boundary
-
-The mark `- [x]` SHALL go into `tasks.md` right after the run is green and review findings
-are closed. Marking a batch of checkboxes at the end of the work SHALL NOT be allowed:
-closed tasks and open ones stop being distinguishable.
-
-`lexforge evidence record --change <name> --label tests` SHALL run once every dispatched
-section of the wave has come back and its checkbox is marked. An executor agent working a
-section SHALL NOT run it: a stamp taken while another agent is still writing describes a state
-of the code that never existed.
-
-An exit code of `1` SHALL leave the wave unclosed: no further section is dispatched, and the
-next step is reading the failure. The checkboxes already marked SHALL stay marked, each resting
-on its own green run, and the change SHALL NOT pass `lexforge verify` until a stamp comes back
-green.
-
-Where no section runs in parallel with another, the wave is one section and the boundary is the
-task boundary it always was.
-
-#### Scenario: Five tasks, one checkbox
-
-- **WHEN** five tasks are done and their marks are all set at once at the end
-- **THEN** this is a violation: each mark is set at the moment its own task closes
-
-#### Scenario: A red stamp
-
-- **WHEN** `lexforge evidence record` returns `1` at the end of a wave
-- **THEN** no further section is dispatched, the next step is reading the failure, and the
-  marked checkboxes stay marked
-
-#### Scenario: Two sections in one wave
-
-- **WHEN** sections 4 and 5 run in parallel and both come back green
-- **THEN** both checkboxes are marked, and one stamp is taken after the second agent returns
+- **THEN** the skill quotes the requirement, shows the test, and a new review without the
+  finding is registered before `task close`
 
 ### Requirement: A task that outgrows the spec stops the work
 
-A task SHALL be considered to have outgrown the spec when the work it calls for is
-described by no requirement in the change's delta specs, or contradicts a decision in
-`design.md`.
+During implementation the skill SHALL go to the owner in four cases only: the plan lacks a task
+or a file; a decision changes visible behaviour and the plan did not take it; a task is blocked
+and no way out exists without a guess; the plan is finished. Every other fork SHALL be decided by
+the agent and recorded with `lexforge journal add --kind ruling` and its reason.
 
-In that case the skill SHALL stop and name the user three legitimate outcomes: drop the
-work as unnecessary, go back to the delta spec and add the requirement through
-`lexforge-spec`, or open a separate change.
+A missing task or file SHALL be added to the plan only through
+`lexforge plan amend --quote` with the owner's words, followed by a review with
+`--angle amendment`. Work that no requirement in the change's delta specs describes SHALL stop
+the task and go back to the delta spec through `lexforge-spec` or to a separate change.
 
 Doing the work silently SHALL NOT be allowed. Silently adding the requirement to the delta
 after the fact SHALL NOT be allowed either: a requirement written after the code describes
@@ -216,7 +156,7 @@ the code, not the task.
 #### Scenario: A bug found along the way
 
 - **WHEN** a bug turns up in a neighboring module during a task, fixable in three lines
-- **THEN** the skill stops, names the finding and the three outcomes, and makes no change
+- **THEN** the skill stops, names the finding to the owner as a missing task, and makes no change
   inside the current task
 
 #### Scenario: A requirement is missing
@@ -240,24 +180,25 @@ independent tasks: the answer is stated either way.
 A runtime that cannot start them SHALL leave the work sequential. The skill SHALL say so and
 SHALL NOT treat the absence as a reason to merge tasks or to skip the review after a task.
 
-The check SHALL also establish whether an executor agent of this runtime can start a reviewer of
-its own. Where it cannot, a dispatched executor SHALL carry out one task and return, and the
-dispatching skill SHALL review that task and mark its checkbox before dispatching the next task
-of the same section. No task SHALL be written on top of a task nobody has reviewed.
+An executor SHALL NOT start a reviewer, whatever its runtime allows: after `task green` the
+executor returns, and the session starts the reviewer of the task. A task whose `Depends on:`
+names a task that is not closed SHALL NOT be started, so no task is written on top of a task
+nobody has reviewed.
 
 A runtime that can start no agent at all SHALL reach no reviewer either. The skill SHALL say so
 before the first task, SHALL work the first task to green, and SHALL stop at its review with no
-checkbox marked. It SHALL put the two lawful ways out to the user: make a reviewer reachable, or
-strike that task from the plan with their word - struck meaning the task is dropped and its
-work with it, never that the work stands and the review is waived. Reading one's own diff SHALL NOT stand in for the
-review, the absence of a reviewer SHALL NOT be a reason to tick, and no further task SHALL be
-opened while the first stands unreviewed.
+`task close` run. It SHALL put the two lawful ways out to the user: make a reviewer reachable,
+or strike that task from the plan with their word through `lexforge plan amend` - struck
+meaning the task is dropped and its work with it, never that the work stands and the review is
+waived. Reading one's own diff SHALL NOT stand in for the review, the absence of a reviewer
+SHALL NOT be a reason to close the task, and no further task SHALL be started while the first
+stands unreviewed.
 
 #### Scenario: The runtime can start them
 
 - **WHEN** implementation begins and the runtime can start executor subagents
-- **THEN** the skill says so before the first task, and the plan's independent tasks run in
-  parallel
+- **THEN** the skill says so before the first task, and tasks whose dependencies are closed and
+  whose files do not overlap run in parallel, each in its own worktree
 
 #### Scenario: The runtime cannot start them
 
@@ -267,63 +208,21 @@ opened while the first stands unreviewed.
 #### Scenario: An executor that cannot review
 
 - **WHEN** the runtime starts executor agents but an executor of it cannot start a reviewer, and
-  section 4 holds three tasks
-- **THEN** the executor returns after task 4.1, the dispatching skill reviews it and marks its
-  checkbox, and only then is task 4.2 dispatched
+  task 4.2 says `Depends on: 4.1`
+- **THEN** the executor of 4.1 returns after `task green`, the session starts the reviewer and
+  runs `task close`, and only then is task 4.2 started
 
 #### Scenario: No agent of any kind
 
 - **WHEN** the runtime's tool list holds nothing that starts an agent, so neither an executor nor
   a reviewer can be reached
 - **THEN** the skill says so before the first task, works task 2.1 to green, stops at its review
-  with no checkbox marked, and opens no further task
+  with no `task close` run, and starts no further task
 
 #### Scenario: A plan with no independent tasks
 
 - **WHEN** the plan records no task as independent of another
 - **THEN** the check still happens and its answer is still stated before the first task
-
-### Requirement: An executor starts no agent, and the session starts every one
-
-An agent dispatched for a part of the plan SHALL start no agent of any kind: not an
-executor, not a reviewer, not an agent that inherits its context, not an agent handed its
-brief or any part of it, not an agent asked for extra hands, and not any type its runtime
-offers for delegating to itself.
-
-The session that holds the plan SHALL start every agent of the implementation stage - each
-executor and each reviewer - and no agent SHALL be started by anything else.
-
-The test SHALL hold by effect, because a runtime can invent a type next month that this list
-does not name: an agent that continues the caller's work instead of looking at it is the one
-this rule refuses, whatever its type is called. A name the runtime gives the type SHALL NOT
-make it lawful, and neither SHALL an intent to review the result afterwards.
-
-Work that came from an agent an executor started SHALL close no checkbox, however much code
-stands in the tree. The lawful path to closing those tasks is the one already written: take
-the implementation out, watch it fail, and put it back inside the same task.
-
-Reaching a token budget SHALL NOT be a reason to start one: the executor SHALL stop, SHALL
-return what is green, and SHALL name what it did not reach.
-
-#### Scenario: A fork inherits the section brief
-
-- **WHEN** an executor holding section 1 starts a subagent of a type that inherits its full
-  context, and that subagent writes tasks 1.6 through 1.16 with runs and reviewers of its own
-- **THEN** the executor's report names the violation, tasks 1.6 through 1.16 stay unticked,
-  and the code those tasks produced closes nothing
-
-#### Scenario: An agent asked only to help
-
-- **WHEN** an executor is behind on a section and starts one more agent to write the tests
-  while it writes the implementation
-- **THEN** that agent is the forbidden one, and the section's tasks stay unclosed
-
-#### Scenario: An executor starts its own reviewer
-
-- **WHEN** an executor finishes a cycle and starts a reviewer agent itself, with the brief
-  from `reviewer-prompt.md`, instead of returning to the session
-- **THEN** that dispatch is the forbidden one too, and the cycle's tasks stay unclosed until
-  the session starts the reviewer itself
 
 ### Requirement: Unaccounted state in the working tree stops the work
 
@@ -348,244 +247,6 @@ user whose the state is before any task is closed on top of it.
 - **THEN** the agent names its own dispatch as the source rather than a foreign session, and
   the tasks those edits cover stay unclosed
 
-### Requirement: A dispatched agent does not exceed a token budget of 300,000
-
-An agent the implementation stage dispatches - an executor for a section, a reviewer for a
-task - SHALL be given work that fits inside 300,000 tokens of its own use, and SHALL NOT
-exceed that budget.
-
-A section whose work does not fit inside the budget SHALL be dispatched in parts, each part
-small enough to fit inside the budget, down to one agent per task where nothing larger fits.
-
-An agent that reaches the budget with work left SHALL stop, return the tasks that are green
-and reviewed, and name the tasks it did not reach.
-
-It SHALL NOT start another agent to carry on its own work, and reaching the budget SHALL NOT
-be a reason to.
-
-The tasks it did not reach stay unticked.
-
-#### Scenario: A section too large for one agent
-
-- **WHEN** a section holds nine tasks that the dispatching skill estimates will run a single
-  executor past 300,000 tokens
-- **THEN** the section is dispatched in parts that each fit inside the budget, no single agent
-  carries the whole section, and the part size falls to one task per agent where nothing
-  larger fits
-
-#### Scenario: An agent reaches the budget with tasks left
-
-- **WHEN** an executor holding four tasks reaches 300,000 tokens of its own use after
-  finishing the second
-- **THEN** it stops, returns the two tasks that are green and reviewed, names the two tasks it
-  did not reach, and starts no further agent to carry on its own work
-
-### Requirement: A dispatched agent's token budget is held by reading discipline
-
-A dispatched agent's token budget is spent by reading, not by the number of tasks it
-holds, and the discipline that keeps it inside the budget SHALL be reading discipline.
-
-The brief a dispatched agent is handed SHALL carry the line numbers of the places it has
-to work on, found once by the session before the agent starts, so that the agent does not
-spend its own budget finding them again.
-
-A dispatched agent SHALL NOT read a large file whole. It SHALL find its place with a
-line-numbered search and read the range around it instead.
-
-While a cycle is being fixed, a run SHALL name the single test being fixed rather than the
-whole file. The whole file SHALL be run once, at the end of the cycle.
-
-The whole suite SHALL run only at the wave boundary, where the stamp is taken, because its
-own output costs the budget too.
-
-The size of a dispatched part SHALL be judged by the reading its tasks demand, not by the
-number of tasks it holds.
-
-#### Scenario: The brief carries line numbers found once
-
-- **WHEN** the session dispatches an executor for a task that fixes an assertion inside a
-  file thousands of lines long
-- **THEN** the brief names the line numbers of the place to fix, found once by the
-  session, and the executor does not spend its own budget searching for them again
-
-#### Scenario: A dispatched agent searches instead of reading whole
-
-- **WHEN** an executor needs to see the code around a line the brief did not number
-- **THEN** it finds the place with a line-numbered search and reads the range around it,
-  and does not read the whole file
-
-#### Scenario: A cycle names its one test until the end
-
-- **WHEN** a cycle is being fixed and the fix has not yet turned the target assertion
-  green
-- **THEN** every run inside the cycle names the single failing test, and the whole file's
-  own suite runs exactly once, at the end of the cycle
-
-#### Scenario: The whole suite waits for the wave boundary
-
-- **WHEN** a section's cycles are all green and reviewed
-- **THEN** the whole suite runs once, at the wave boundary where the stamp is taken, and
-  not inside any one cycle before it
-
-#### Scenario: A part sized by task count still exceeds the budget
-
-- **WHEN** a section is split into six tasks against files no one of them rereads whole,
-  and a second split of the same section into three tasks against thousand-line files
-  still runs one agent past its budget
-- **THEN** the split that holds is the one whose tasks demand less reading, not the one
-  with fewer tasks, and the next split is sized by the reading its tasks demand
-
-### Requirement: A ready section dispatches one executor per group named in its plan
-
-The dispatching skill SHALL read the group labels of a ready section and SHALL dispatch one
-executor per distinct label, concurrently.
-
-The loop each group's executor runs SHALL end at the green run: the test, the failure watched
-and recorded, the implementation, and the green run. Review SHALL NOT be part of it.
-
-The executor of a group SHALL return its result to the session at the end of that loop and
-SHALL mark no checkbox - the same as the executor of a cycle.
-
-The session SHALL dispatch the reviewer for each group's work as its own agent, SHALL close
-every CRITICAL and IMPORTANT finding before ticking any checkbox, and SHALL tick the boxes of
-that group.
-
-A section whose tasks all carry one label SHALL be one executor, exactly as a section with no
-concurrent neighbour is today. Two groups of one section SHALL NOT be merged into one pass,
-folded into one executor, or run as a pair, whatever their size.
-
-An executor dispatched for a group SHALL touch no task carrying a different label: a group's
-executor works only the tasks its own label names.
-
-The wave boundary and its `lexforge evidence record` stamp SHALL stay where they are - taken
-once, after every group of the wave has come back, never after one group of a still-running
-section.
-
-#### Scenario: A section dispatched as two groups
-
-- **WHEN** section 4 is ready and its tasks carry labels `A` and `B`
-- **THEN** the dispatching skill starts two executors at once, one holding every task labelled
-  `A` and the other every task labelled `B`, and each runs the test, the watched-red run, and
-  the green implementation for its own tasks, then returns its result to the session
-
-#### Scenario: The session reviews a group's work after its executor returns
-
-- **WHEN** the group `A` executor of section 4 returns its result to the session
-- **THEN** the session dispatches the reviewer for group `A`'s work as its own agent, closes
-  its CRITICAL and IMPORTANT findings, and ticks the boxes of group `A`
-
-#### Scenario: A section with one label
-
-- **WHEN** section 2 is ready and every one of its tasks carries the label `A`
-- **THEN** the dispatching skill starts one executor for the whole section, as it would for a
-  section with no concurrent neighbour
-
-#### Scenario: Groups never merged into one pass
-
-- **WHEN** two groups of section 4 are both ready at once
-- **THEN** neither is folded into the other's executor, and no single executor is asked to
-  carry both
-
-#### Scenario: An executor stays inside its own label
-
-- **WHEN** the executor holding group `A` of section 4 finishes its own tasks before the
-  executor holding group `B` returns
-- **THEN** the group `A` executor touches no task labelled `B`, and waits for the wave
-  boundary rather than picking up the other group's work
-
-#### Scenario: The stamp waits for every group of the wave
-
-- **WHEN** section 4's group `A` executor and group `B` executor are both dispatched in the
-  same wave
-- **THEN** `lexforge evidence record` runs once, after both executors have come back and every
-  task of the wave is ticked, not after either group alone
-
-### Requirement: The executor does not take a file over the line limit
-
-An executor SHALL NOT make an edit that takes a covered file from within the line limit to
-over it. The new code that would take the file over SHALL go into a new file instead.
-
-On the `keep` path, an executor SHALL NOT add lines to a covered file that was over the
-limit at the start of the change; new code meant for it SHALL go into a new file.
-
-#### Scenario: Code that would cross the limit goes into a new file
-
-- **WHEN** a task adds 30 lines of refund logic to `src/cart.ts`, 390 lines, and the limit is
-  400
-- **THEN** the executor puts the refund logic into a new file and leaves `src/cart.ts` at 400
-  lines or fewer
-
-#### Scenario: A long file does not grow on the keep path
-
-- **WHEN** `long_files: keep` is recorded and a task adds a method to `src/billing.ts`, 612
-  lines
-- **THEN** the executor writes the method in a new file, and `src/billing.ts` ends the task
-  at 612 lines or fewer
-
-### Requirement: The brief names the limit and the path
-
-The brief a session hands an executor SHALL name the line limit and, when the change records
-one, its `long_files` path.
-
-#### Scenario: A brief carries the limit
-
-- **WHEN** the session dispatches an executor for a task of a change with a limit of 400 and
-  `long_files: keep`
-- **THEN** the brief names the limit 400 and the `keep` path
-
-### Requirement: A reviewer subagent looks at the work after each wave
-
-The session SHALL dispatch one reviewer agent per wave once every cycle of the section has
-current GREEN, and before ticking any checkbox of that section. A cycle with `controls`
-SHALL get its own reviewer competent in that control. This SHALL NOT be replaced by the
-executor's own read of its own change, and the executor SHALL NOT dispatch a reviewer.
-
-The reviewer SHALL work read-only: it does not edit the working tree, does not move `HEAD`,
-and does not launch subagents of its own. It SHALL NOT execute the project; it reads the
-patches and the run output it was handed.
-
-The reviewer's reply SHALL carry findings at levels CRITICAL, IMPORTANT and MINOR, each
-with a cycle, a file and a line, and a verdict.
-
-After a fix round, the session SHALL send the reviewer the fix patch and the earlier
-findings only, not the whole wave again.
-
-#### Scenario: A section of four cycles
-
-- **WHEN** four cycles of one section reach GREEN
-- **THEN** the session dispatches one reviewer for the four, not four reviewers
-
-#### Scenario: A re-review after fixes
-
-- **WHEN** the reviewer raised two IMPORTANT findings and the executor fixed them
-- **THEN** the next reviewer receives the fix patch and the two findings, and not the
-  patches of the whole wave
-
-#### Scenario: The reviewer answers in generalities
-
-- **WHEN** the reviewer's reply is "looks good" with not one reference to a file and line
-- **THEN** the reply is not accepted, and the request is sent again pointing out the empty
-  review
-
-### Requirement: The session dispatches executors per cycle and reviews per wave
-
-The session that holds the plan SHALL dispatch one executor per cycle. The executor SHALL
-return its result at GREEN and SHALL mark no checkbox.
-
-The session SHALL dispatch the next section's executors only after the wave review of the
-current section is closed and its boxes are ticked.
-
-#### Scenario: Cycles of one section
-
-- **WHEN** a section holds three cycles
-- **THEN** the session dispatches three executors and, after all three return green, one
-  reviewer
-
-#### Scenario: The next section waits
-
-- **WHEN** a wave review of section 2 has an open IMPORTANT finding
-- **THEN** no executor of section 3 is dispatched
-
 ### Requirement: Subagents run on the model of their stage
 
 The session SHALL start each executor on the model `stages` assigns to `apply` and each
@@ -600,15 +261,14 @@ session's model by default.
 
 ### Requirement: The executor's brief is the context output
 
-The executor's brief SHALL consist of the output of
-`lexforge context --change <name> --task <id> --json` for its cycle and the instruction to
-run the cycle. The brief SHALL NOT hand over the full plan, the full design or a shared
-brief file.
+The executor's brief SHALL be the file `lexforge/changes/<name>/tasks/<id>/brief.md` written by
+`lexforge task start`, with the instruction to work in the worktree it names. The brief SHALL
+NOT hand over the full plan, the full design or a shared brief file.
 
 #### Scenario: A shared brief file
 
 - **WHEN** the session is about to tell an executor to read a shared brief file before work
-- **THEN** it sends the context output of that cycle instead
+- **THEN** it sends the path of the brief that `task start` wrote for that task instead
 
 ### Requirement: Waiting on a subagent does not poll
 
@@ -621,34 +281,106 @@ call per expected result and SHALL NOT call the wait in a loop with a short time
 - **THEN** it waits with one `wait_agent` call with a long timeout instead of repeated short
   waits
 
-### Requirement: Continuation combines historical tasks with native cycle state
+### Requirement: A task executor starts no agent, and the session starts every one
 
-`status`, task context, `resume`, and cycle dependency checks SHALL read the migration ledger and
-native workflow 2 cycle state as distinct sources. A historically confirmed task SHALL be shown
-as completed with origin `historical` and SHALL NOT return to the execution queue solely because
-the change migrated. A task classified as incomplete, conflicting, or needing verification SHALL
-remain open and SHALL NOT satisfy a dependency.
+An executor started for a task SHALL start no agent of any kind: not an executor, not a
+reviewer, not an agent that inherits its context, not an agent handed its brief or any part of
+it, not an agent asked for extra hands, and not any type its runtime offers for delegating to
+itself.
 
-A cycle dependency SHALL be satisfied only when every task represented by the predecessor is
-historically confirmed or the predecessor has a valid native workflow 2 closure. A mixed cycle
-SHALL execute and review its remaining work through workflow 2 while exposing the confirmed task
-context and acceptance mapping to the executor; the migration itself SHALL NOT close that cycle.
+The session that holds the plan SHALL start every agent of the implementation stage - each
+executor and each reviewer - and no agent SHALL be started by anything else.
 
-#### Scenario: Dependency on confirmed legacy work
+The test SHALL hold by effect, because a runtime can invent a type next month that this list
+does not name: an agent that continues the caller's work instead of looking at it is the one
+this rule refuses, whatever its type is called. A name the runtime gives the type SHALL NOT
+make it lawful, and neither SHALL an intent to review the result afterwards.
 
-- **WHEN** every task in predecessor cycle `parse-plan` is historically confirmed
-- **THEN** dependent cycle `apply-plan` may start and the predecessor tasks do not re-enter the
-  queue
+Work that came from an agent an executor started SHALL close no task, however much code stands
+in the task worktree. The lawful path is `lexforge task abandon` and a new `task start`, so the
+red run is taken again on a commit that holds the test only.
 
-#### Scenario: Dependency on a mixed cycle
+Reaching a token budget SHALL NOT be a reason to start one: the executor SHALL stop, SHALL
+return what it committed, and SHALL name what it did not reach.
 
-- **WHEN** a predecessor cycle contains one confirmed task and one task needing verification
-- **THEN** its dependent cycle remains blocked until the open task is completed and the mixed
-  cycle receives a valid workflow 2 closure
+#### Scenario: A fork inherits the task brief
 
-#### Scenario: Resume after migration
+- **WHEN** the executor of task 1.6 starts a subagent of a type that inherits its full context,
+  and that subagent writes the test and the implementation of task 1.6
+- **THEN** the executor's report names the violation, task 1.6 is not closed, and the session
+  abandons it with `lexforge task abandon --change demo --task 1.6`
 
-- **WHEN** a migrated change has 80 confirmed tasks and 20 incomplete tasks
-- **THEN** `resume` reports the 80 with historical origin, queues only eligible work among the
-  remaining 20, and links to migration gaps without emitting the full plan
+#### Scenario: An agent asked only to help
+
+- **WHEN** the executor of task 2.1 is behind and starts one more agent to write the test while
+  it writes the implementation
+- **THEN** that agent is the forbidden one, and task 2.1 stays unclosed
+
+#### Scenario: An executor starts the reviewer of its task
+
+- **WHEN** the executor of task 2.1 records the green run and starts a reviewer agent itself,
+  with the brief from `reviewer-prompt.md`, instead of returning to the session
+- **THEN** that dispatch is the forbidden one too, and task 2.1 stays unclosed until the session
+  starts the reviewer itself
+
+### Requirement: A dispatched agent holds one task within a token budget of 300,000
+
+An agent the implementation stage dispatches - the executor of a task or the reviewer of a task -
+SHALL be given one task, SHALL be given work that fits inside 300,000 tokens of its own use, and
+SHALL NOT exceed that budget. One executor SHALL NOT hold two tasks: each task gets its own
+executor through its own `task start`.
+
+An agent that reaches the budget with its task not green SHALL stop, return what it committed,
+and name what it did not reach. It SHALL NOT start another agent to carry on its own work, and
+reaching the budget SHALL NOT be a reason to. The task stays unclosed.
+
+#### Scenario: Two tasks for one executor
+
+- **WHEN** the session is about to hand tasks 3.1 and 3.2 to one executor
+- **THEN** each task is started with its own `task start` and its own executor
+
+#### Scenario: An executor reaches the budget before green
+
+- **WHEN** the executor of task 3.1 reaches 300,000 tokens of its own use after the red run and
+  before the implementation passes
+- **THEN** it stops, returns what it committed, names what it did not reach, starts no further
+  agent, and task 3.1 stays unclosed
+
+### Requirement: A dispatched agent's budget is held by reading discipline on its task
+
+A dispatched agent's token budget is spent by reading, and the discipline that keeps it inside
+the budget SHALL be reading discipline.
+
+Together with the brief of `task start`, the session SHALL hand the executor the line numbers of
+the places it has to work on, found once by the session before the executor starts, so that the
+executor does not spend its own budget finding them again.
+
+A dispatched agent SHALL NOT read a large file whole. It SHALL find its place with a
+line-numbered search and read the range around it instead.
+
+While a task is being fixed, a run SHALL name the single test being fixed rather than the whole
+file. The task's `Command:` SHALL run in full at `task red` and `task green`, where the CLI runs
+it.
+
+The size of a task SHALL be judged by the reading it demands, not by the number of lines it
+changes.
+
+#### Scenario: The brief comes with line numbers found once
+
+- **WHEN** the session starts an executor for a task that fixes an assertion inside a file
+  thousands of lines long
+- **THEN** the session hands the line numbers of the place to fix with the brief, found once,
+  and the executor does not spend its own budget searching for them again
+
+#### Scenario: A dispatched agent searches instead of reading whole
+
+- **WHEN** an executor needs to see the code around a line it was not given
+- **THEN** it finds the place with a line-numbered search and reads the range around it, and
+  does not read the whole file
+
+#### Scenario: A fix names its one test until green
+
+- **WHEN** the implementation of a task has not yet turned the target assertion green
+- **THEN** every run of the executor names the single failing test, and the task's `Command:`
+  runs in full at `task green`
 
