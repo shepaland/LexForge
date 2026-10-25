@@ -116,18 +116,20 @@ Change documents live in `lexforge/changes/<name>/`: the proposal `proposal.md`,
 requirements changes (delta specs), design decisions in `design.md` and the plan `tasks.md`.
 The schema sets their order. Checks between stages are called gates.
 
-`check plan` finds placeholders, references used in place of task descriptions and requirements
-without tasks. It also checks section dependencies and a task's
-`Depends on:` list, and flags two tasks that write the same file when neither depends
-on the other (`shared-file-without-order`). Each plan section must have its own file,
-linked from `tasks.md`.
+`check plan` finds placeholders, references used in place of task descriptions and
+requirements without tasks. It also checks section dependencies and a task's `Depends
+on:` list, and flags two tasks that write the same file when neither depends on the
+other (`shared-file-without-order`). Each plan section must have its own file, linked
+from `tasks.md`.
 
 `task start` opens the task's worktree and writes its brief. `lexforge/config.yaml` can set
 `worktree.setup`: a shell command, such as `npm ci`, that `task start` runs once in the new
 worktree; a non-zero exit removes the worktree and refuses with `worktree-setup-failed`. A
 `task red` that breaks before reaching the test refuses with `red-run-broken`: when the
-worktree is missing what `worktree.setup` installs, the fix is `worktree.setup`; when the
-break names a module the task never declared, the fix is `lexforge plan amend` instead.
+worktree is missing what `worktree.setup` installs, the fix is `worktree.setup`, and the
+same fix answers a test run that finds no tests or a compiler error outside the task's own
+files; when the break names a module the task never declared, the fix is `lexforge plan
+amend` instead.
 
 `task red` records a failing test run on a task's test commit; `task green` records the
 passing run on the implementation commit and writes the review package. When a task's work
