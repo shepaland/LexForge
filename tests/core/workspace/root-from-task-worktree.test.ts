@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { findWorkspaceRoot } from "../../../src/core/workspace/find-root.js";
-import { type GitWorkspace } from "../../helpers/git-workspace.js";
+import { type GitWorkspace, writeAt } from "../../helpers/git-workspace.js";
 import { createTaskWorkspace, taskSteps } from "../../helpers/task-workspace.js";
 
 let ws: GitWorkspace | undefined;
@@ -28,5 +28,15 @@ describe("findWorkspaceRoot inside a task worktree", () => {
     const link = path.join(links, "task");
     symlinkSync(path.join(ws.root, ".lexforge/worktrees/demo/1.1"), link);
     expect(findWorkspaceRoot(path.join(link, "src"))).toBe(ws.root);
+  });
+
+  it("a nested project inside a task worktree keeps its own workspace", async () => {
+    ws = createTaskWorkspace();
+    const steps = taskSteps(ws.root);
+    expect((await steps.start("1.1")).exitCode).toBe(0);
+    const wt = steps.wt("1.1");
+    const nested = path.join(wt, "examples/notes");
+    writeAt(wt, "examples/notes/lexforge/config.yaml", "schema: spec-driven\nengineering:\n  stacks: []\n");
+    expect(findWorkspaceRoot(path.join(nested, "src"))).toBe(nested);
   });
 });
