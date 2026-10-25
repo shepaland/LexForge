@@ -1,7 +1,6 @@
 import { UsageError } from "../../cli/errors.js";
 import { featureBranchName } from "./feature-branch.js";
 import { readGit, tryGit } from "./repository.js";
-import { ensureWorktreeExcluded } from "./task-worktree.js";
 
 const DEV = "dev";
 
@@ -23,11 +22,8 @@ export function mergeFeature(root: string, name: string): MergeFeatureResult {
     return { merged: false };
   }
 
-  // .lexforge/ holds the task worktrees. git refuses a negative pathspec that names an
-  // already-ignored path, so staging keeps it out through the exclude file instead: the
-  // same one task start writes, idempotent to call again when no worktree was ever opened.
-  ensureWorktreeExcluded(root);
-  readGit(root, ["add", "--all", "--", "."]);
+  // .lexforge/ holds the task worktrees; staged, each would land in dev as a gitlink.
+  readGit(root, ["add", "--all", "--", ".", ":(exclude).lexforge"]);
 
   if (tryGit(root, ["diff", "--cached", "--quiet"]).ok === false) {
     readGit(root, ["commit", "--message", `Complete ${name}`]);
