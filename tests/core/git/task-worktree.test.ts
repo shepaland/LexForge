@@ -39,6 +39,16 @@ beforeEach(() => {
 });
 afterEach(() => workspace.remove());
 
+/**
+ * Some workspace directory names this file builds to pin an escaping rule
+ * cannot exist on Windows at all: `\` is a path separator there, and `*`
+ * and `?` are reserved in a filename, so the directory the case needs would
+ * either come out as two directories or never get created. The product
+ * code the case covers is correct on Windows; there is no failure for the
+ * guard to hide, only a directory this platform cannot make.
+ */
+const onPosix = it.skipIf(process.platform === "win32");
+
 describe("task worktree", () => {
   it("creates the worktree on its own branch from the change branch tip", () => {
     const made = createTaskWorktree(root, "demo", "2.1");
@@ -79,7 +89,7 @@ describe("task worktree", () => {
     expect(status).not.toContain("examples/notes/.lexforge");
     expect(status).toContain("?? .lexforge/");
   });
-  it("keeps a literal backslash in the workspace's own directory name, rather than reading it as a path separator", () => {
+  onPosix("keeps a literal backslash in the workspace's own directory name, rather than reading it as a path separator", () => {
     const nested = join(root, "a\\b");
     mkdirSync(nested, { recursive: true });
 
@@ -93,7 +103,7 @@ describe("task worktree", () => {
 
     expect(git(root, "status", "--short")).toBe("");
   });
-  it("escapes gitignore-special characters in the workspace's own path segment", () => {
+  onPosix("escapes gitignore-special characters in the workspace's own path segment", () => {
     const nested = join(root, "weird[1]*?#!dir");
     mkdirSync(nested, { recursive: true });
 
