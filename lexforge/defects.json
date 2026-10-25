@@ -1852,6 +1852,16 @@
       "summary": "The dropped-promise claims are all negatives, so deleting the check plan paragraph passes them, and the positive text that replaced it is unpinned",
       "state": "open",
       "recordedAt": "2026-10-25T05:25:49.998Z"
+    },
+    {
+      "id": "a063a897",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/workspace/find-root.ts",
+      "line": 25,
+      "summary": "Inside a task worktree whose top holds a lexforge/ directory without config.yaml, the command now refuses workspace-incomplete instead of resolving the main worktree",
+      "state": "open",
+      "recordedAt": "2026-10-25T05:39:27.266Z"
     }
   ]
 }
