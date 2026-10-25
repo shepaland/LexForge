@@ -5,16 +5,44 @@ import { taskBranchName, taskWorktreePath } from "../tasks/paths.js";
 import { featureBranchName } from "./feature-branch.js";
 import { readGit, tryGit } from "./repository.js";
 
-const EXCLUDE_LINE = "/.lexforge/";
+/**
+ * Backslash-escapes the characters a gitignore pattern treats as special,
+ * wherever they appear in a path segment: `\`, `*`, `?`, `[`, `]`, `!`, `#`.
+ * Mid-pattern `#` and `!` need no escaping - git takes them as literal there,
+ * and the line this builds always starts with `/` - but escaping them too
+ * costs nothing and keeps one rule for every character this function touches.
+ */
+function escapeGitignoreSegment(segment: string): string {
+  return segment.replace(/[\\*?[\]!#]/g, "\\$&");
+}
+
+/**
+ * The exclude line that hides `root`'s own `.lexforge/`, anchored to the
+ * repository's top so a `.lexforge/` the workspace does not own is left
+ * alone. `git rev-parse --show-prefix`, read with `root` as git's own
+ * working directory, gives that path already `/`-separated on every
+ * platform, with a literal backslash in a directory name kept rather than
+ * read as a separator, and resolved through any symlink in `root` or in the
+ * repository's top by git itself - not by comparing the two with
+ * `path.relative`, which can disagree with git over a path neither side
+ * canonicalised the same way.
+ */
+function worktreeExcludeLine(root: string): string {
+  const prefix = readGit(root, ["rev-parse", "--show-prefix"]);
+  if (prefix === "") return "/.lexforge/";
+  const segments = prefix.split("/").filter((segment) => segment.length > 0);
+  return `/${segments.map(escapeGitignoreSegment).join("/")}/.lexforge/`;
+}
 
 /** Keeps `.lexforge/` out of `git status` through the repository's own exclude file, so no tracked file changes. */
 export function ensureWorktreeExcluded(root: string): void {
   const common = readGit(root, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+  const line = worktreeExcludeLine(root);
   const file = path.join(common, "info", "exclude");
   const text = existsSync(file) ? readFileSync(file, "utf8") : "";
-  if (text.split(/\r?\n/).includes(EXCLUDE_LINE)) return;
+  if (text.split(/\r?\n/).includes(line)) return;
   mkdirSync(path.dirname(file), { recursive: true });
-  appendFileSync(file, (text === "" || text.endsWith("\n") ? "" : "\n") + EXCLUDE_LINE + "\n");
+  appendFileSync(file, (text === "" || text.endsWith("\n") ? "" : "\n") + line + "\n");
 }
 
 export function createTaskWorktree(

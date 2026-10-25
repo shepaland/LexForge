@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -39,6 +39,16 @@ beforeEach(() => {
 });
 afterEach(() => workspace.remove());
 
+/**
+ * Some workspace directory names this file builds to pin an escaping rule
+ * cannot exist on Windows at all: `\` is a path separator there, and `*`
+ * and `?` are reserved in a filename, so the directory the case needs would
+ * either come out as two directories or never get created. The product
+ * code the case covers is correct on Windows; there is no failure for the
+ * guard to hide, only a directory this platform cannot make.
+ */
+const onPosix = it.skipIf(process.platform === "win32");
+
 describe("task worktree", () => {
   it("creates the worktree on its own branch from the change branch tip", () => {
     const made = createTaskWorktree(root, "demo", "2.1");
@@ -61,6 +71,51 @@ describe("task worktree", () => {
     const exclude = git(root, "rev-parse", "--git-path", "info/exclude");
     const text = readFileSync(join(root, exclude), "utf8");
     expect(text.split("\n").filter((line) => line === "/.lexforge/")).toHaveLength(1);
+  });
+  it("hides the .lexforge/ of a workspace below the root, and leaves another workspace's .lexforge/ reported", () => {
+    const nested = join(root, "examples/notes");
+    mkdirSync(nested, { recursive: true });
+
+    ensureWorktreeExcluded(nested);
+
+    const exclude = git(root, "rev-parse", "--git-path", "info/exclude");
+    const text = readFileSync(join(root, exclude), "utf8");
+    expect(text.split("\n")).toContain("/examples/notes/.lexforge/");
+
+    writeAt(nested, ".lexforge/worktrees/demo/2.1/note.txt", "nested task worktree\n");
+    writeAt(root, ".lexforge/worktrees/demo/2.1/note.txt", "top task worktree\n");
+
+    const status = git(root, "status", "--short");
+    expect(status).not.toContain("examples/notes/.lexforge");
+    expect(status).toContain("?? .lexforge/");
+  });
+  onPosix("keeps a literal backslash in the workspace's own directory name, rather than reading it as a path separator", () => {
+    const nested = join(root, "a\\b");
+    mkdirSync(nested, { recursive: true });
+
+    ensureWorktreeExcluded(nested);
+
+    const exclude = git(root, "rev-parse", "--git-path", "info/exclude");
+    const text = readFileSync(join(root, exclude), "utf8");
+    expect(text).toContain("/a\\\\b/.lexforge/");
+
+    writeAt(nested, ".lexforge/worktrees/demo/2.1/note.txt", "nested task worktree\n");
+
+    expect(git(root, "status", "--short")).toBe("");
+  });
+  onPosix("escapes gitignore-special characters in the workspace's own path segment", () => {
+    const nested = join(root, "weird[1]*?#!dir");
+    mkdirSync(nested, { recursive: true });
+
+    ensureWorktreeExcluded(nested);
+
+    const exclude = git(root, "rev-parse", "--git-path", "info/exclude");
+    const text = readFileSync(join(root, exclude), "utf8");
+    expect(text).toContain("/weird\\[1\\]\\*\\?\\#\\!dir/.lexforge/");
+
+    writeAt(nested, ".lexforge/worktrees/demo/2.1/note.txt", "nested task worktree\n");
+
+    expect(git(root, "status", "--short")).toBe("");
   });
   it("answers ancestry and diff", () => {
     expect(isAncestor(root, first, second)).toBe(true);
