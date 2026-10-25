@@ -1972,6 +1972,46 @@
       "summary": "The two bare prose spans left in the rewritten test are /api/auth and /etc/nginx/conf.d, both rejected by isCanonicalTaskFile whatever the span reader does, so no case pins that a canonical bare prose path stays out of namedFiles under a well-formed Files: line, which is what the amended requirement states. That branch is pinned only by the eight malformed-declaration cases of task-file-declarations.test.ts:20, where Files: is broken and files is empty.",
       "state": "open",
       "recordedAt": "2026-10-25T11:39:20.868Z"
+    },
+    {
+      "id": "8e4091ef",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/tasks/workflow-file.ts",
+      "line": 46,
+      "summary": "The docstring says the guard is called before anything of a change's state is read or written, but in changeStatus it runs after readChangeState has already read .lexforge.yaml, loaded the schema and probed the artifact files. The one placement that needed care is the one the comment describes wrongly.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:53:27.215Z"
+    },
+    {
+      "id": "03520514",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/status/change-status.ts",
+      "line": 95,
+      "summary": "assertMigrated re-reads the change's .lexforge.yaml and reloads its schema, which readChangeState just read, so every status --change parses the same file twice. The answer is right; it is one duplicated read the (root, change) signature forces.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:53:27.387Z"
+    },
+    {
+      "id": "82d9bcbc",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/cli/migration-refusal.test.ts",
+      "line": 46,
+      "summary": "assertRefused asserts before the caller's removeWorkspace, so a failing assertion aborts the test and leaves the temporary workspace on disk. The other tests of the file remove the workspace before their expects for that reason.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:53:27.561Z"
+    },
+    {
+      "id": "1f1b6431",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "src/core/gates/verify-change.ts",
+      "line": 117,
+      "summary": "verify and resume (src/core/tasks/resume.ts:78 and :104) read the workflow without confirming the change exists first, so a change name the workspace does not have answers change-needs-migration with the next step lexforge migrate --change <that name>, a command that cannot work, where change-not-found and exit code 2 belong. The shared assertMigrated(root, change) of src/core/tasks/workflow-file.ts is the call these two sites want; neither file was in the scope of the task that introduced it.",
+      "state": "open",
+      "recordedAt": "2026-10-25T11:53:27.737Z"
     }
   ]
 }
