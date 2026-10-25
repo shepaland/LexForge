@@ -91,9 +91,9 @@ the audience `reviewer`; every other rule SHALL be marked `both`.
 
 With `--json` the output SHALL be one JSON document as described in the contract below.
 More than 60 selected rules SHALL be an error with exit code `1` that names the count
-and tells the user to split the cycle. More than 200 given files SHALL be an error with exit
+and tells the user to split the task. More than 200 given files SHALL be an error with exit
 code `1` and error code `files-too-many` that names the count and tells the user to split
-the cycle.
+the task.
 
 Interaction: dispatcher -> cli, cli -> dispatcher
 
@@ -126,7 +126,7 @@ cli -> dispatcher: selection
 
 #### Scenario: Too many rules
 
-- **WHEN** the files of a cycle match 61 rules
+- **WHEN** the files of a task match 61 rules
 - **THEN** the command exits `1` with error code `rules-too-many` and names 61
 
 #### Scenario: Too many files

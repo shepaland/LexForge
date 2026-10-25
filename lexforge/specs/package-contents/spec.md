@@ -182,22 +182,25 @@ their skills name.
 
 ### Requirement: User documentation explains safe workflow migration
 
-The README documentation and execution guide SHALL explain preview, apply, historical trust
-requirements, gap resolution, mixed-cycle behavior, input-change refusal, interruption recovery,
-idempotent reruns, and safe continuation. They SHALL include a compact example report for a mixed
-change and SHALL state that installation alone does not authorize migration.
+`README.md`, `README.ru.md` and `docs/task-execution.md` SHALL explain the migration of a 5.x
+change to 6.0.0: the `change-needs-migration` refusal, the command
+`lexforge migrate --change <name>`, which tasks become historical and which stay open, the
+`missingFields` list, and plan review and approval of the open part. The command SHALL appear
+on a line of its own in each file. They SHALL state that installation alone does not migrate a
+change, and SHALL name none of the removed commands `cycle`, `context`, `workflow migrate` and
+`evidence red`.
 
 #### Scenario: Reader has a partly completed change
 
-- **WHEN** a reader follows the migration guide with confirmed, uncertain, and open tasks
-- **THEN** they can preview the classifications, locate detailed reasons, resolve only required
-  gaps, apply under the lock, and resume the remaining work
+- **WHEN** a reader follows the documented command on a 5.x change with closed and open tasks
+- **THEN** the command exits `0`, `workflow.json` holds version 3, and the reader knows that the
+  open tasks go through plan review and approval
 
 #### Scenario: Reader only upgrades the package
 
-- **WHEN** a reader installs the release but does not request migration
-- **THEN** the guide says the existing change remains on workflow 1 and no migration state is
-  written
+- **WHEN** a reader installs the release but does not run the migration
+- **THEN** the documentation says that every command on the existing change refuses with
+  `change-needs-migration` until `lexforge migrate` runs, and that nothing is written before
 
 ### Requirement: The archive carries the engineering rules and their guide
 

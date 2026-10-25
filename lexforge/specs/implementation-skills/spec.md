@@ -186,30 +186,33 @@ calling runtime, and `lexforge-archive` SHALL demand no model, because archival 
 
 ### Requirement: Skills distinguish installation from migration authorization
 
-The apply, verify, and archive skills SHALL state that installing a LexForge version capable of
-workflow 2 migration does not authorize migration of an existing change. When the user requests
-migration, the skills SHALL run preview first, summarize blockers and minimum additional checks,
-and SHALL NOT stop active agents, apply migration, publish a package, or update a global
-installation unless the corresponding action is separately in scope.
+The apply, verify, and archive skills SHALL state that installing LexForge 6.0.0 does not
+migrate an existing change by itself. When a command refuses with `change-needs-migration`, the
+skills SHALL run `lexforge migrate --change <name>`, report the historical and open tasks and
+`missingFields` it returns, and send the open part of the plan through plan review and owner
+approval. They SHALL NOT stop active agents, publish a package, or update a global installation
+unless the corresponding action is separately in scope.
 
 #### Scenario: Upgrade without migration request
 
-- **WHEN** a project installs the new LexForge version and resumes a workflow 1 change
-- **THEN** the skills keep workflow 1 behavior and do not run migration automatically
+- **WHEN** a project installs LexForge 6.0.0 and resumes a 5.x change
+- **THEN** the first command refuses with `change-needs-migration`, and the skill runs
+  `lexforge migrate` before any task command
 
 #### Scenario: Incomplete history
 
-- **WHEN** preview reports missing review provenance for completed-looking tasks
-- **THEN** the skill names the gap and the minimum review action without marking those tasks
-  confirmed or disabling a gate
+- **WHEN** migration reports open tasks in `missingFields`
+- **THEN** the skill names those tasks, adds the missing fields in `tasks.md` and sends the open
+  part to plan review, without ticking those tasks or skipping approval
 
 ### Requirement: The reviewer brief carries the selected engineering rules
 
 The reviewer brief in `skills/lexforge-apply/reviewer-prompt.md` SHALL have a slot
-`[ENGINEERING_RULES]`, filled with the output of `lexforge rules` over the files of the
-cycle. A finding on an engineering rule SHALL name the rule ID, the file and the line,
-and the failure the sign points to. Such a finding SHALL block the wave until a fix closes
-it. There SHALL be no warning level for an engineering rule.
+`[ENGINEERING_RULES]`, filled from the `## Engineering rules` section of the task brief that
+`lexforge task start` selects over the files of the task. A finding on an engineering rule SHALL
+name the rule ID, the file and the line, and the failure the sign points to. Such a finding SHALL
+block the task: `task close` refuses with `findings-open` until a fix closes it. There SHALL be
+no warning level for an engineering rule.
 
 Interaction: dispatcher -> cli, cli -> dispatcher, dispatcher -> reviewer, reviewer -> dispatcher
 
@@ -229,10 +232,10 @@ reviewer -> dispatcher: review_report
 
 #### Scenario: A rule broken in the cycle
 
-- **WHEN** the cycle patch builds an SQL query by string concatenation and the brief
-  carries `BE-02`
-- **THEN** the reviewer reports a finding naming `BE-02`, the file and the line, and the
-  wave is not marked done
+- **WHEN** the task's diff builds an SQL query by string concatenation and the brief carries
+  `BE-02`
+- **THEN** the reviewer reports a finding naming `BE-02`, the file and the line, and the task is
+  not closed
 
 #### Scenario: A switched-off rule
 
@@ -241,10 +244,11 @@ reviewer -> dispatcher: review_report
 
 ### Requirement: The executor gets the rules before it writes code
 
-`lexforge context` for a task SHALL include the engineering rules selected for the files
-the task names, without the rules whose audience is `reviewer`.
+The brief that `lexforge task start` writes for a task SHALL include, in its
+`## Engineering rules` section, the engineering rules selected for the files the task names,
+without the rules whose audience is `reviewer`.
 
 #### Scenario: Context for a backend task
 
 - **WHEN** a task names `api/orders.py` in a project with `engineering.stacks: [python]`
-- **THEN** `lexforge context` holds the matching `BE` and `PY` rules and no `RV` rule
+- **THEN** the brief of `task start` holds the matching `BE` and `PY` rules and no `RV` rule

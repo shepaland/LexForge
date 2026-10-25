@@ -40,6 +40,7 @@ starts the appropriate workflow. See [First run](#first-run) for setup details.
 
 | Version | What the update gives you |
 | --- | --- |
+| [6.0.0](CHANGELOG.md#600--2026-10-24) | **Plan-driven execution.** A task of `tasks.md` is the only unit of work, run through its own commands — `task start`, `task red`, `task green`, `task review`, `task close` — with `task abandon`, `plan amend` and `plan escalate` as the ways out. Four subagents review the plan before `plan approve`. A change still on LexForge 5.x needs `lexforge migrate` before any command runs on it. |
 | [5.0.0](CHANGELOG.md#500--2026-10-12) | **Updates.** The agent learns about a new npm release and offers to update, then reinstalls the skills itself. **Data model in the specs.** A change carries the database schema and a migration with its rollback in SQL or Markdown, and `validate` checks that both match the schema. |
 | [4.0.0](CHANGELOG.md#400--2026-10-11) | The executor and the reviewer receive engineering rules for the files of each cycle: backend, frontend, testing and review, with stack additions. A project names its stacks with `lexforge stacks set`, and `new change` refuses until it does. A review finding can name the rule it breaks. |
 | [3.0.0](CHANGELOG.md#300--2026-10-10) | One reviewer checks a whole wave of cycles, and after fixes only their diff is reviewed again. Refusals name the files involved. Specs carry an ASCII sequence diagram with a contract table for interactions and a mockup for UI; the plan and the executor work against them. Each change runs on `feature/<name>` and is merged into `dev` on archive. |
@@ -64,16 +65,19 @@ npm install -g lexforge@latest
 lexforge init --tools claude,codex
 ```
 
-Changes already in progress move to workflow 2 separately. First, check which results can be preserved:
+Installing LexForge 6.0.0 migrates no existing change by itself. Every command on a change
+still running on LexForge 5.x refuses with `change-needs-migration` and writes nothing until
+the migration runs:
 
 ```sh
-lexforge workflow migrate --change <name> --to 2 --dry-run --json
+lexforge migrate --change <name>
 ```
 
-Follow the [migration instructions](skills/lexforge-apply/execution-v2.md#safe-migration-of-existing-work)
-for the remaining steps. If scripts call the CLI, account for the changed `workflow migrate`
-response in 2.0.0: read schema fields from `status.workflow`. The [CHANGELOG](CHANGELOG.md)
-lists other compatibility changes and requirements for older plans.
+Closed work becomes historical tasks, the rest stays open; the answer lists any task still
+missing a required field in `missingFields`, and the open part goes through plan review and
+owner approval before work on it continues. The full walk is in the
+[task execution guide](https://raw.githubusercontent.com/shepaland/LexForge/main/docs/task-execution.md).
+The [CHANGELOG](CHANGELOG.md) lists other compatibility changes.
 
 ## Supported platforms
 
@@ -98,7 +102,7 @@ The CLI checks that documents are ready and test results are current before the 
 | OpenSpec: requirements format | `### Requirement:` with `WHEN`/`THEN` scenarios, checked by `validate --strict` |
 | OpenSpec: specifications in the repository | the delta is merged on `archive`, the change moves to `lexforge/changes/archive/` |
 | superpowers: identifying the task type before design | the `lexforge` skill chooses an investigation (spike) or the `bounded` / `spec-driven` schema |
-| superpowers: test-driven development (TDD) and independent review | `lexforge-apply` runs tests and independent review for each behavioural cycle |
+| superpowers: test-driven development (TDD) and independent review | `lexforge-apply` runs tests and independent review for each task |
 | superpowers: completion backed by check results | `evidence record` runs the command and links the result to the commit and file state |
 
 The CLI also checks plans for placeholders and requirements without tasks, and checks whether
@@ -106,63 +110,37 @@ saved results are stale. These checks have no disable flag. Skills read the curr
 through `lexforge status --change <name> --json`. The design and plan stay in the change
 directory without separate copies for each skill.
 
-## How it works
-
-```
-request: "build X", "add Y", "fix Z"
-    │
-    ▼
-skill: lexforge — names the class of work  ──►  spike: answer only, no change
-    │  bounded · spec-driven
-    ▼
-lexforge new change <name>  ──►  branch feature/<name> from dev
-    │
-    ▼
-PLANNING — project code is not touched. Every skill first calls
-lexforge status --change <name> --json and works only on status `ready`;
-on `blocked` it names what is missing and stops.
-    lexforge-propose ──► proposal.md          one question at a time
-    lexforge-spec    ──► specs/<cap>/spec.md  validate --strict → 0
-    lexforge-design  ──► design.md            agreed section by section
-    lexforge-plan    ──► tasks.md             check plan → 0
-    │
-    ▼  isPlanningComplete = true
-IMPLEMENTATION — lexforge-apply, behavioural cycles (workflow 2)
-    cycle start ──► RED ──► implementation ──► GREEN ──► cycle close
-    executor and reviewer get the engineering rules for the cycle's files
-    at the wave boundary: one review of the wave, evidence record
-    task grew past the spec → stop and ask the user
-    │
-    ▼
-lexforge-verify · lexforge verify --change <name>
-    CRITICAL found → back to lexforge-apply
-    zero CRITICAL  → lexforge archive <change>
-                     delta  → lexforge/specs/<capability>/spec.md
-                     change → lexforge/changes/archive/<date>-<name>/
-                     feature/<name> → merged into dev; dev → main only on your answer
-
-off the pipeline: lexforge-debug — failing test, broken build, unexpected
-behaviour; it works without a LexForge workspace too.
-```
-
 ## Artifacts, gates, archive
 
 Change documents live in `lexforge/changes/<name>/`: the proposal `proposal.md`,
 requirements changes (delta specs), design decisions in `design.md` and the plan `tasks.md`.
 The schema sets their order. Checks between stages are called gates.
 
-`check plan` finds placeholders, references used in place of task descriptions and requirements
-without tasks. It also checks section dependencies, group labels and files shared by groups
-that would run concurrently. Each plan section must have its own file, linked from `tasks.md`.
+`check plan` finds placeholders, references used in place of task descriptions and
+requirements without tasks. It also checks section dependencies and a task's `Depends
+on:` list, and flags two tasks that write the same file when neither depends on the
+other (`shared-file-without-order`). Each plan section must have its own file, linked
+from `tasks.md`.
 
-In workflow 1, `evidence red` records a failing test run for a task. `verify` reports completed
-tasks that write production code without such a record. `evidence record` runs a project check
-and saves its result, exit code, commit and working-tree fingerprint as a stamp.
-Editing the code makes the stamp stale; `check evidence` detects this.
+`task start` opens the task's worktree and writes its brief. `lexforge/config.yaml` can set
+`worktree.setup`: a shell command, such as `npm ci`, that `task start` runs once in the new
+worktree; a non-zero exit removes the worktree and refuses with `worktree-setup-failed`. A
+`task red` that breaks before reaching the test refuses with `red-run-broken`: when the
+worktree is missing what `worktree.setup` installs, the fix is `worktree.setup`, and the
+same fix answers a test run that finds no tests or a compiler error outside the task's own
+files; when the break names a module the task never declared, the fix is `lexforge plan
+amend` instead.
 
-`verify` reads saved results, so checks must run first. Workflow 2 also checks cycle closure,
-review reports and current files against the latest reviewed snapshots. A cycle includes a
-failing test (RED), implementation, a passing test (GREEN) and independent review.
+`task red` records a failing test run on a task's test commit; `task green` records the
+passing run on the implementation commit and writes the review package. When a task's work
+grows past its delta spec, the executor stops, names what falls outside the spec and waits
+for the user instead of a quiet fix. `evidence record` runs a project check and saves its
+result, exit code, commit and working-tree fingerprint as a stamp. Editing the code makes
+the stamp stale; `check evidence` detects this.
+
+`verify` reads saved results, so checks must run first. It also checks that every task is
+closed and reviewed, and that current files match the latest reviewed snapshots. A task
+includes a failing test (RED), implementation, a passing test (GREEN) and independent review.
 
 An open `critical` or `important` entry in `lexforge/defects.json` blocks `verify` and `archive`.
 A `minor` entry can remain open. `lexforge defect record --change <name> --level <level>
@@ -325,7 +303,7 @@ Skills wait until required documents are ready before starting implementation.
 
 | Skill | Fires when | Result |
 | --- | --- | --- |
-| `lexforge-apply` | The artifacts are done, implementation is asked for | Behavioural cycles with RED/GREEN, independent review and evidence; the legacy task loop for workflow 1 |
+| `lexforge-apply` | The artifacts are done, implementation is asked for | RED/GREEN on each task of the plan, with independent review and a review package before it closes |
 | `lexforge-verify` | Implementation is finished, before archiving | Machine checks and review against requirements; open `CRITICAL` and `IMPORTANT` block completion |
 | `lexforge-archive` | The report has no `CRITICAL` findings | The delta in `lexforge/specs/`, the change in the archive, the branch merged into `dev`, a question about `main` |
 | `lexforge-debug` | A test fails, a build breaks, code behaves unexpectedly | The cause named, a failing test for the bug, one edit at that point |
@@ -343,6 +321,7 @@ in `lexforge/config.yaml`; agents receive them through `lexforge instructions`.
 | --- | --- |
 | `init` | Sets up the `lexforge/` workspace and installs the skills; `--tools`, `--scope`, `--language` |
 | `doctor` | Checks whether the local installation is healthy |
+| `migrate --change <name>` | Carries this change over to 6.0.0; without `--change`, every pending change and the config |
 | `new change <name>` | Creates the change directory, `.lexforge.yaml` and `workflow.json` on a new `feature/<name>` branch from `dev`; `--schema` overrides the project default |
 | `status` | Shows the artifact statuses of one change, or lists the active changes |
 | `instructions <artifact> --change <name>` | Serves the template, the context, the rules and the instruction |
@@ -350,22 +329,29 @@ in `lexforge/config.yaml`; agents receive them through `lexforge instructions`.
 | `check plan --change <name>` | Checks plan completeness, dependencies and task groups |
 | `check evidence --change <name>` | Compares the stamps against the code on disk; `--require` narrows the labels |
 | `evidence record --change <name> --label <label>` | Runs the command of one label and records a stamp |
-| `evidence red --change <name> --task <id> --command <cmd>` | Runs the command of one task and records the failing run |
-| `context --change <name> --task <id>` | Returns current cycle context and source links; `--max-bytes` refuses oversize output without truncation |
-| `workflow migrate --change <name> --to 2` | Previews with `--dry-run`; applies a recoverable migration after authorization |
-| `cycle start --change <name> --cycle <id> --executor <identity>` | Captures the files before edits |
-| `cycle run --change <name> --cycle <id> --phase red\|green` | Runs the cycle's declared command and records evidence |
-| `cycle review --change <name> --wave <section> --file <path>` | Registers one independent report for every cycle of a plan section; `--cycle <id>` reviews one cycle |
-| `cycle close --change <name> --cycle <id>` | Checks cycle completion and saves continuation state |
-| `cycle restart --change <name> --cycle <id> --executor <identity>` | Starts a new attempt while retaining history and the original review baseline |
+| `task start --change <name> --task <id> --executor <id>` | Opens the task's worktree and writes its brief |
+| `task red --change <name> --task <id>` | Runs the task's command on the test commit and records the failure |
+| `task green --change <name> --task <id>` | Runs the task's command on the implementation commit and writes the review package |
+| `task review --change <name> --task <id> --file <report.md>` | Registers a reviewer's report against the task's green commit |
+| `task close --change <name> --task <id>` | Checks the task in git, merges it into the change branch and ticks it |
+| `task abandon --change <name> --task <id>` | Removes the task's worktree and branch so the task can start over |
+| `plan review --change <name> --angle <angle> --file <report.md>` | Registers a review report of the plan from one angle |
+| `plan approve --change <name> --quote <words>` | Approves the reviewed plan with the owner's words |
+| `plan amend --change <name> --quote <words>` | Accepts a change of the approved plan |
+| `plan escalate --change <name>` | Moves a short change to the full path |
+| `review final --change <name>` | Writes the final review package, or registers the reviewer's report with `--file` |
 | `resume --change <name>` | Rebuilds continuation state from primary records |
+| `journal add --change <name> --kind <kind> --text <text>` | Writes an entry into the change journal; `--quote`, `--reason`, `--scope` |
+| `journal resolve --change <name> --id <id> --note <words>` | Closes a journal entry with a note |
+| `journal session --change <name>` | Opens a new session; permissions of the last session expire |
+| `unlock --change <name>` | Removes the lock of a change left by a process that is no longer running |
 | `verify --change <name>` | Checks a change before the work is called finished |
 | `archive <change>` | Merges the delta and mockups into the specs, moves the change to the archive and merges `feature/<name>` into `dev` |
 | `styles find` | Lists the project's CSS files for mockups |
 | `styles set <paths...>` | Saves the chosen CSS files under `ui.styles` in `lexforge/config.yaml` |
 | `stacks set <stacks...>` | Saves the project's stacks under `engineering.stacks`; `--none` saves an empty list |
 | `stores add <name> --dialect <dialect>` | Appends a data store to `data_stores` in `lexforge/config.yaml` |
-| `rules --change <name> --files <paths...>` | Prints the engineering rules that apply to the files of a cycle |
+| `rules --change <name> --files <paths...>` | Prints the engineering rules that apply to the files of a task |
 | `defect record --change <name>` | Records a defect against a change; `--level`, `--file`, `--line`, `--summary` |
 | `defect close <id>` | Marks a recorded defect as fixed |
 | `defect list` | Lists recorded defects; `--change` and `--open` narrow the list |
@@ -380,7 +366,7 @@ standard error. Changes to JSON fields and exit codes are listed in the [CHANGEL
 | `2` | The command cannot run: an unknown argument, a missing change, no workspace, no git repository |
 
 Code `1` reports a finding or a rejected run. Code `2` means the call cannot proceed,
-including stale evidence or unmet cycle prerequisites.
+including stale evidence or unmet task prerequisites.
 `doctor` has one exception: a missing workspace is a finding for it, so it answers `1`, not `2`.
 
 ## What to commit
@@ -399,28 +385,6 @@ including stale evidence or unmet cycle prerequisites.
 
 `evidence.json` changes on every run, so two people working on the same change in parallel will get
 a merge conflict on it.
-
-## Line limit
-
-The default limit is 400 lines, set by `file_limit.lines` in `lexforge/config.yaml`.
-Lines are counted as in `wc -l`; exactly 400 is allowed. `file_limit.include` selects the
-files to check. Its defaults cover 24 source and test extensions, including `**/*.ts`,
-`**/*.py` and `**/*.vue`. A project's list replaces the defaults. Markdown, JSON, YAML and
-lock files are excluded by default. Use a pattern such as `!src/generated/**` to exclude
-generated or vendored code.
-
-Before writing `tasks.md`, `lexforge-plan` counts lines in the files its tasks will touch.
-For files over the limit, the user chooses `refactor` (split the file) or `keep` (retain it
-without further growth). The choice is stored in the change's `.lexforge.yaml` as
-`long_files: refactor` or `long_files: keep`.
-
-`lexforge check plan` rejects a plan that names a long file without a `long_files` setting.
-For `refactor`, the first task for that file must be marked `(move)`, so code is moved before
-other edits.
-
-`lexforge verify` checks touched files. With `refactor`, they must fit the limit. With `keep`,
-a file already over the limit must not grow; other files must stay within the limit.
-New files must fit the limit in both cases.
 
 ## Limits
 

@@ -169,9 +169,9 @@ describe("checkPlan: material references from delta specs", () => {
       "lexforge/changes/add-ui/tasks/01-screens.md": [
         "Depends on: none",
         "",
-        "- [ ] 1.1 [A] Write the login form in `src/login.ts`",
+        "- [ ] 1.1 Write the login form in `src/login.ts`",
         "      -> web#Login screen",
-        "- [ ] 1.2 [A] Write the ingest flow in `src/ingest.ts`",
+        "- [ ] 1.2 Write the ingest flow in `src/ingest.ts`",
         "      -> web#Ingest flow",
         "",
       ].join("\n"),

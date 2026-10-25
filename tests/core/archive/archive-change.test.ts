@@ -5,9 +5,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { archiveChange } from "../../../src/core/archive/archive-change.js";
 import { recordEvidence } from "../../../src/core/gates/evidence-record.js";
-import { recordRedRun } from "../../../src/core/gates/red-run-record.js";
 import { createCapture } from "../../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../../helpers/git-workspace.js";
+import { commitWork, sealForVerify } from "../../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -37,6 +37,7 @@ const PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -60,21 +61,11 @@ afterEach(() => {
 /** A change that passes every check: closed plan, edited file, fresh stamp. */
 async function cleanWorkspace(): Promise<string> {
   const made = createGitWorkspace(FILES);
+  sealForVerify(made.root, CHANGE);
   created.push(made);
 
   writeAt(made.root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
-
-  // Task 1.1 is ticked and names `src/app.ts`: the fifth measure of `verify`
-  // needs a red record for it before the change can archive.
-  const redCapture = createCapture();
-  await recordRedRun({
-    cwd: made.root,
-    change: CHANGE,
-    task: "1.1",
-    command: 'node -e "process.exit(1)"',
-    stdout: redCapture.stdout,
-    stderr: redCapture.stderr,
-  });
+  commitWork(made.root, CHANGE);
 
   const capture = createCapture();
   await recordEvidence({

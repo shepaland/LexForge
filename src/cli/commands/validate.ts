@@ -1,6 +1,8 @@
 import type { Command } from "commander";
 
+import { assertMigrated } from "../../core/tasks/workflow-file.js";
 import { validateChange } from "../../core/validation/validate-change.js";
+import { findWorkspaceRoot } from "../../core/workspace/find-root.js";
 import { renderResult } from "../render.js";
 import type { CliContext } from "../run.js";
 
@@ -14,6 +16,8 @@ export function registerValidate(program: Command, context: CliContext): void {
     .option("--strict", "add the completeness checks: purpose, placeholders, artifacts")
     .option("--json", "print one JSON document instead of human output")
     .action((change: string, options: { strict?: boolean; json?: boolean }) => {
+      assertMigrated(findWorkspaceRoot(context.cwd), change);
+
       const result = validateChange({
         cwd: context.cwd,
         change,

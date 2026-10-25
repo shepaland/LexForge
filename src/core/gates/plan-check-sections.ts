@@ -1,5 +1,4 @@
 import { makeFinding, type Finding } from "../validation/finding.js";
-import { findConcurrentFiles } from "./plan-check-groups.js";
 import type { PlanTasks } from "./task-list.js";
 import type { PlanSection } from "./plan-check-sections-parse.js";
 
@@ -7,13 +6,12 @@ export type { PlanSection } from "./plan-check-sections-parse.js";
 export { parseSections, readDependsOn, collectSectionFiles } from "./plan-check-sections-parse.js";
 
 /**
- * The seven rules over the sections of the plan: a repeated section number, a
+ * The rules over the sections of the plan: a repeated section number, a
  * repeated `Depends on:` line, an unreadable value on it, a missing line
- * entirely, a line naming a section the plan does not have, two sections
- * that wait for each other, and two sections that become ready at the same
- * moment and name the same file. The last two both need the graph of
- * resolved edges — a dependency the plan does not have is dropped from it,
- * already reported by its own rule.
+ * entirely, a line naming a section the plan does not have, and two sections
+ * that wait for each other. The cycle rule needs the graph of resolved edges
+ * — a dependency the plan does not have is dropped from it, already reported
+ * by its own rule.
  */
 export function checkSectionDependencies(plan: PlanTasks, sections: PlanSection[]): Finding[] {
   const findings: Finding[] = [];
@@ -117,7 +115,6 @@ export function checkSectionDependencies(plan: PlanTasks, sections: PlanSection[
   );
 
   findings.push(...findCycles(usableSections, byNumber, edges));
-  findings.push(...findConcurrentFiles(plan, usableSections, edges));
   findings.push(...checkSectionTasksInline(sections));
 
   return findings;

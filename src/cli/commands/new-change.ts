@@ -13,9 +13,10 @@ export function registerNew(program: Command, context: CliContext): void {
     .command("change <name>")
     .description("Create lexforge/changes/<name>/ with its .lexforge.yaml")
     .option("--schema <name>", "schema of this change; without it the project default is used")
+    .option("--short", "take the short path: one task, no plan review")
     .option("--json", "print one JSON document instead of human output")
-    .action((name: string, options: { schema?: string; json?: boolean }) => {
-      const result = createChange({ cwd: context.cwd, name, schema: options.schema });
+    .action((name: string, options: { schema?: string; short?: boolean; json?: boolean }) => {
+      const result = createChange({ cwd: context.cwd, name, schema: options.schema, short: Boolean(options.short) });
 
       renderResult(result, {
         json: Boolean(options.json),

@@ -82,7 +82,7 @@ exports[`контракт машинного вывода > status по одно
   "outputVersion",
   "schema",
   "stages",
-  "workflow",
+  "tasks",
   "workspaceRoot",
 ]
 `;
@@ -277,11 +277,15 @@ exports[`контракт машинного вывода ворот > verify > 
 
 exports[`контракт машинного вывода ворот > verify > verify: ключи summary 1`] = `
 [
-  "filesOverLimit",
+  "finalReview",
+  "missingCommits",
   "openDefects",
   "openTasks",
   "requirementsWithoutTrace",
+  "shortPath",
   "staleLabels",
-  "unrecordedTasks",
+  "tasksNotReviewed",
+  "tasksWithoutClosedRecord",
+  "uncommittedWork",
 ]
 `;

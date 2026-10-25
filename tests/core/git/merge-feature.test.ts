@@ -1,6 +1,8 @@
+import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { UsageError } from "../../../src/cli/errors.js";
+import { ensureWorktreeExcluded } from "../../../src/core/git/task-worktree.js";
 import {
   commitAll,
   createGitWorkspace,
@@ -37,8 +39,8 @@ async function load(): Promise<MergeFeature> {
 }
 
 /** A repository on feature/add-auth, branched from dev, with a.txt committed. */
-function featureWorkspace(): GitWorkspace {
-  const workspace = createGitWorkspace({ "a.txt": "base\n" });
+function featureWorkspace(extra: Record<string, string> = {}): GitWorkspace {
+  const workspace = createGitWorkspace({ "a.txt": "base\n", ...extra });
   created.push(workspace);
   git(workspace.root, "config", "user.name", "LexForge Test");
   git(workspace.root, "config", "user.email", "test@example.com");
@@ -103,5 +105,48 @@ describe("mergeFeature", () => {
     expect(mergeFeature(root, "add-auth")).toEqual({ merged: false });
     expect(git(root, "branch", "--show-current")).toBe("main");
     expect(git(root, "status", "--porcelain")).toBe("?? c.txt");
+  });
+
+  it("keeps .lexforge/ out of the merge when the repository's exclude file already hides it, as task start leaves it", async () => {
+    const { mergeFeature } = await load();
+    const { root } = featureWorkspace();
+
+    ensureWorktreeExcluded(root);
+    writeAt(root, ".lexforge/worktrees/demo/2.1/note.txt", "task worktree\n");
+    writeAt(root, "b.txt", "feature work\n");
+
+    expect(mergeFeature(root, "add-auth")).toEqual({ merged: true });
+
+    expect(git(root, "ls-tree", "-r", "--name-only", "dev")).not.toContain(".lexforge");
+    expect(git(root, "status", "--porcelain")).toBe("");
+  });
+
+  it("stages only the workspace's own subtree when it sits below the root of the repository", async () => {
+    const { mergeFeature } = await load();
+    const { root } = featureWorkspace({ "examples/notes/app.txt": "notes\n" });
+
+    const nested = path.join(root, "examples/notes");
+    writeAt(root, "a.txt", "changed above the workspace\n");
+    writeAt(nested, "app.txt", "notes changed\n");
+
+    expect(mergeFeature(nested, "add-auth")).toEqual({ merged: true });
+
+    expect(git(root, "show", "dev:examples/notes/app.txt")).toBe("notes changed");
+    expect(git(root, "status", "--porcelain")).toBe(" M a.txt");
+  });
+
+  it("keeps a nested workspace's .lexforge/ out of the merge when its own exclude line already hides it", async () => {
+    const { mergeFeature } = await load();
+    const { root } = featureWorkspace({ "examples/notes/app.txt": "notes\n" });
+    const nested = path.join(root, "examples/notes");
+
+    ensureWorktreeExcluded(nested);
+    writeAt(nested, ".lexforge/worktrees/demo/2.1/note.txt", "task worktree\n");
+    writeAt(nested, "app.txt", "notes changed\n");
+
+    expect(mergeFeature(nested, "add-auth")).toEqual({ merged: true });
+
+    expect(git(root, "ls-tree", "-r", "--name-only", "dev")).not.toContain(".lexforge");
+    expect(git(root, "status", "--porcelain")).toBe("");
   });
 });

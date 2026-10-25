@@ -11,7 +11,6 @@ import {
   changeFiles,
   created,
   editApp,
-  recordRed,
   workspace,
   type ArchiveDocument,
 } from "./archive-fixtures.js";
@@ -34,10 +33,10 @@ async function featureWorkspace(beforeEdit?: (root: string) => void): Promise<st
   const root = workspace(files).root;
 
   git(root, "branch", "dev");
-  git(root, "checkout", "-b", `feature/${CHANGE}`);
+  // The fixture has already cut feature/add-auth at HEAD for the task records.
+  git(root, "checkout", `feature/${CHANGE}`);
   beforeEdit?.(root);
   editApp(root);
-  await recordRed(root);
   await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
   return root;
 }
@@ -114,8 +113,10 @@ describe("lexforge archive on a feature branch", () => {
 describe("lexforge archive outside a feature branch", () => {
   it("archives without a merge and says the merge was skipped", async () => {
     const root = await featureWorkspace();
+    // main carries the reviewed work of the change, so only the branch differs.
     git(root, "stash", "--include-untracked");
     git(root, "checkout", "main");
+    git(root, "merge", "--ff-only", `feature/${CHANGE}`);
     git(root, "stash", "pop");
 
     const { exitCode, capture } = await call(["archive", CHANGE, "--json"], root);
@@ -125,5 +126,19 @@ describe("lexforge archive outside a feature branch", () => {
     expect(answer.merged, MERGED).toBe(false);
     expect(answer.nextStep).toMatch(/not built on its feature branch/);
     expect(git(root, "log", "dev", "--merges", "--format=%s")).toBe("");
+  });
+});
+
+describe("lexforge archive beside another change's task worktree", () => {
+  it("leaves the worktree out of dev", async () => {
+    const root = await featureWorkspace((dir) =>
+      git(dir, "worktree", "add", "--quiet", "-b", "task/other/1.1", ".lexforge/worktrees/other/1.1", "dev"),
+    );
+
+    const { exitCode, capture } = await call(["archive", CHANGE, "--json"], root);
+
+    expect(exitCode, capture.err).toBe(0);
+    const inDev = git(root, "ls-tree", "-r", "--name-only", "dev").split("\n");
+    expect(inDev.filter((file) => file.startsWith(".lexforge/"))).toEqual([]);
   });
 });

@@ -9,7 +9,7 @@ import type { OutputStream } from "../../src/core/types.js";
 import { createCapture } from "../helpers/capture.js";
 import { createGitWorkspace, git, type GitWorkspace } from "../helpers/git-workspace.js";
 
-// Matched line by line by `cycle run --phase red`.
+// The newlines put the message on a line of its own, so a red run is matched by that line whole.
 const EXPECTED = "\n`new change` creates the change while npm reports 99.0.0\n";
 
 const created: GitWorkspace[] = [];

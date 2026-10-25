@@ -78,13 +78,17 @@ user change the assignment in `lexforge/config.yaml`; do not change it yourself.
 
 Run `lexforge verify --change <name> --json` and read the exit code.
 
-- `0` — the six measures found nothing, not the whole check: the rest needs reading,
+- `0` — the ten measures found nothing, not the whole check: the rest needs reading,
   not running.
 - `1` — work. `summary` names the measure to go back to: `openTasks`,
-  `requirementsWithoutTrace`, `staleLabels`, `openDefects`, `unrecordedTasks`,
-  `filesOverLimit`. Fix what `findings` names, run again, until `0`.
+  `tasksWithoutClosedRecord`, `tasksNotReviewed`, `missingCommits`,
+  `requirementsWithoutTrace`, `staleLabels`, `openDefects`, `finalReview`,
+  `uncommittedWork`, `shortPath`. Fix what `findings` names, run again, until `0`.
 - `2` — no check happened. Read `error.code`, repair the call or the config, write no
-  report.
+  report. `change-needs-migration`: installing LexForge 6.0.0 migrates no existing
+  change by itself. Run `lexforge migrate --change <name>`, name its historical and
+  open tasks and any `missingFields`, then send the open part through plan review and
+  owner approval.
 
 ## Three sections, never one
 
@@ -92,19 +96,18 @@ Run `lexforge verify --change <name> --json` and read the exit code.
    a verdict.
 2. **Plan against work done.** Closed tasks, stamp freshness, every finding of the
    command.
-3. **Decisions against implementation.** Every decision of `design.md` by name, with the
-   file and line where it is kept or broken.
+3. **Decisions against implementation.** Every decision of `design.md` by name, with file
+   and line where it is kept or broken.
 
 An empty section carries the reason - "no `design` artifact, schema `bounded`" - not a
-blank. Merged sections hide the failure of one behind the pass of another.
+blank.
 
 Copy `notChecked` into the report whole and put a verdict under each line. Those lines
 are the work, not a caveat to paste under an answer.
 
 Section 3 reads `design.md` against the code, now. Writing the code with `design.md` open
 is memory, not reading; a green suite tests the code against your own reading of the
-design; a sign-off covers the code as it stood then. Code contradicting a decision is
-CRITICAL at exit `0` too.
+design. Code contradicting a decision is CRITICAL at exit `0` too.
 
 ## Levels and the threshold
 
@@ -134,8 +137,7 @@ and a stored verdict rots on the next edit. An unfixed finding goes to
 
 | Excuse | Reality |
 |---|---|
-| "the automated evidence is real and it's enough to ship on" | One measure of six, and none of them read `design.md`. |
-| "I'm trusting a summary of a summary for that part" | Then nothing runs under the verdict. Run it again. |
+| "the automated evidence is real and it's enough to ship on" | One measure of ten, and none of them read `design.md`. |
 | "put 'reread decision 4' at the top of tomorrow's list" | Reading postponed past the archive is reading nobody does. |
 | "objective grounds for a severity change, not just schedule pressure" | No code changed between the finding and the argument. |
 | "The risk is latent rather than active" | A silent no-op surfaces in an incident. That is the level. |
@@ -149,5 +151,3 @@ and a stored verdict rots on the next edit. An unfixed finding goes to
 - A level lowered while the code stayed the same.
 
 Go back to the skipped section.
-
-Migration: [authorization, preview, reconciliation, freshness](../lexforge-apply/execution-v2.md#safe-migration-of-existing-work).

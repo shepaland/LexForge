@@ -48,16 +48,4 @@ describe("tasks.md как индекс, файл на секцию", () => {
       expect(text, `«${phrase}» смягчает правило до обычной практики`).not.toContain(phrase);
     }
   });
-
-  it("разбиение не меняет id задачи, и red-runs.json читает тот же ключ", () => {
-    const text = planFilePerSectionText();
-
-    expect(text).toMatch(
-      /The split changes no task's id\. `red-runs\.json` reads a task by its id alone, never by file or line, so a record written before the split still answers for the same task after it\./,
-    );
-
-    for (const phrase of ["red-runs.json usually reads the same key after the split"]) {
-      expect(text, `«${phrase}» допускает смену ключа red-runs.json`).not.toContain(phrase);
-    }
-  });
 });

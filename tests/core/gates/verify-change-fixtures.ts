@@ -1,5 +1,5 @@
 import { createGitWorkspace, type GitWorkspace } from "../../helpers/git-workspace.js";
-import type { RedRunRecord } from "../../../src/core/gates/red-run-store.js";
+import { sealForVerify } from "../../helpers/verify-seal.js";
 
 export const CONFIG = `schema: spec-driven
 verification:
@@ -24,23 +24,25 @@ The system SHALL store a password as a hash.
 
 export const CHANGE = "add-auth";
 
-/** A red record good enough for the fifth dimension: any non-zero exit code. */
-export const RED_RECORD: RedRunRecord = {
-  command: "npx vitest run tests/core/gates/example.test.ts",
-  exitCode: 1,
-  startedAt: "2026-08-30T09:12:44.281Z",
-  durationMs: 1200,
-  head: "9f1c0b7a4e1d2c3b5a6f7e8d9c0b1a2f3e4d5c6b",
-  worktreeDigest: "sha256:1f0a",
-  outputTail: "FAIL",
-  outputTruncated: false,
-};
-
 /** Swallows the output of the check the ledger stamp is taken from. */
 export const SILENT = { write: () => true };
 
 /** Workspaces `workspace` has made, removed in each file's own `afterEach`. */
 export const created: GitWorkspace[] = [];
+
+/**
+ * Hands control back to the event loop. Every case here drives git through
+ * `execFileSync`, which blocks the worker's event loop for its whole call;
+ * run back to back across a file with dozens of cases, that adds up past
+ * the minute vitest's own runner gives a queued `onTaskUpdate` to be
+ * acknowledged, and the file times out on that exchange even though every
+ * test in it passed. Called from each file's own `afterEach`, one macrotask
+ * after the test is enough for that queued call to be acknowledged before
+ * its clock runs out.
+ */
+export function yieldEventLoop(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
 
 export function workspace(tasks: string, files: Record<string, string> = {}): GitWorkspace {
   const made = createGitWorkspace({
@@ -52,6 +54,7 @@ export function workspace(tasks: string, files: Record<string, string> = {}): Gi
     [`lexforge/changes/${CHANGE}/tasks.md`]: tasks,
     ...files,
   });
+  sealForVerify(made.root, CHANGE);
   created.push(made);
   return made;
 }

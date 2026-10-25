@@ -8,6 +8,7 @@ import {
   writeAt,
   type GitWorkspace,
 } from "../helpers/git-workspace.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 
 const CHANGE = "add-auth";
 
@@ -38,7 +39,9 @@ const OPEN_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "- [ ] 1.2 Написать проверку пароля при входе в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -48,6 +51,7 @@ const CLOSED_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -61,8 +65,11 @@ const TWO_OPEN_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "- [ ] 1.2 Написать проверку пароля при входе в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "- [ ] 1.3 Написать восстановление пароля в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -87,6 +94,7 @@ afterEach(() => {
 
 function workspace(tasks: string): GitWorkspace {
   const made = createGitWorkspace(changeFiles(tasks));
+  sealForVerify(made.root, CHANGE);
   created.push(made);
   return made;
 }
@@ -104,11 +112,15 @@ interface VerifyDocument {
   notChecked: string[];
   summary: {
     openTasks: number;
+    tasksWithoutClosedRecord: number;
+    tasksNotReviewed: number;
+    missingCommits: number;
     requirementsWithoutTrace: number;
     staleLabels: number;
     openDefects: number;
-    unrecordedTasks: number;
-    filesOverLimit: number;
+    finalReview: number;
+    uncommittedWork: number;
+    shortPath: number;
   };
   nextStep: string;
 }
@@ -116,14 +128,7 @@ interface VerifyDocument {
 /** The work of the change: a line the base commit does not carry. */
 function editApp(root: string): void {
   writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
-}
-
-/** Records a red run for one task through the CLI, the only lawful way to write one. */
-async function redRun(root: string, task: string): Promise<void> {
-  await call(
-    ["evidence", "red", "--change", CHANGE, "--task", task, "--command", 'node -e "process.exit(1)"'],
-    root,
-  );
+  commitWork(root, CHANGE);
 }
 
 describe("lexforge verify", () => {
@@ -145,7 +150,6 @@ describe("lexforge verify", () => {
   it("чистый change даёт код 0", async () => {
     const root = workspace(CLOSED_PLAN).root;
     editApp(root);
-    await redRun(root, "1.1");
     await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
 
     const { exitCode, capture } = await call(["verify", "--change", CHANGE, "--json"], root);
@@ -155,11 +159,15 @@ describe("lexforge verify", () => {
     expect(data.findings).toEqual([]);
     expect(data.summary).toEqual({
       openTasks: 0,
+      tasksWithoutClosedRecord: 0,
+      tasksNotReviewed: 0,
+      missingCommits: 0,
       requirementsWithoutTrace: 0,
       staleLabels: 0,
       openDefects: 0,
-      unrecordedTasks: 0,
-      filesOverLimit: 0,
+      finalReview: 0,
+      uncommittedWork: 0,
+      shortPath: 0,
     });
   });
 
@@ -220,7 +228,6 @@ describe("lexforge verify: четвёртое измерение — журна�
   it("первые три измерения чисты, но открытая critical запись даёт находку с её rule id, код 1", async () => {
     const root = workspace(CLOSED_PLAN).root;
     editApp(root);
-    await redRun(root, "1.1");
     await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
     await recordDefect(root, "critical", "session token not invalidated on logout");
 
@@ -235,7 +242,6 @@ describe("lexforge verify: четвёртое измерение — журна�
   it("summary несёт счётчик для каждого из четырёх измерений", async () => {
     const root = workspace(TWO_OPEN_PLAN).root;
     editApp(root);
-    await redRun(root, "1.1");
     // No `evidence record` call: the one described label ("tests") is
     // missing a stamp, which is one finding of rule "evidence-not-fresh".
     await recordDefect(root, "critical", "session token not invalidated on logout");
@@ -246,18 +252,21 @@ describe("lexforge verify: четвёртое измерение — журна�
     expect(exitCode).toBe(1);
     expect(data.summary).toEqual({
       openTasks: 2,
+      tasksWithoutClosedRecord: 0,
+      tasksNotReviewed: 0,
+      missingCommits: 0,
       requirementsWithoutTrace: 0,
       staleLabels: 1,
       openDefects: 1,
-      unrecordedTasks: 0,
-      filesOverLimit: 0,
+      finalReview: 0,
+      uncommittedWork: 0,
+      shortPath: 0,
     });
   });
 
   it("три открытые minor записи не мешают: код 0", async () => {
     const root = workspace(CLOSED_PLAN).root;
     editApp(root);
-    await redRun(root, "1.1");
     await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
     await recordDefect(root, "minor", "first minor");
     await recordDefect(root, "minor", "second minor");
@@ -271,37 +280,14 @@ describe("lexforge verify: четвёртое измерение — журна�
   });
 });
 
-describe("lexforge verify: пятое измерение — красный прогон задачи", () => {
-  it("пять измерений сворачиваются в один список, находка называется в JSON и в человеческом выводе", async () => {
-    const root = workspace(CLOSED_PLAN).root;
-    editApp(root);
-    // No `evidence red` call for task 1.1: this is exactly the missing record
-    // the fifth dimension exists to catch.
-    await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
-
-    const { exitCode, capture } = await call(["verify", "--change", CHANGE, "--json"], root);
-    const data = JSON.parse(capture.out) as VerifyDocument;
-
-    expect(exitCode).toBe(1);
-    expect(data.findings.map((finding) => finding.rule)).toContain("task-no-red-record");
-    expect(data.summary.unrecordedTasks).toBe(1);
-    expect((data as unknown as { dimensions: string[] }).dimensions.join(" ")).toContain(
-      "red record",
-    );
-
-    const human = await call(["verify", "--change", CHANGE], root);
-    expect(human.capture.err).toContain("task-no-red-record");
-    expect(human.capture.err).toContain("red record");
-  });
-
+describe("lexforge verify: измерения", () => {
   it("нет флага, который проверяет одно измерение в отдельности", async () => {
     const root = workspace(CLOSED_PLAN).root;
     editApp(root);
-    await redRun(root, "1.1");
     await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
 
     const { exitCode } = await call(
-      ["verify", "--change", CHANGE, "--only", "task-no-red-record"],
+      ["verify", "--change", CHANGE, "--only", "evidence-not-fresh"],
       root,
     );
 

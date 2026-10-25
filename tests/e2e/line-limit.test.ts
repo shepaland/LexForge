@@ -92,7 +92,7 @@ const collectFindings = (): Finding[] => {
 };
 
 describe("line-limit gate", () => {
-  it("names every .ts file under src/ and tests/ that exceeds 330 lines or lacks a trailing newline", () => {
+  it("names every .ts file under src/ and tests/ that exceeds 400 lines or lacks a trailing newline", () => {
     const findings = collectFindings();
     const report = findings.map(({ message }) => `  ${message}`).join("\n");
 

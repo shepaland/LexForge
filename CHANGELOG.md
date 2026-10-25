@@ -17,6 +17,44 @@ the entry lists the contract change in its own section, and an upgrade that touc
 skills says so - after `npm install lexforge@<version>` comes
 `lexforge init --tools <list>`, which rewrites them in place.
 
+## 6.0.0 — 2026-10-24
+
+A task of `tasks.md` is the only unit of the plan, carried through its own commands instead
+of a behavioural cycle's. `execution-plan.json` is gone; the plan and its section files are
+the one source an executor reads.
+
+### Contract
+
+- Breaking: `lexforge cycle start`, `cycle run`, `cycle review`, `cycle close` and
+  `cycle restart`, `lexforge context` and `lexforge workflow migrate` are removed.
+  `lexforge evidence red` is removed too; `task red` records the red run in its place.
+  `task start`, `task red`, `task green`, `task review`, `task close` and `task abandon`
+  run one task of the approved plan.
+- New commands: `plan review --change --angle --file`, `plan approve --change --quote`,
+  `plan amend --change --quote`, `plan escalate --change` and
+  `review final --change [--file]` carry plan review, owner approval, a later change of
+  an approved plan, the move off the short path, and the review of the whole branch before
+  `verify`.
+- Every command on a change still carrying a 5.x `workflow.json` answers `2` with
+  `change-needs-migration` and writes nothing. `lexforge migrate --change <name>` carries
+  the change over: closed work becomes historical tasks, the rest stays open, and a task
+  missing a required field is listed in `missingFields` before the open part goes through
+  plan review and owner approval.
+- A change runs on its own branch from `new change` on; the base is recorded at plan
+  approval and `verify` checks it against the branch history.
+
+### Other
+
+- The short path (`new change --short`) fits one task with no new capability, no `Data:`
+  and no migration; a refusal `short-path-not-eligible` names `plan escalate` as the way out.
+- Four subagents review the plan from `specs`, `code`, `dependencies` and `gaps` before
+  `plan approve`; a fix after a finding sends a new review of all four angles, not only
+  the one that found it.
+
+Upgrade the CLI with `npm install -g lexforge@6.0.0`, then refresh installed skills with
+`lexforge init --tools <list>`. Run `lexforge migrate --change <name>` on every change
+still on 5.x before working on it.
+
 ## 5.0.0 — 2026-10-12
 
 Two gates for agents and two new kinds of documents. A command no longer runs on skills left

@@ -143,13 +143,15 @@ single question.
 ### Requirement: The plan skill leaves no placeholders
 
 Skill `lexforge-plan` SHALL write `tasks.md` as numbered sections and tasks in the form
-`- [ ] 1.1`, where each task names the file it touches and the check that confirms the
-result.
+`- [ ] 1.1`, where each task carries `Files:` with the files it touches, `Test:` with its test
+files and `Command:` with the command that confirms the result.
 
 Every delta-spec requirement SHALL be covered by at least one task.
 
-Tasks with code SHALL be laid out by TDD: first a failing test, then a separate step that
-runs it and shows the failure, then the implementation.
+A task with code SHALL be one task that holds the whole TDD step: its test is committed first
+and seen to fail by `lexforge task red`, then the implementation is committed and seen to pass
+by `lexforge task green`. Writing the test, running it and writing the implementation SHALL NOT
+be split into three tasks.
 
 Lines like `TBD`, `TODO`, "same as task N," and "add error handling" with no named place
 SHALL NOT stay in the plan.
@@ -162,8 +164,8 @@ SHALL NOT stay in the plan.
 #### Scenario: Task with code
 
 - **WHEN** a task adds a function
-- **THEN** the plan carries three steps: write a failing test, run it and see it fail, write
-  the implementation
+- **THEN** the plan carries one task whose `Test:` names the failing test, whose `Files:` names
+  the test and the implementation, and whose `Command:` runs the test
 
 #### Scenario: A spot where it's unclear how to do it
 
@@ -214,82 +216,40 @@ artifact itself, and the run SHALL show the agent handing the work over instead.
   told the handover costs too much time
 - **THEN** the run ends with no artifact written by that subagent and with the handover made
 
-### Requirement: The plan skill labels every task with the agent group it belongs to
-
-Skill `lexforge-plan` SHALL write a group label in square brackets right after every task's
-id, in the form `- [ ] 3.1 [A] Write the failing prose test in ...`. A label SHALL be a short
-token of letters, digits and hyphens, at most eight characters long; a longer bracketed word,
-or one holding a space, is ordinary task text, not a label.
-
-Tasks that may run in one agent SHALL share a label. A section one agent takes whole SHALL
-carry one label across every one of its tasks. A task SHALL carry exactly one label: a second
-label on the same task is a defect of the plan, not a way to put that task in two groups.
-
-The skill SHALL place tasks into groups so that no two groups of one section name the same
-file in backticks, and so that each group is work that fits inside the token budget of one
-agent.
-
-#### Scenario: A section split across two agents
-
-- **WHEN** section 4 holds eight tasks and the skill decides two agents can carry it at once
-- **THEN** every task the first agent takes carries one label, every task the second agent
-  takes carries a different label, and no task naming a file the other group's tasks also
-  name lands in either group
-
-#### Scenario: A section one agent takes whole
-
-- **WHEN** the skill decides a section is small enough for a single agent
-- **THEN** every task of that section carries the same label
-
-#### Scenario: A task whose text opens with a bracketed word
-
-- **WHEN** task 4.5's text opens with `[reference]`, a bracketed word nine letters long, as
-  ordinary prose, not as the label the skill would write
-- **THEN** the skill leaves `[reference]` inside task 4.5's text, because a bracketed word
-  over eight characters is not a label, and writes that task's own short label after its id
-  the same as every other task
-
-#### Scenario: A group too large for one agent
-
-- **WHEN** the tasks the skill would put in one group do not fit inside the token budget of
-  one agent
-- **THEN** the skill splits that work into more groups, each with its own label, before
-  handing the plan to `lexforge check plan --change <name>`
-
 ### Requirement: A task with no green midpoint is cut into steps, not given a bigger budget
 
-Skill `lexforge-plan` SHALL size a task so that one cycle finishes it and the suite is green
-when the cycle ends.
+Skill `lexforge-plan` SHALL size a task so that one executor finishes it, from the red run to
+the green run, and the suite is green when the task closes.
 
 A task whose work has no point partway through it where the suite is green SHALL NOT be
-written as one task: the skill SHALL cut it into steps, each of which leaves the suite green
-when it ends.
+written as one task: the skill SHALL cut it into tasks, each of which leaves the suite green
+when it closes.
 
-Where the work replaces a structure already in use, those steps SHALL keep the old structure
-and the new one side by side until the last step: the new path is added first, callers move
-to it one at a time in the steps that follow, and the old path is removed only in the final
-step.
+Where the work replaces a structure already in use, those tasks SHALL keep the old structure
+and the new one side by side until the last task: the new path is added first, callers move
+to it one at a time in the tasks that follow, and the old path is removed only in the final
+task.
 
 A task naming work with no such midpoint SHALL be treated as a plan defect, not as a task
 that needs a larger budget: enlarging the dispatched agent's budget SHALL NOT be offered as
-the fix.
+the fix. During implementation the plan is cut through `lexforge plan amend`.
 
 #### Scenario: A task that replaces a structure in use
 
 - **WHEN** a task would replace four states and three handlers of a dialogue with one FSM
   state, and no point of that rewrite leaves the suite green until every one of the old
   states and handlers is gone
-- **THEN** the skill cuts it into steps that add the new handler beside the old ladder, move
+- **THEN** the skill cuts it into tasks that add the new handler beside the old ladder, move
   one required question onto it at a time, check every required question routes through it,
-  and remove the old states and handlers only in the last step
+  and remove the old states and handlers only in the last task
 
 #### Scenario: Three agents over budget on the same task
 
-- **WHEN** three dispatched agents in a row exceed the token budget on the task that reads
+- **WHEN** three executors in a row exceed the token budget on the task that reads
   "collapse the dialogue into one FSM state", and the task still has no point where the suite
   is green partway through it
-- **THEN** the plan cuts that task into steps instead, and a larger budget is not offered as
-  the fix
+- **THEN** the plan cuts that task into tasks through `lexforge plan amend` instead, and a
+  larger budget is not offered as the fix
 
 ### Requirement: The plan is an index, and carries no task of its own
 
@@ -318,67 +278,28 @@ section's entry in the index.
 
 ### Requirement: A task that only carries code between files declares itself a move
 
-Skill `lexforge-plan` SHALL write `(move)` after the group label of a task whose whole work
-is carrying existing code from one file to another without changing behaviour, and SHALL
-write no such declaration on any other task.
+Skill `lexforge-plan` SHALL write `(move)` right after the id of a task whose whole work is
+carrying existing code from one file to another without changing behaviour, and SHALL write no
+such declaration on any other task.
 
-A move has no run to watch fail, so the three-task triple does not apply to it: the failing
-test a triple starts with would be a test of behaviour nobody is changing. The declaration is
-what the completion check reads, so a move left undeclared stops the change at `verify`, and a
-task declared a move that does change behaviour passes a check it should have failed.
+A move has no run to watch fail, so it carries no `Test:` and takes no red run: a failing test
+would be a test of behaviour nobody is changing, and its `Command:` is a regression run that
+passes at `task green`. The declaration is what `task red` and `task green` read, so a move left
+undeclared stops at `task red`, and a task declared a move that does change behaviour passes
+without the red run it should have had.
 
 #### Scenario: A section that splits a file
 
 - **WHEN** the skill plans a section that carries four functions out of one file into a new
   one, changing no behaviour
-- **THEN** each of those tasks carries `(move)` after its group label, and none of them is
-  written as a test, a run and an implementation
+- **THEN** each of those tasks carries `(move)` right after its id, and none of them carries a
+  `Test:` line
 
 #### Scenario: A task that changes behaviour
 
 - **WHEN** a task adds a branch, a field or a rule, however small
-- **THEN** the skill writes no `(move)` on it and writes it as a test, a run and an
-  implementation
-
-### Requirement: The plan skill asks the user for the path before writing the plan
-
-Before it writes `tasks.md`, the skill `lexforge-plan` SHALL count the lines of every
-existing covered file its tasks will name.
-
-When any of them is over the line limit, the skill SHALL show the user each such file with
-its line count, SHALL ask which path the change takes, `refactor` or `keep`, and SHALL
-record the user's answer as `long_files` in the change's `.lexforge.yaml` before it writes
-`tasks.md`.
-
-The skill SHALL NOT choose the path itself, and SHALL NOT write `tasks.md` before the user
-has answered.
-
-When none of the files is over the limit, the skill SHALL NOT ask.
-
-#### Scenario: A long file stops the plan until the user chooses
-
-- **WHEN** the plan for `add-refunds` will name `src/billing.ts`, 612 lines, and the limit is
-  400
-- **THEN** the skill shows `src/billing.ts` with 612 lines, asks for `refactor` or `keep`,
-  writes the answer to `.lexforge.yaml`, and only then writes `tasks.md`
-
-#### Scenario: No long file, no question
-
-- **WHEN** every existing covered file the plan will name is within the limit
-- **THEN** the skill writes `tasks.md` without asking about a path
-
-### Requirement: On the refactor path the splitting comes first
-
-On the `refactor` path, the skill `lexforge-plan` SHALL split each long file the plan names
-in a task declared `(move)`, and that task SHALL come before any other task naming the same
-file.
-
-#### Scenario: The split precedes the feature work
-
-- **WHEN** the change is on the `refactor` path and the plan names `src/billing.ts`, 612
-  lines
-- **THEN** the first task naming `src/billing.ts` is a `(move)` task that splits it, and the
-  task adding refunds to billing comes after it
+- **THEN** the skill writes no `(move)` on it and writes it as one task with `Test:` and
+  `Command:`
 
 ### Requirement: The specs skill agrees mockups and classes with the user
 
@@ -408,25 +329,6 @@ line, the diagram and the contract table.
 - **WHEN** the user answers "I don't know" to the question about the project CSS
 - **THEN** the skill runs `lexforge styles find` and shows the list before writing the
   config
-
-### Requirement: The plan skill writes explicit file scope when inference is ambiguous
-
-Skill `lexforge-plan` SHALL name touched files as canonical workspace-root-relative paths and SHALL use one `Files:` continuation line with comma-separated backtick paths when a task's other prose contains a backtick value that could be confused with a repository file. The skill SHALL NOT abbreviate a repository file and resolve it through a filesystem search. It MAY omit `Files:` when the task's repository files are already unambiguous under safe legacy inference.
-
-#### Scenario: A task names a route and a repository file
-
-- **WHEN** the task changes `src/http/routes.ts` and its prose must mention `/api/auth`
-- **THEN** the skill writes a `Files:` line naming `src/http/routes.ts` from the workspace root, leaving `/api/auth` free to remain accurate task prose
-
-#### Scenario: A short file name has a known repository location
-
-- **WHEN** the task touches `src/config/nginx.conf`
-- **THEN** the skill names `src/config/nginx.conf` rather than abbreviating it as `nginx.conf` and asking the parser to search the workspace
-
-#### Scenario: An unambiguous legacy-shaped task
-
-- **WHEN** a task names only canonical root-relative repository paths in backticks and contains no competing path-shaped value
-- **THEN** the skill may keep the existing task style without a `Files:` line
 
 ### Requirement: The specs skill settles the data stores with the owner
 
@@ -480,3 +382,32 @@ with the answers, the type that follows, and the sections of that type.
   work
 - **THEN** the skill asks what happens to an unfinished send when an instance stops, and writes
   no answer until the owner says yes or no
+
+### Requirement: The plan skill sends the plan to four reviewers
+
+The skill `lexforge-plan` SHALL, once `lexforge check plan` passes, send the plan to four fresh
+reviewers on the model of the `tasks` stage, one per angle: `specs`, `code`, `dependencies` and
+`gaps`, with the prompt `skills/lexforge-plan/plan-reviewer-prompt.md`. Each report SHALL be
+registered with `lexforge plan review --angle <angle> --file <report.md>`. Critical and important
+findings SHALL be fixed in the plan, and the changed plan SHALL be reviewed again, before the
+owner is asked for approval.
+
+#### Scenario: Approval asked after two angles
+
+- **WHEN** the `specs` and `code` reviews approved and the agent is about to ask the owner
+- **THEN** the skill sends the `dependencies` and `gaps` reviews first, because `plan approve`
+  refuses with `plan-reviews-missing`
+
+### Requirement: The plan skill shows the owner a summary of decisions and the plan link
+
+After four approving reviews the skill SHALL show the owner a summary laid out by
+`skills/lexforge-plan/digest.md`: the agent's own decisions first, those that change visible
+behaviour at the top, then the verdicts of the four angles with the number of findings closed,
+then the link to `tasks.md`. The owner's answer SHALL be recorded with
+`lexforge plan approve --quote` in the owner's words.
+
+#### Scenario: A decision the agent took alone
+
+- **WHEN** the agent chose the date format itself while writing the plan
+- **THEN** the summary names that decision before the review verdicts
+

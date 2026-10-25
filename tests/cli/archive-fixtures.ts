@@ -1,4 +1,5 @@
 import { run } from "../../src/cli/run.js";
+import { commitWork, sealForVerify } from "../helpers/verify-seal.js";
 import { createCapture } from "../helpers/capture.js";
 import { createGitWorkspace, writeAt, type GitWorkspace } from "../helpers/git-workspace.js";
 
@@ -32,7 +33,9 @@ export const OPEN_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "- [ ] 1.2 Написать проверку пароля при входе в `src/app.ts`",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -42,6 +45,7 @@ export const CLOSED_PLAN = [
   "",
   "- [x] 1.1 Написать хранение пароля в виде хеша в `src/app.ts`",
   "      -> auth#Password is stored hashed",
+  "      Files: `src/app.ts`",
   "",
 ].join("\n");
 
@@ -60,6 +64,7 @@ export const created: GitWorkspace[] = [];
 
 export function workspace(files: Record<string, string>): GitWorkspace {
   const made = createGitWorkspace(files);
+  if (`lexforge/changes/${CHANGE}/tasks.md` in files) sealForVerify(made.root, CHANGE);
   created.push(made);
   return made;
 }
@@ -73,23 +78,7 @@ export async function call(argv: string[], cwd: string) {
 /** The work of the change: a line the base commit does not carry. */
 export function editApp(root: string): void {
   writeAt(root, "src/app.ts", 'export function app(): string {\n  return "hashed";\n}\n');
-}
-
-/**
- * Task 1.1 of every fixture plan in this file is ticked and names
- * `src/app.ts`, so the fifth measure of `verify` needs a red record for it.
- * Written through the CLI's own writer (`lexforge evidence red`), the same
- * way a real change would produce one.
- */
-export async function recordRed(root: string, task = "1.1"): Promise<void> {
-  const { exitCode, capture } = await call(
-    ["evidence", "red", "--change", CHANGE, "--task", task, "--command", 'node -e "process.exit(1)"'],
-    root,
-  );
-
-  if (exitCode !== 0) {
-    throw new Error(`failed to record a red run for task ${task}: ${capture.err}`);
-  }
+  commitWork(root, CHANGE);
 }
 
 /** Local date of the run, the form the archive directory is named with. */
@@ -104,7 +93,6 @@ export function today(): string {
 export async function cleanWorkspace(files: Record<string, string>): Promise<string> {
   const root = workspace(files).root;
   editApp(root);
-  await recordRed(root);
   await call(["evidence", "record", "--change", CHANGE, "--label", "tests"], root);
   return root;
 }

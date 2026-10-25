@@ -1,50 +1,37 @@
 import { fencedLines } from "../markdown-fences.js";
 import { splitTextLines } from "../read-text.js";
-import { type FileDeclarationProblem, readTaskFileScope } from "./task-files.js";
+import { type FileDeclarationProblem, readNamedFiles, readTaskFileScope } from "./task-files.js";
+import { type Control, type FieldProblem, readTaskFields } from "./task-fields.js";
+
+export type { Control, FieldProblem } from "./task-fields.js";
 
 /**
- * A checkbox line of `tasks.md`: the mark, an optional number, a run of zero
- * or more `[label]` markers right after it, and the rest of the line. The run
- * is its own capture so it never leaks into the number: `3.1 [A]` still
- * parses `3.1`. It is read out into individual labels by `LABEL_TOKEN` below,
- * so `[A] [B]` gives two labels rather than collapsing to one.
- *
- * A label is at most eight characters of letters, digits or hyphens - `[A]`,
- * `[store]`, `[cli]`. Anything longer, such as `[reference]`, or anything
- * with a space inside, is not a label: the run stops matching there and the
- * bracket stays in the task's text as ordinary prose. The eight-character
- * bound is deliberate, not incidental - the gate rules of the next cycle and
- * the plan template both read labels through this same pattern.
- *
- * Two extra optional groups sit before the number and before the label run:
- * a `(move)` written in either wrong spot would otherwise block the group
- * right after it from matching at all - the number group needs digits right
- * where `(move)` stands, and the label run needs `[` right where it stands.
- * Capturing it there instead lets the number and the label run parse as if
- * it were never in the way; `parseTaskList` below folds the captured text
- * back into the task's own words, since a misplaced `(move)` is not the
- * declaration and must stay visible to whoever wrote it - even on a line
- * that also carries the real declaration in its proper place.
+ * A checkbox line of `tasks.md`: the mark, an optional `(move)` written before
+ * the number, an optional number, and the rest of the line. A bracket after
+ * the number is the task's own words. The `(move)` before the number is not
+ * the declaration and stays visible in the task's text; `parseTaskList` folds
+ * it back in.
  */
-const TASK_LINE =
-  /^\s*-\s*\[( |x|X)\]\s*(\(move\)\s*)?([\d.]+)?\s*(\(move\)\s*)?((?:\[[A-Za-z0-9-]{1,8}\]\s*)*)(.*)$/;
-
-/** Pulls every label out of the bracket run `TASK_LINE` captured. */
-const LABEL_TOKEN = /\[([A-Za-z0-9-]{1,8})\]/g;
+const TASK_LINE = /^\s*-\s*\[( |x|X)\]\s*(\(move\)\s*)?([\d.]+)?\s*(.*)$/;
 
 /**
- * The `(move)` declaration, read only where it stands: right after a
- * *non-empty* group label run, before the task's own words. It is the plan
- * author's statement that a task carries code from one file to another with
- * no change in behaviour, so no red run can ever pin it. Cut out here, it
- * never reaches `text`, `cleanText` or `firstLine` - a task's wording is
- * never weighed against it, so it must not linger where wording is read.
+ * The `(move)` declaration, read only where it stands: right after the
+ * number, before the task's own words. It is the plan author's statement that
+ * a task carries code from one file to another with no change in behaviour,
+ * so no red run can ever pin it. Cut out here, it never reaches `text`,
+ * `cleanText` or `firstLine`.
  *
  * The trailing `(?:\s+|$)` demands a boundary after the closing paren, so
- * `(move):` and `(move)text` fail to match and stay in the task's own words
- * instead of being read as the declaration.
+ * `(move):` and `(move)text` stay in the task's own words.
  */
 const MOVE_DECLARATION = /^\(move\)(?:\s+|$)/;
+
+/**
+ * A line of the task's fields. The paths and commands on it are not what the
+ * author wrote about the work, so `cleanText` leaves it out and a task is not
+ * long enough just because it names its files.
+ */
+const FIELD_LINE = /^(Files|Test|Command|Depends on|Controls):/;
 
 /** A task carries on over an indented line that starts no new list item. */
 const CONTINUATION = /^\s+\S/;
@@ -68,19 +55,14 @@ export interface RequirementLink {
 export interface PlanTask {
   /** Task number, such as `3.4`. Empty when the task carries none. */
   number: string;
-  /**
-   * The labels in the `[...]` markers right after the number, in the order
-   * written - `[A] [B]` gives `["A", "B"]`. Empty when the task carries none.
-   */
-  groups: string[];
   /** Line the task starts on, counted from 1. */
   line: number;
   /** True for `- [x]` in either case. */
   done: boolean;
   /**
-   * True when the line carries `(move)` right after the group label run: the
-   * task only carries code from one file to another, so the fifth dimension
-   * of `verify` does not check it for a red record. Read as written - a
+   * True when the line carries `(move)` right after the number: the
+   * task only carries code from one file to another and needs no Test
+   * field of its own. Read as written - a
    * task's own wording never overrides or supplies it.
    */
   declaresMove: boolean;
@@ -92,7 +74,8 @@ export interface PlanTask {
    */
   firstLine: string;
   /**
-   * The task text with the number and the requirement references taken out:
+   * The task text with the number, the requirement references and the field
+   * lines taken out:
    * what the author actually wrote about the work. Rules that measure the
    * task read this, so a reference does not pass for a description.
    */
@@ -100,24 +83,19 @@ export interface PlanTask {
   /** Requirement references found in the task. */
   links: RequirementLink[];
   /**
-   * File paths the task WRITES: bare backtick spans only, a whole `Check:`
-   * command left out. `section-concurrent-file` reads this - two sections
-   * running the same test file through `Check:` is not a conflict, only two
-   * sections writing it is. See `namedFiles` below for every file a task
-   * names, its commands included.
+   * File paths the task WRITES: exactly the ones its `Files:` line declares.
+   * Nothing is inferred from the task's text. `shared-file-without-order`
+   * reads this field.
    */
   files: string[];
   /**
-   * Every file the task NAMES, its `Check:` commands included: a file named
-   * only inside a command span - `` Check: `npx vitest run x.test.ts` `` -
-   * reaches this field even though it is left out of `files` above, because
-   * the whole command sits in one backtick span with whitespace in it.
-   * `checkGroupSharedFiles` reads this field, because a TDD triple's three
-   * tasks are tied together precisely by the file their `Check:` commands
-   * run, not by which of them happens to write it in plain prose too.
+   * Every file the task names: the `Files:` line, the `Test:` line, the files
+   * a `Command:` or `Check:` span runs, and bare path-shaped spans when the
+   * task has no `Files:` line. Left out of `files`, because running a file is
+   * not writing it.
    */
   namedFiles: string[];
-  /** Problems in an explicit Files declaration; presence suppresses legacy inference. */
+  /** Problems in the `Files:` line: repeated, malformed or unsafe. */
   fileDeclarationProblems: FileDeclarationProblem[];
   /**
    * File the task's own line lives in: the plan's own artifact file for a
@@ -126,6 +104,16 @@ export interface PlanTask {
    * always counts from this file, never from the index that may point at it.
    */
   file: string;
+  /** Test files named on the `Test:` line. */
+  tests: string[];
+  /** The one command on the `Command:` line, or `null` when the task has none. */
+  command: string | null;
+  /** Task numbers on the `Depends on:` line, or `null` when the task has no such line. */
+  dependsOn: string[] | null;
+  /** Controls named on the `Controls:` line. */
+  controls: Control[];
+  /** Repeated, malformed or unknown field values, in the order found. */
+  fieldProblems: FieldProblem[];
 }
 
 /**
@@ -162,18 +150,12 @@ export function parseTaskList(content: string, file: string = ""): PlanTask[] {
     }
 
     const startLine = index + 1;
-    const rawRest = match[6]!.trim();
-    const groups = readGroups(match[5] ?? "");
-    // Only a non-empty label run can carry the declaration right after it -
-    // an empty run means the group label itself is missing or was never
-    // reached, so `(move)` here is not standing where the spec puts it.
-    const declaresMove = groups.length > 0 && MOVE_DECLARATION.test(rawRest);
-    // A `(move)` caught by either of the wrong-spot groups is not the
-    // declaration and must not vanish - it goes back in front of the rest
-    // of the task's own words, where the author will still see it. This
-    // holds even when the line also carries a real declaration right after
-    // the label run: that one is cut below, but the misplaced one is not.
-    const misplacedMove = (match[2] ?? "") + (match[4] ?? "");
+    const rawRest = match[4]!.trim();
+    const declaresMove = MOVE_DECLARATION.test(rawRest);
+    // A `(move)` before the number is not the declaration and must not
+    // vanish - it goes back in front of the task's own words, where the
+    // author will still see it.
+    const misplacedMove = match[2] ?? "";
     const cleanedRest = declaresMove ? rawRest.replace(MOVE_DECLARATION, "") : rawRest;
     const rest = (misplacedMove + cleanedRest).trim();
     const own = [rest];
@@ -189,29 +171,32 @@ export function parseTaskList(content: string, file: string = ""): PlanTask[] {
     }
 
     const fileScope = readTaskFileScope(own);
+    const fields = readTaskFields(own);
     tasks.push({
       number: match[3] ?? "",
-      groups,
       line: startLine,
       done: match[1] !== " ",
       declaresMove,
       text: join(own),
       firstLine: own[0]!,
-      cleanText: join(own.map((part) => part.replace(REQUIREMENT_LINK, "").trim())),
+      cleanText: join(
+        own.filter((part) => !FIELD_LINE.test(part)).map((part) => part.replace(REQUIREMENT_LINK, "").trim()),
+      ),
       links: own.flatMap(readLink),
       files: fileScope.files,
-      namedFiles: fileScope.namedFiles,
+      namedFiles: [...new Set([...fileScope.namedFiles, ...fields.tests, ...commandFiles(fields.command)])],
       fileDeclarationProblems: fileScope.fileDeclarationProblems,
       file,
+      ...fields,
     });
   }
 
   return tasks;
 }
 
-/** Reads every label out of the bracket run `TASK_LINE` captured after the number. */
-function readGroups(run: string): string[] {
-  return [...run.matchAll(LABEL_TOKEN)].map((match) => match[1]!);
+/** Files a `Command:` span names; the program and the script it runs are not files the task names. */
+function commandFiles(command: string | null): string[] {
+  return command === null ? [] : readNamedFiles([`\`${command}\``]);
 }
 
 /** Joins the lines of a task into one line, dropping the empty ones. */

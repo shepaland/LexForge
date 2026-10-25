@@ -10,54 +10,6 @@ requirement left a trace in the code, and where the line sits that a machine doe
 
 ## Requirements
 
-### Requirement: Four dimensions in one response
-
-`lexforge verify --change <name>` SHALL check six things in a single call and fold the
-findings into one list:
-
-- open checkboxes in `tasks.md`;
-- ticked tasks with no red record of their own;
-- delta-spec requirements with no trace in the code;
-- stamp state for every label in the `verification` section;
-- open ledger entries of level `critical` or `important` naming this change;
-- covered files the change touched that break the rule of its path for long files.
-
-The dimensions SHALL NOT be toggled off by flags and SHALL NOT be called separately: the
-check before completion runs as a whole, or the agent picks the one dimension that passes.
-
-Every finding SHALL carry a rule id that shows which dimension it came from.
-
-#### Scenario: Every dimension in one answer
-
-- **WHEN** `verify` runs on a change with one open checkbox, one ticked task with no red
-  record, and a stale stamp
-- **THEN** one response carries all three findings, and the exit code is `1`
-
-#### Scenario: A flag that narrows the check
-
-- **WHEN** an agent looks for a way to run one dimension on its own
-- **THEN** no such flag exists, and the whole check runs
-
-#### Scenario: Findings of three kinds
-
-- **WHEN** a change still has an open checkbox, a requirement with no trace, and a label with
-  no stamp
-- **THEN** the response carries three findings with different rule ids, exit code `1`
-
-#### Scenario: All three dimensions are clean
-
-- **WHEN** the tasks are closed, every ticked task that names production work carries a red
-  record, every requirement has a trace, and every label is fresh, and the ledger holds no open
-  entry above MINOR for this change, and no covered file the change touched breaks the rule of
-  its path for long files
-- **THEN** the command exits with code `0`
-
-#### Scenario: An open entry above MINOR
-
-- **WHEN** the first four dimensions are clean and the ledger holds one open `critical` entry
-  for this change
-- **THEN** the response carries one finding with the ledger's rule id, exit code `1`
-
 ### Requirement: An open task is a finding
 
 `verify` SHALL report a finding for every `- [ ]` checkbox in `tasks.md`. The finding text SHALL
@@ -90,8 +42,8 @@ there is nothing to check, and code `0` here would mean "no tasks left."
 hold:
 
 - at least one plan task references the requirement, and every referencing task is closed;
-- at least one file named in those tasks' text is changed in the change relative to the
-  comparison base.
+- at least one file named in the `Files:` line of those tasks is changed in the change relative
+  to the comparison base.
 
 A requirement that fails either condition SHALL become a finding naming the capability and the
 requirement name.
@@ -99,19 +51,20 @@ requirement name.
 The requirement's text SHALL NOT be searched for in source files: a requirement's wording turns
 up in code by coincidence, and such a search gives a green answer out of nothing.
 
-The comparison base SHALL be the commit at which the change's directory first appeared in the
-repository. Everything changed after that counts as this change's work.
+The comparison base SHALL be the base recorded when the plan was approved, or
+`git merge-base dev feature/<name>` for a change migrated from 5.x. Everything changed after
+that counts as this change's work.
 
 #### Scenario: Requirement covered by a closed task and an edited file
 
-- **WHEN** a requirement is named by task `3.4`, the task is closed, and a file from its text is
-  changed relative to the comparison base
+- **WHEN** a requirement is named by task `3.4`, the task is closed, and a file from its
+  `Files:` line is changed relative to the comparison base
 - **THEN** there is no finding
 
 #### Scenario: Task closed, file untouched
 
-- **WHEN** a task referencing a requirement is marked closed, but none of the files named in it
-  is changed relative to the comparison base
+- **WHEN** a task referencing a requirement is marked closed, but none of the files in its
+  `Files:` line is changed relative to the comparison base
 - **THEN** the check reports a finding naming the requirement and the file the edit never
   touched
 
@@ -184,7 +137,8 @@ Without it, a zero exit code reads as a full check, and the text part of the che
 ### Requirement: verify's machine output is usable by a skill
 
 `verify --json` SHALL print a single document to standard output and nothing else. The document
-SHALL carry findings in the shared gate shape and a count for each of the four dimensions.
+SHALL carry findings in the shared gate shape and a count for each dimension that
+`lexforge verify` checks.
 
 A skill SHALL decide from the exit code and the document's fields, without parsing
 human-readable strings.
@@ -193,150 +147,158 @@ human-readable strings.
 
 - **WHEN** `verify --json` finds two open tasks, one stale label and one open ledger entry above
   MINOR
-- **THEN** the document carries counts of `2` for tasks, `0` for requirements, `1` for stamps and
-  `1` for open defects
+- **THEN** the document carries a count of `2` for tasks, `1` for stamps, `1` for open defects
+  and `0` for every other dimension
 
 #### Scenario: Standard output parses whole
 
 - **WHEN** `verify --change add-auth --json` is run
 - **THEN** the whole standard output parses as JSON with no pre-cleaning
 
-### Requirement: A ticked task with no red record is a finding
+### Requirement: A ticked task without a closed task record is a finding
 
-`lexforge verify --change <name>` SHALL raise a finding for every task `tasks.md` marks
-`- [x]` whose first named file lies outside `tests/` and outside the change's own directory,
-and that carries no red record, and SHALL name those task ids.
+`lexforge verify --change <name>` SHALL report `ticked-task-without-record` for a ticked task
+with no task record, and `task-record-not-closed` for a ticked task whose record is not closed.
+A historical record SHALL count as closed.
 
-The first file a task's line names is the file it writes; every file named after it is the
-subject that work is about, not the work. A ticked task whose first named file is a test file,
-or a file inside the change directory, or that names no file at all — one whose work is only a
-run, one that writes a test — is not checked by this dimension.
+#### Scenario: A checkbox ticked by hand
 
-A task whose line carries the declaration `(move)` after its group label SHALL NOT be checked
-by this dimension either. `(move)` is the plan author's statement that the task carries code
-from one file to another and changes no behaviour, which leaves no run to watch fail. The
-declaration is read as written; nothing weighs it against the task's own words, and a task
-without it is checked whatever its wording suggests.
+- **WHEN** task `1.2` is ticked in `tasks.md` and has no task record
+- **THEN** verify reports `ticked-task-without-record` on task `1.2`
 
-The finding SHALL NOT be waived because the change was started before the records existed,
-because the task is small, or because the tree is green now. A change owner closes it one of
-three ways: record the red run for that task, declare the task a `(move)`, or clear its
-checkbox.
+#### Scenario: A migrated task
 
-A record whose exit code is `0` SHALL count as no record.
+- **WHEN** task `1.1` is ticked and its record has `origin: "historical"`
+- **THEN** the task adds no finding
 
-#### Scenario: A change ticked before the records existed
+### Requirement: A recorded commit missing from history is a finding
 
-- **WHEN** a change carries eighteen ticked tasks, each naming a source file outside `tests/`
-  and outside the change directory, and no red records at all
-- **THEN** `verify` names all eighteen task ids as findings and exits `1`
+For every native task record, the red commit, the green commit and the merge commit SHALL be
+ancestors of the change branch. `lexforge verify --change <name>` SHALL report
+`recorded-commit-missing` for each one that is not.
 
-#### Scenario: One task of a section unrecorded
+#### Scenario: The change branch rewritten
 
-- **WHEN** tasks 1.1 through 1.5 carry red records and task 1.6 is ticked with none
-- **THEN** the finding names task 1.6 alone
+- **WHEN** the change branch was rewritten and the merge commit of task `1.1` is gone from it
+- **THEN** verify reports `recorded-commit-missing` on task `1.1`
 
-#### Scenario: A ticked task outside this dimension's reach
+### Requirement: A change without an approved final review is a finding
 
-- **WHEN** a ticked task's line names only a test file, only a file inside the change
-  directory, or no file at all
-- **THEN** the dimension raises no finding for it, with or without a red record
+After the last task closes, the diff of the whole change SHALL be reviewed and registered with
+`lexforge review final --change <name> --file <report.md>`; the command SHALL refuse with
+`tasks-open` while a task is open and with `reviewer-is-executor` when the reviewer executed a
+task of the change. The base of the review SHALL be the base of the approval, or
+`git merge-base dev feature/<name>` for a change migrated from 5.x. `lexforge verify` SHALL
+report `final-review-missing` without a registered final review, `final-review-stale` when the
+change branch moved past the reviewed commit, and `final-review-findings-open` when the latest
+final review holds a critical or important finding.
 
-#### Scenario: The source file a test pins is not the work
+#### Scenario: No final review
 
-- **WHEN** a ticked task writes the test file `tests/core/gates/x.test.ts` and names
-  `src/core/gates/x.ts` after it as the subject that test pins, and carries no record
-- **THEN** the dimension raises no finding for it
+- **WHEN** every task is closed and no final review is registered
+- **THEN** verify reports `final-review-missing`
 
-#### Scenario: A task declared a move
+#### Scenario: A commit after the final review
 
-- **WHEN** a ticked task's line carries `(move)` after its group label and its first named
-  file is a source file outside `tests/`, with no red record
-- **THEN** the dimension raises no finding for it
+- **WHEN** a commit lands on the change branch after the final review
+- **THEN** verify reports `final-review-stale`
 
-#### Scenario: The same task without the declaration
+#### Scenario: A blocking finding in the final review
 
-- **WHEN** that task's line carries no `(move)`, however plainly its words describe carrying
-  code from one file to another
-- **THEN** the dimension raises the finding and names its task id
+- **WHEN** the latest final review holds a critical finding
+- **THEN** verify reports `final-review-findings-open`
 
-### Requirement: A touched file that breaks its path is a finding
+### Requirement: verify checks every dimension in one response
 
-`verify` SHALL report a finding for each covered file the change touched that breaks the
-rule of the change's path for long files. The finding SHALL name the file, its line count at
-the start of the change, its line count now, and the limit.
+`lexforge verify --change <name>` SHALL check these things in a single call and fold the
+findings into one list:
 
-A file the change deleted SHALL NOT be reported.
+- open checkboxes in `tasks.md`;
+- ticked tasks without a closed task record;
+- closed task records whose green commit carries no approving review;
+- recorded task commits missing from the history of the change branch;
+- delta-spec requirements with no trace in the code;
+- stamp state for every label in the `verification` section;
+- open ledger entries of level `critical` or `important` naming this change;
+- work the working tree holds that no commit of the change branch does, anywhere but the
+  change directory - its delta specs excepted, because archive merges those into the main
+  specs - the task worktrees, and the defect ledger with the lock and temporary files kept
+  beside it;
+- a change on the short path still fitting it, with its delta written before the code;
+- the final review of the whole change.
 
-#### Scenario: A short file grown over the limit is reported
+The dimensions SHALL NOT be toggled off by flags and SHALL NOT be called separately: the
+check before completion runs as a whole, or the agent picks the one dimension that passes.
 
-- **WHEN** the change touched `src/cart.ts`, 380 lines at the start and 420 now, and the
-  limit is 400
-- **THEN** `verify` reports a finding naming `src/cart.ts`, 380, 420 and 400, and exits `1`
+Every finding SHALL carry a rule id that shows which dimension it came from.
 
-#### Scenario: A long file grown on the keep path is reported
+#### Scenario: Three dimensions failing in one answer
 
-- **WHEN** `long_files: keep` is recorded and the change touched `src/billing.ts`, 612 lines
-  at the start and 640 now
-- **THEN** `verify` reports a finding naming `src/billing.ts`, 612, 640 and 400
+- **WHEN** `verify` runs on a change with one open checkbox, one ticked task without a task
+  record, and a stale stamp
+- **THEN** one response carries all three findings, and the exit code is `1`
 
-#### Scenario: A long file left long on the refactor path is reported
+#### Scenario: No flag narrows the check
 
-- **WHEN** `long_files: refactor` is recorded and the change touched `src/billing.ts`, 612
-  lines at the start and 590 now
-- **THEN** `verify` reports a finding naming `src/billing.ts`, 612, 590 and 400
+- **WHEN** an agent looks for a way to run one dimension on its own
+- **THEN** no such flag exists, and the whole check runs
 
-#### Scenario: A deleted file is not reported
+#### Scenario: Every dimension clean
 
-- **WHEN** the change deleted `src/legacy-billing.ts`, 900 lines at the start
-- **THEN** `verify` reports no finding about `src/legacy-billing.ts`
+- **WHEN** the tasks are closed with closed task records, every recorded commit is in the
+  history of the change branch, every requirement has a trace, every label is fresh, the ledger
+  holds no open entry above MINOR for this change, and an approved final review covers the tip
+  of the change branch
+- **THEN** the command exits with code `0`
 
-### Requirement: With no recorded path, the refactor rule applies
+#### Scenario: Work the working tree holds and no commit does
 
-When the change's `.lexforge.yaml` holds no `long_files` and the change touched a covered
-file that was over the limit at the start, `verify` SHALL judge that file by the rule of the
-`refactor` path, and the finding SHALL name both ways out: recording `long_files`, or
-splitting the file.
+- **WHEN** every other dimension is clean and the working tree holds an edit to a source file
+  that no commit of the change branch carries
+- **THEN** the response carries one finding with the rule id `uncommitted-work` naming that
+  file, and the exit code is `1`
 
-#### Scenario: An unplanned long file is judged strictly
+#### Scenario: An uncommitted delta spec of the change
 
-- **WHEN** no `long_files` is recorded and the executor touched `src/billing.ts`, 612 lines at
-  the start and 612 now, although no task named it
-- **THEN** `verify` reports a finding naming `src/billing.ts`, and the finding names
-  `long_files` and splitting the file as the two ways out
+- **WHEN** every other dimension is clean and the only file the working tree holds and no
+  commit does is a delta spec under the change's own `specs/`
+- **THEN** the response still carries the `uncommitted-work` finding, because archive merges
+  that file into the main specs
 
-### Requirement: Final verification validates migrated state
+#### Scenario: An open ledger entry above MINOR
 
-For a migrated change, `lexforge verify` SHALL report every incomplete task, unresolved
-historical-evidence gap, contradiction, invalid dependency, and partially completed cycle. It
-SHALL accept a historically confirmed task as completed for queue purposes without requiring a
-fabricated workflow 2 red record, and SHALL independently require fresh evidence for the current
-code and final scope.
+- **WHEN** every other dimension is clean and the ledger holds one open `critical` entry for
+  this change
+- **THEN** the response carries one finding with the ledger's rule id, exit code `1`
 
-The migration ledger, its input digest, and referenced evidence SHALL be readable and internally
-consistent. Missing or modified migration details SHALL be a finding or a refusal rather than a
-fallback that treats every checkbox as valid.
+### Requirement: Final verification accepts historical task records
 
-#### Scenario: Confirmed history with fresh current checks
+For a change migrated from 5.x, `lexforge verify` SHALL accept a historical task record as a
+closed task without a red or green run, and SHALL require for it the same final review of the
+current code as for a native change. A ticked task with neither a historical nor a native closed
+record SHALL be a finding. A change with `workflow.json` below version 3 SHALL be refused with
+`change-needs-migration`.
 
-- **WHEN** all tasks are historically confirmed or natively closed and current evidence covers
-  the present code
-- **THEN** migration state adds no finding to final verification
+#### Scenario: Historical tasks with a final review of the tip
 
-#### Scenario: Confirmed history with stale current checks
+- **WHEN** all tasks are historical or natively closed and the final review covers the present
+  tip of the change branch
+- **THEN** the historical records add no finding to final verification
 
-- **WHEN** all tasks are historically confirmed but code changed after their recorded state
-- **THEN** final verification reports stale or uncovered current evidence while preserving the
-  historical completion report
+#### Scenario: Historical tasks with a final review left behind
 
-#### Scenario: Damaged migration detail
+- **WHEN** all tasks are historical but the change branch moved after the final review
+- **THEN** final verification reports `final-review-stale` and keeps the historical tasks closed
 
-- **WHEN** a referenced legacy log or durable migration detail has changed since apply
-- **THEN** final verification refuses or reports the integrity failure and does not silently
-  reopen or confirm the affected tasks
+#### Scenario: A ticked migrated task without a record
 
-#### Scenario: Workflow version compatibility
+- **WHEN** a ticked task of a migrated change has no task record
+- **THEN** final verification reports `ticked-task-without-record` and does not treat the
+  checkbox as closed
 
-- **WHEN** the suite verifies an unmigrated workflow 1 change and a native workflow 2 change
-- **THEN** each keeps its existing gate semantics without requiring a migration ledger
+#### Scenario: A change below workflow version 3
+
+- **WHEN** verify runs on a change with `workflow.json` version 2
+- **THEN** it refuses with `change-needs-migration` and the next step
+  `lexforge migrate --change <name>`
 
