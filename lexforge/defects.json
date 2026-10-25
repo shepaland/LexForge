@@ -1842,6 +1842,16 @@
       "summary": "it.each puts the machine's absolute path into the test name, and the test pins only the absence of the old phrases",
       "state": "open",
       "recordedAt": "2026-10-24T21:21:38.877Z"
+    },
+    {
+      "id": "cbd636cc",
+      "change": "plan-driven-execution",
+      "level": "minor",
+      "file": "tests/e2e/migrate-docs.test.ts",
+      "line": 334,
+      "summary": "The dropped-promise claims are all negatives, so deleting the check plan paragraph passes them, and the positive text that replaced it is unpinned",
+      "state": "open",
+      "recordedAt": "2026-10-25T05:25:49.998Z"
     }
   ]
 }
