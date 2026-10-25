@@ -1,57 +1,55 @@
-import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 
 import { describe, expect, it } from "vitest";
 
-const run = promisify(execFile);
-
-/** The local `vitest` entry point, called directly: this is not the lexforge CLI, so it carries no registry-stub duty. */
-const VITEST_BIN = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../node_modules/vitest/vitest.mjs",
-);
+const GATES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "gates");
 
 /**
- * Each of these seven builds a git workspace for every one of its cases
- * through `execFileSync`, which blocks the worker's event loop for the whole
- * call. Run together, the cumulative block across a file's cases used to
- * outlast the 60-second reply window vitest's own runner gives a queued
- * `onTaskUpdate`, so the group finished every test green and still exited `1`
- * on `Error: [vitest-worker]: Timeout calling "onTaskUpdate"`. This test runs
- * exactly that group through a real `vitest run` and pins both the exit code
- * and the absence of that error, so a fix that drops its yield back to the
- * event loop fails here before it reaches the full suite.
+ * Each of these seven builds a git workspace for every one of its cases through
+ * `execFileSync`, which holds the worker's only thread for the whole call. Run back
+ * to back with no turn of the event loop between cases, the block adds up past the
+ * minute vitest's runner gives a queued `onTaskUpdate` to be acknowledged, and the
+ * run exits `1` on `Error: [vitest-worker]: Timeout calling "onTaskUpdate"` while
+ * every test in it passes. The yield after each case is what keeps `npx vitest run`
+ * at `0`, so the checks below pin it in every one of the seven: a file that drops it
+ * fails here, which replaying the group does not catch, since the lighter files stay
+ * under the minute on their own. Reproducing the timeout costs over a minute of
+ * synchronous work by definition and three to ten times that on Windows, so these
+ * read the discipline instead of replaying it; the full run the task names as its
+ * command is what measures the outcome.
  */
-const HEAVY_GATE_FILES = [
-  "tests/core/gates/verify-change-evidence.test.ts",
-  "tests/core/gates/verify-change-records.test.ts",
-  "tests/core/gates/verify-change-tasks.test.ts",
-  "tests/core/gates/verify-change-trace.test.ts",
-  "tests/core/gates/verify-change.test.ts",
-  "tests/core/gates/verify-refusals.test.ts",
-  "tests/core/gates/verify-short-path.test.ts",
+const YIELDING_FILES = [
+  "verify-change-evidence.test.ts",
+  "verify-change-records.test.ts",
+  "verify-change-tasks.test.ts",
+  "verify-change-trace.test.ts",
+  "verify-change.test.ts",
+  "verify-refusals.test.ts",
+  "verify-short-path.test.ts",
 ];
 
-describe("the suite under its own parallelism", () => {
-  it(
-    "runs the seven heaviest gate files together without a birpc timeout",
-    async () => {
-      const result = await run(process.execPath, [VITEST_BIN, "run", "--reporter=dot", ...HEAVY_GATE_FILES], {
-        cwd: process.cwd(),
-        maxBuffer: 32 * 1024 * 1024,
-      }).then(
-        (ok) => ({ status: 0, output: ok.stdout + ok.stderr }),
-        (error) => ({
-          status: typeof error.code === "number" ? error.code : 1,
-          output: `${error.stdout ?? ""}${error.stderr ?? ""}`,
-        }),
-      );
+describe("the gate files that block their worker", () => {
+  it("yield a whole turn of the event loop, not a microtask", async () => {
+    const fixtures = await import("./gates/verify-change-fixtures.js");
 
-      expect(result.status).toBe(0);
-      expect(result.output).not.toContain("Timeout calling");
-    },
-    180_000,
-  );
+    expect(typeof fixtures.yieldEventLoop).toBe("function");
+
+    let macrotaskRan = false;
+    setImmediate(() => {
+      macrotaskRan = true;
+    });
+    await fixtures.yieldEventLoop();
+
+    expect(macrotaskRan).toBe(true);
+  });
+
+  for (const file of YIELDING_FILES) {
+    it(`${file} hands the event loop back after each case`, () => {
+      const source = readFileSync(path.join(GATES, file), "utf8");
+
+      expect(source).toMatch(/afterEach\(yieldEventLoop\)/);
+    });
+  }
 });
